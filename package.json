@@ -1,0 +1,37 @@
+{
+  "name": "vibranium",
+  "version": "0.0.1",
+  "description": "API testing tool",
+  "main": "app/index.js",
+  "bin": {
+    "vib-cli": "app/src/cli.js",
+    "vc": "app/src/cli.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sarathm09/vibranium.git"
+  },
+  "keywords": [
+    "api-automation",
+    "api-testing",
+    "regression-testing"
+  ],
+  "author": "Sarath S Menon",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/sarathm09/vibranium/issues"
+  },
+  "homepage": "https://github.com/sarathm09/vibranium#readme",
+  "dependencies": {
+    "chalk": "^3.0.0",
+    "commander": "4.0.x",
+    "treeify": "^1.1.0",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "eslint": "^6.7.2"
+  }
+}

@@ -11,8 +11,8 @@
             "skipFiles": [
                 "<node_internals>/**"
             ],
-            "program": "${workspaceFolder}/app/src/compiler.js",
-            "args": ["list", "-s", "matrix_crud"]
+            "program": "${workspaceFolder}/app/index.js",
+            "args": ["list", "-s", "matrix_crud", "-d"]
         }
     ]
 }

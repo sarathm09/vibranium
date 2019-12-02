@@ -3,6 +3,7 @@
 const vibranium = require('commander');
 const { readFileSync } = require('fs')
 const compiler = require('./compiler')
+const testexecutor = require('./testexecutor')
 const logHandler = require('./loghandler')
 
 const version = readFileSync(__dirname + '/../config/version.txt', 'utf8');
@@ -18,18 +19,23 @@ vibranium
     .option('-l --log [loglevel]', 'Logging level [info, debug, error], default is info')
     .option('--system [systems]', 'The system on which the apis need to be executed. The sytem name should be defined in the config file')
     .option('--no-color', 'Plain text output without colors')
-    .action(options => {
-        console.log(options.opts())
+    .action(async options => {
+        console.time()
+        const scenarios = await compiler.search(options.collections, options.scenarios, options.apis)
+
+        const result = await testexecutor.runTests(scenarios);
+        console.timeEnd()
     });
+
 
 
 vibranium
     .command('list')
     .alias('l')
     .description('List all the vibranium tests')
-    .option('-c --collections [collections]', 'Collections to list, separated by comma(,)')
-    .option('-s --scenarios [scenarios]', 'Scenarios to list, separated by comma(,)')
-    .option('-a --apis [apis]', 'API endpoints to list, separated by comma(,)')
+    .option('-c --collections [collections]', 'Collections to list, separated by comma(,)', 'all')
+    .option('-s --scenarios [scenarios]', 'Scenarios to list, separated by comma(,)', 'all')
+    .option('-a --apis [apis]', 'API endpoints to list, separated by comma(,)', 'all')
     .option('-f --format [format]', 'Format to print the output in, default is tree. [tree, csv, json]', 'tree')
     .option('--no-color', 'Plain text output without colors')
     .action(async options => {
@@ -40,7 +46,6 @@ vibranium
         if (options.format == 'tree' || options.format == 'csv') {
             apiList = compiler.convertApiListToTreeStructure(apiList)
         }
-        
         logHandler.printApiList(apiList, options.format, options.color)
 
         console.timeEnd()

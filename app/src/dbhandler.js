@@ -1,6 +1,4 @@
 const Datastore = require('nedb');
-
-
 let db;
 
 const initializeDatabase = () => {
@@ -50,9 +48,40 @@ const findApiInDb = db => {
     })
 }
 
+/**
+ * Load all the APIs into database
+ * 
+ * @param {array} apis List of APIs
+ * @returns promise object
+ */
+const insertApisIntoDatabase = apis => {
+    return new Promise(resolve => {
+        db.apis.insert(apis, (err, newDoc) => {
+            if (err) logger.error(err)
+            resolve(newDoc)
+        })
+    })
+}
+
+const findApiDetails = (collection, scenario, api) => {
+    return new Promise(resolve => {
+        db.apis.find({ name: api, collection: collection, scenario: scenario })
+            .exec(async (err, values) => {
+                if (err || values.length === 0) resolve({})
+                else {
+                    values[0]['_apiId'] = `${values[0].collection}.${values[0].scenario}.${values[0].name}`
+                    resolve(values[0])
+                }
+            })
+    });
+}
+
+
+db = initializeDatabase();
 
 module.exports = {
-    initialize: initializeDatabase,
     find: findApiInDb,
-    insert: insertScenariosIntoDatabase
+    insertScenarios: insertScenariosIntoDatabase,
+    insertApis: insertApisIntoDatabase,
+    findApiDetails
 }

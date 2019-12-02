@@ -8,7 +8,9 @@
     "vc": "app/src/cli.js"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint app",
+    "doc": "documentation build app/** -f html -o docs --theme node_modules/documentation-devseed-theme"
   },
   "repository": {
     "type": "git",
@@ -28,10 +30,12 @@
   "dependencies": {
     "chalk": "^3.0.0",
     "commander": "4.0.x",
+    "nedb": "^1.8.0",
     "treeify": "^1.1.0",
     "winston": "^3.2.1"
   },
   "devDependencies": {
+    "documentation-devseed-theme": "^0.1.7",
     "eslint": "^6.7.2"
   }
 }

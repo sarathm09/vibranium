@@ -21,15 +21,14 @@ vibranium
     .option('--no-color', 'Plain text output without colors')
     .action(async options => {
         console.time()
-        const scenarios = await compiler.search(options.collections, options.scenarios, options.apis)
-
-        const result = await testexecutor.runTests(scenarios);
+        const scenarioList = await compiler.search(options.collections, options.scenarios, options.apis)
+        const result = await testexecutor.runTests(scenarioList);
         console.timeEnd()
     });
 
 
 
-vibranium
+let listCommand = vibranium
     .command('list')
     .alias('l')
     .description('List all the vibranium tests')
@@ -49,7 +48,19 @@ vibranium
         logHandler.printApiList(apiList, options.format, options.color)
 
         console.timeEnd()
-    });
+    })
+
+
+listCommand
+    .command('freeze')
+    .alias('f')
+    .description("Freeze the current list of scenarios into a file so that the files are not scanned again and again")
+
+
+listCommand
+    .command('unfreeze')
+    .alias('u')
+    .description("Start scanning for all file changes")
 
 
 vibranium

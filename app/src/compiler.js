@@ -225,6 +225,7 @@ const searchForApi = async (collections, scenarios, apis) => {
 }
 
 
+
 module.exports = {
     compile: loadAllScenarios,
     search: searchForApi,

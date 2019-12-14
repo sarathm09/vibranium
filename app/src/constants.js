@@ -13,5 +13,11 @@ module.exports = {
         INFO: [],
         DEBUG: [],
         ERROR: []
+    },
+
+    authTypes: {
+        oauth2: [ 'jwt', 'cf-jwt', 'client-credentials', 'oauth2', 'jwt-token'],
+        basic: ['basic', 'username-password', 'basic-authentication'],
+        none: ['none']
     }
 }

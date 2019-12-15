@@ -28,14 +28,18 @@
   },
   "homepage": "https://github.com/sarathm09/vibranium#readme",
   "dependencies": {
+    "browser-or-node": "^1.2.1",
     "chalk": "^3.0.0",
     "commander": "4.0.x",
     "nedb": "^1.8.0",
     "treeify": "^1.1.0",
+    "vm2": "^3.8.4",
     "winston": "^3.2.1"
   },
   "devDependencies": {
     "documentation-devseed-theme": "^0.1.7",
-    "eslint": "^6.7.2"
+    "eslint": "^6.7.2",
+    "express": "^4.17.1",
+    "uuid": "^3.3.3"
   }
 }

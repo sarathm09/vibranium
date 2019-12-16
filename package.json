@@ -1,45 +1,46 @@
 {
-  "name": "vibranium",
-  "version": "0.0.1",
-  "description": "API testing tool",
-  "main": "app/index.js",
-  "bin": {
-    "vib-cli": "app/src/cli.js",
-    "vc": "app/src/cli.js"
-  },
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "eslint app",
-    "doc": "documentation build app/** -f html -o docs --theme node_modules/documentation-devseed-theme"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/sarathm09/vibranium.git"
-  },
-  "keywords": [
-    "api-automation",
-    "api-testing",
-    "regression-testing"
-  ],
-  "author": "Sarath S Menon",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/sarathm09/vibranium/issues"
-  },
-  "homepage": "https://github.com/sarathm09/vibranium#readme",
-  "dependencies": {
-    "browser-or-node": "^1.2.1",
-    "chalk": "^3.0.0",
-    "commander": "4.0.x",
-    "nedb": "^1.8.0",
-    "treeify": "^1.1.0",
-    "vm2": "^3.8.4",
-    "winston": "^3.2.1"
-  },
-  "devDependencies": {
-    "documentation-devseed-theme": "^0.1.7",
-    "eslint": "^6.7.2",
-    "express": "^4.17.1",
-    "uuid": "^3.3.3"
-  }
+	"name": "vibranium",
+	"version": "0.0.1",
+	"description": "API testing tool",
+	"author": "Sarath S Menon",
+	"main": "app/index.js",
+	"homepage": "https://github.com/sarathm09/vibranium#readme",
+	"keywords": [
+		"api-automation",
+		"api-testing",
+		"regression-testing"
+	],
+	"bin": {
+		"vib-cli": "app/src/cli.js",
+		"vc": "app/src/cli.js"
+	},
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"lint": "eslint app",
+		"doc": "documentation build app/** -f html -o docs --theme node_modules/documentation-devseed-theme"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/sarathm09/vibranium.git"
+	},
+	"bugs": {
+		"url": "https://github.com/sarathm09/vibranium/issues"
+	},
+	"dependencies": {
+		"vm2": "^3.8.4",
+		"uuid": "^3.3.3",
+		"nedb": "^1.8.0",
+		"chalk": "^3.0.0",
+		"axios": "^0.19.0",
+		"winston": "^3.2.1",
+		"treeify": "^1.1.0",
+		"request": "^2.88.0",
+		"express": "^4.17.1",
+		"commander": "^4.0.1",
+		"browser-or-node": "^1.2.1"
+	},
+	"devDependencies": {
+		"eslint": "^6.7.2",
+		"documentation-devseed-theme": "^0.1.7"
+	}
 }

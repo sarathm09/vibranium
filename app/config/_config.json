@@ -1,0 +1,40 @@
+{
+    "accounts": {
+        "system_that_uses_no_auth": {
+            "url": "SYSTEM_UI_URL",
+            "api_url": "API_ENDPOINT",
+            "method": "none"
+        },
+        "some_random_name_for_my_system_with_basic_auth": {
+            "url": "SYSTEM_UI_URL",
+            "api_url": "API_ENDPOINT",
+            "credentials": {
+                "username": "MY_SUPER_SECRET_USERNAME",
+                "password": "MY_SUPER_SECRET_PASSWORD"
+            }
+        },
+        "another_system_that_uses_jwt_token_based_auth": {
+            "url": "SYSTEM_UI_URL",
+            "api_url": "API_ENDPOINT",
+            "method": "oauth2",
+            "oauth_url": "OAUTH_TOKEN_URL_FOR_THE_SYSTEM",
+            "credentials": {
+                "clientid": "MY_SUPER_SECRET_CLIENT_ID",
+                "secret": "MY_SUPER_SECRET_CLIENT_SECRET"
+            }
+        }
+    },
+    "default_account": "system_that_uses_no_auth",
+    "env_vars": {
+        "short_text": "[a-zA-Z 0-9]{5, 20}",
+        "lorem_255": "{lorem_255}",
+        "lorem_5000": "{lorem_5000}"
+    },
+    "executor": {
+        "max_parallel_executors": 20
+    },
+    "logger": {
+        "default_log_level": "INFO",
+        "max_log_history_to_keep": "30d"
+    }
+}

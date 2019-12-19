@@ -1,9 +1,12 @@
 const { readdir, stat } = require('fs').promises;
 const { join } = require('path');
 const pathResolve = require('path').resolve;
-const { scenariosPath } = require('./constants');
-const { logger } = require('./loghandler')
+const { vibPath } = require('./constants');
+const logHandler = require('./loghandler')
 const utils = require('./utils')
+
+
+const logger = logHandler.moduleLogger('compiler')
 
 
 const readListOfTestScenarios = async (directoryPath) => {
@@ -38,7 +41,7 @@ const readListOfTestScenarios = async (directoryPath) => {
 const loadPayloadFiles = async endpoint => {
     let endpointWithPayloadData = endpoint;
     if (!!endpoint.payload && typeof (endpoint.payload) == 'string' && endpoint.payload.startsWith("!")) {
-        let payloadFilePath = join(scenariosPath, '..', 'payloads', endpoint.payload.replace('!', '')) + ".json";
+        let payloadFilePath = join(vibPath.scenarios, '..', 'payloads', endpoint.payload.replace('!', '')) + ".json";
         try {
             let payloadJsonResponse = await utils.readJsonFile(payloadFilePath, true);
             endpointWithPayloadData.payload = payloadJsonResponse.status ? payloadJsonResponse.data : {};
@@ -145,7 +148,7 @@ const convertApiListToTreeStructure = apis => {
 
 const findApiDetails = (apis, collection, scenario, api) => {
     let dependentApi = apis.find(_ => _.name === api && _.scenario === scenario && _.collection === collection);
-    return !!dependentApi ? dependentApi : {}
+    return dependentApi ? dependentApi : {}
 }
 
 
@@ -177,29 +180,41 @@ const fetchDependentApis = (apis, api) => {
 }
 
 
-const processScenarioFiles = (scenarioFiles, apis, searchMode) => {
-    return new Promise((resolve, reject) => {
-        Promise.all(scenarioFiles)
-            .then(result => {
-                result.filter(obj => !obj.status).map(obj => logger.warn(`${obj.message}`, { ignored: true }))
-                let scenarios = result.filter(obj => obj.status).map(obj => obj.data);
-                let scenariosToBeProcessed = scenarios
-                    .filter(scenario => !!scenario)
-                    .map(scenario => loadEndpoinsForScenario(scenario, apis, searchMode));
+const processScenarioFiles = (scenarioFiles, apis, searchMode) => new Promise(resolve => {
+    Promise.all(scenarioFiles)
+        .then(result => {
+            result.filter(obj => !obj.status).map(obj => logger.warn(`${obj.message}`, { ignored: true }))
+            let scenarios = result.filter(obj => obj.status).map(obj => obj.data);
+            let scenariosToBeProcessed = scenarios
+                .filter(scenario => !!scenario)
+                .map(scenario => loadEndpoinsForScenario(scenario, apis, searchMode));
+            return Promise.all(scenariosToBeProcessed)
+        })
+        .then(processedScenarios => resolve(processedScenarios))
+        .catch(error => logger.error(error.message));
+})
 
-                return Promise.all(scenariosToBeProcessed)
-            })
-            .then(processedScenarios => resolve(processedScenarios))
-            .catch(error => logger.error(error));
-    })
+
+
+const loadAllScenariosFromCache = async (collections, scenarios, apis) => {
+    let cachedScenarios = await utils.loadCachedScenarios()
+    let filteredScenarios = cachedScenarios.filter(scenario => utils.isAll(collections) ? true : utils.splitAndTrimInput(collections).includes(utils.getCollectionNameForScenario(scenario.collection)))
+        .filter(scenario => utils.isAll(scenarios) ? true : (utils.splitAndTrimInput(scenarios).includes(scenario.name) ||
+            utils.splitAndTrimInput(scenarios).includes(utils.getScenarioFileNameFromPath(scenario.file))))
+
+    return filteredScenarios.map(scenario => {
+        let filteredApis = scenario.endpoints.filter(e => utils.splitAndTrimInput(apis).includes(e.name))
+        scenario.endpoints = filteredApis
+        return scenario
+    }).filter(scenario => scenario.endpoints.length > 0)
 }
 
 
-const loadAllScenarios = async (collections, scenarios, apis) => {
-    const scenarioFiles = await readListOfTestScenarios(scenariosPath);
+const loadAllScenariosFromSystem = async (collections, scenarios, apis) => {
+    const scenarioFiles = await readListOfTestScenarios(vibPath.scenarios);
     let filteredScenarios = scenarioFiles
         .filter(scenarioFile => utils.isAll(collections) ? true : utils.splitAndTrimInput(collections).includes(utils.getCollectionNameForScenario(scenarioFile)))
-        .map(file => new Promise(async (resolve, reject) => resolve(await utils.readJsonFile(file))));
+        .map(file => new Promise(resolve => utils.readJsonFile(file).then(() => resolve())));
 
     filteredScenarios = await processScenarioFiles(filteredScenarios, apis);
     filteredScenarios = filteredScenarios
@@ -210,18 +225,59 @@ const loadAllScenarios = async (collections, scenarios, apis) => {
 }
 
 
-const searchForApi = async (collections, scenarios, apis) => {
-    const scenarioFiles = await readListOfTestScenarios(scenariosPath);
+const searchForApiFromCache = async (collections, scenarios, apis) => {
+    let cachedScenarios = await utils.loadCachedScenarios()
+    let filteredScenarios = cachedScenarios
+        .filter(scenario => utils.isAll(collections) ? true : utils.includesRegex(utils.splitAndTrimInput(collections), scenario.collection))
+        .filter(scenario => utils.isAll(scenarios) ? true : (utils.includesRegex(utils.splitAndTrimInput(scenarios), scenario.name) ||
+            utils.includesRegex(utils.splitAndTrimInput(scenarios), utils.getScenarioFileNameFromPath(scenario.file))))
+
+    return filteredScenarios.map(scenario => {
+        let filteredApis = scenario.endpoints.filter(e => utils.isAll(apis) ? true : utils.includesRegex(utils.splitAndTrimInput(apis), e.name))
+        scenario.endpoints = filteredApis
+        return scenario
+    }).filter(scenario => scenario.endpoints.length > 0)
+}
+
+
+const searchForApiFromSystem = async (collections, scenarios, apis) => {
+    const scenarioFiles = await readListOfTestScenarios(vibPath.scenarios);
     let filteredScenarios = scenarioFiles
         .filter(scenarioFile => utils.isAll(collections) ? true : utils.includesRegex(utils.splitAndTrimInput(collections), utils.getCollectionNameForScenario(scenarioFile)))
-        .map(file => new Promise(async (resolve, reject) => resolve(await utils.readJsonFile(file))));
+        .map(file => new Promise(resolve => utils.readJsonFile(file).then(data => resolve(data))));
 
-    filteredScenarios = await processScenarioFiles(filteredScenarios, apis, searchMode = true);
+    filteredScenarios = await processScenarioFiles(filteredScenarios, apis, true);
     filteredScenarios = filteredScenarios
         .filter(scenarioFile => utils.isAll(scenarios) ? true : (utils.includesRegex(utils.splitAndTrimInput(scenarios), scenarioFile.name) ||
             utils.includesRegex(utils.splitAndTrimInput(scenarios), utils.getScenarioFileNameFromPath(scenarioFile.file))));
 
     return filteredScenarios;
+}
+
+
+const loadAllScenarios = async (collections, scenarios, apis) => {
+    let details
+    utils.isVibraniumInitialized()
+
+    if (utils.cacheExists()) {
+        details = await loadAllScenariosFromCache(collections, scenarios, apis)
+    } else {
+        details = await loadAllScenariosFromSystem(collections, scenarios, apis)
+    }
+    return details
+}
+
+
+const searchForApi = async (collections, scenarios, apis) => {
+    let details
+    utils.isVibraniumInitialized()
+
+    if (utils.cacheExists()) {
+        details = await searchForApiFromCache(collections, scenarios, apis)
+    } else {
+        details = await searchForApiFromSystem(collections, scenarios, apis)
+    }
+    return details
 }
 
 

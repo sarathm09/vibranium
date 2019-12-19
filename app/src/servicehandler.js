@@ -22,7 +22,8 @@ const setAvailableSystems = systems => availableSystems = systems
  * @param {object} payload The payload for the api call
  * @param {string} auth Authentication header data
  */
-const getResponse = (url, method, payload, auth) => isNode ? getResponseWithRequest(url, method, payload, auth) : getResponseWithAxios(url, method, payload, auth)
+const getResponse = (url, method, payload, auth, language = 'en') => isNode ?
+    getResponseWithRequest(url, method, payload, auth, language) : getResponseWithAxios(url, method, payload, auth, language)
 
 
 
@@ -35,14 +36,15 @@ const getResponse = (url, method, payload, auth) => isNode ? getResponseWithRequ
  * @param {object} payload The payload for the api call
  * @param {string} auth Authentication header data
  */
-const getResponseWithAxios = async (url, method, payload, auth) => new Promise((resolve, reject) => {
+const getResponseWithAxios = async (url, method, payload, auth, language = 'en') => new Promise((resolve, reject) => {
     let timing = new Date().getTime();
     let request = {
         method: method.toLowerCase(),
         url: url,
         data: payload,
         headers: {
-            'Authorization': auth
+            'Authorization': auth,
+            'Accept-Language': language
         }
     }
     axios(request)
@@ -79,13 +81,14 @@ const getResponseWithAxios = async (url, method, payload, auth) => new Promise((
  * download: Duration of HTTP download (timings.end - timings.response)
  * total: Duration entire HTTP round-trip (timings.end)
  */
-const getResponseWithRequest = async (url, method, payload, auth) => new Promise((resolve, reject) => {
+const getResponseWithRequest = async (url, method, payload, auth, language = 'en') => new Promise((resolve, reject) => {
     let requestOptions = {
         method: method.toUpperCase(),
         uri: url,
         body: JSON.stringify(payload),
         headers: {
-            'Authorization': auth
+            'Authorization': auth,
+            'Accept-Language': language
         },
         time: true
     }
@@ -100,7 +103,7 @@ const getResponseWithRequest = async (url, method, payload, auth) => new Promise
             }
             resolve({
                 timing: response.timingPhases,
-                respone: apiResponse,
+                response: apiResponse,
                 status: response.statusCode,
                 contentType: response.headers['content-type']
             })
@@ -157,7 +160,7 @@ const processBasicAuthBasedSystemCredentials = system => new Promise((resolve, r
  * @param {object} payload The payload for the api call
  * @param {string} systemName The system on which the api needs to be executed
  */
-const callApi = (url, method, payload, systemName) => new Promise((resolve, reject) => {
+const callApi = (url, method, payload, systemName, language='en') => new Promise((resolve, reject) => {
     let system = availableSystems.default
 
     if (!!systemName && !!availableSystems[systemName]) system = availableSystems[systemName]
@@ -165,16 +168,16 @@ const callApi = (url, method, payload, systemName) => new Promise((resolve, reje
 
     if (constants.authTypes.oauth2.includes(system.auth_type)) {
         processOauth2BasedSystemCredentials
-            .then(systemWithAuth => getResponse(url, method, payload, `Bearer ${systemWithAuth.jwt}`))
+            .then(systemWithAuth => getResponse(url, method, payload, `Bearer ${systemWithAuth.jwt}`, language))
             .then(responseWithTiming => resolve(responseWithTiming))
             .catch(err => reject(err))
     } else if (constants.authTypes.basic.includes(system.auth_type)) {
         processBasicAuthBasedSystemCredentials
-            .then(systemWithAuth => getResponse(url, method, payload, `Basic ${systemWithAuth.auth}`))
+            .then(systemWithAuth => getResponse(url, method, payload, `Basic ${systemWithAuth.auth}`, language))
             .then(responseWithTiming => resolve(responseWithTiming))
             .catch(err => reject(err))
     } else if (constants.authTypes.none.includes(system.auth_type)) {
-        getResponse(url, method, payload, `Bearer ${systemWithAuth.jwt}`)
+        getResponse(url, method, payload, `Bearer ${systemWithAuth.jwt}`, language)
             .then(responseWithTiming => resolve(responseWithTiming))
             .catch(err => reject(err))
     }

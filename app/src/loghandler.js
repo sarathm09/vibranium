@@ -11,18 +11,18 @@ const isMac = process.platform === 'darwin';
  * Contains three transports: console, error file and a combined log file
  * @returns logger object
  */
-const createLoggerObject = () => createLogger({
+const createLoggerObject = (module) => createLogger({
     level: 'info',
     transports: [
         new transports.File({
             filename: join(vibPath.logs, 'error.log'),
             level: 'error',
             format: format.errors({ stack: true }),
-            maxsize: 1000000
+            maxsize: 100000
         }),
         new transports.File({
             filename: join(vibPath.logs, 'combined.log'),
-            maxsize: 1000000,
+            maxsize: 100000,
             format: format.combine(
                 format.timestamp({
                     format: 'YYYY-MM-DD HH:mm:ss'
@@ -33,7 +33,7 @@ const createLoggerObject = () => createLogger({
             )
         }),
         new transports.Console({
-            format: format.printf(info => `[${prettyPrint('loglevel', info.level)}] ${prettyPrint('date')}: ${info.message}`)
+            format: format.printf(info => `[${prettyPrint('loglevel', info.level)}] [${module}] ${prettyPrint('date')}: ${info.message}`)
         })
     ],
 });
@@ -91,8 +91,7 @@ const printApiListAsTree = (apis, color = true) => {
  * @param {array} apis List of apis
  */
 const printApiListAsJson = apis => {
-    logger.info("")
-    logger.info("API list: \n" + JSON.stringify(apis, null, 4));
+    console.log(JSON.stringify(apis, null, 4));
 }
 
 
@@ -110,8 +109,7 @@ const printApiListAsCSV = apis => {
             }
         }
     }
-    logger.info("")
-    logger.info(apisList);
+    console.log(apisList.join(","))
 }
 
 
@@ -137,9 +135,11 @@ const printApiList = (apis, format = 'tree', color = true) => {
 }
 
 
-const logger = createLoggerObject();
+const moduleLogger = module => createLoggerObject(module);
+const logger = createLoggerObject("cli");
 
 module.exports = {
     logger,
+    moduleLogger,
     printApiList
 }

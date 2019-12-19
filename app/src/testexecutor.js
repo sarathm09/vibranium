@@ -2,13 +2,16 @@ const uuid4 = require('uuid/v4')
 const process = require('process')
 
 const utils = require('./utils')
-const { executionStatus } = require('./constants')
-const {callApi, setAvailableSystems} = require('./servicehandler')
+const { executionStatus, userConfig } = require('./constants')
+const { callApi, setAvailableSystems } = require('./servicehandler')
 const logHandler = require('./loghandler')
 
 
-const MAX_PARALLEL_EXECUTORS = 7, logger = logHandler('executor')
+const MAX_PARALLEL_EXECUTORS = (!!userConfig.executor && !!userConfig.executor.max_parallel_executors) ?
+    userConfig.executor.max_parallel_executors : 10
+const logger = logHandler.moduleLogger('executor')
 let ACTIVE_PARALLEL_EXECUTORS = 0
+let allScenarios = []
 
 
 /**
@@ -26,39 +29,6 @@ const waitForExecutors = () => new Promise(resolve => {
             waitForExecutors().then(() => resolve())
         }, 300)
     }
-})
-
-
-
-/**
- * Execute the api endpoint when executors are available
- * 
- * @param {object} api The api to be executed
- */
-const executeAPI = api => new Promise(resolve => {
-    waitForExecutors()
-        .then(() => {
-            console.log("waiting for " + (1000 * api))
-            utils.sleep(1000 * api)
-                .then(() => {
-                    console.log("done")
-                    ACTIVE_PARALLEL_EXECUTORS -= 1
-                    resolve()
-                })
-        })
-
-})
-
-
-
-const loadDependendentEndpoint = (endpoint, dependency) => new Promise(resolve => {
-    let wait = Math.random(10)
-    console.log(ACTIVE_PARALLEL_EXECUTORS + "\t\tdepstart: " + endpoint + ": " + dependency.api + "  " + wait)
-    executeAPI(wait)
-        .then(res => {
-            console.log(ACTIVE_PARALLEL_EXECUTORS + "\t\tdepend: " + endpoint + ": " + dependency.api + "  " + wait)
-            resolve()
-        });
 })
 
 
@@ -96,6 +66,7 @@ const processGeneratorsAndGlobals = (variables, scenario) => new Promise(resolve
 const executePreScenarioScripts = (variables, scenario) => new Promise(resolve => {
     const vm = new VM({
         sandbox: {
+            scenario,
             variables,
             getApiResponse,
             console
@@ -103,31 +74,25 @@ const executePreScenarioScripts = (variables, scenario) => new Promise(resolve =
     });
 })
 
-// TODO: collect and print results
-const processEndpoint = endpoint => new Promise(resolve => {
-    let wait = Math.random(10)
-    let res = Promise.resolve();
-    if (endpoint.dependencies) {
-        endpoint.dependencies.forEach(dep => {
-            res = res.then(() => loadDependendentEndpoint(endpoint.name, dep))
-        });
-    }
+const executeEndpointPostDependencyScripts = (endPointVariables, scripts) => {
+    return endPointVariables;
+}
 
-    res.then(() => {
-        console.log(ACTIVE_PARALLEL_EXECUTORS + "\tstart: " + endpoint.name + "  " + wait)
-        executeAPI(wait)
-            .then(() => {
-                console.log(ACTIVE_PARALLEL_EXECUTORS + "\tend: " + endpoint.name + "  " + wait)
-                resolve()
-            });
-    })
 
+
+const executeEndpointPreScripts = (scenarioVariables, scripts) => {
+    return scenarioVariables;
+}
+
+
+// TODO: start and end scripts for scenarios 
+const executePostScenarioScripts = (variables, scenario) => new Promise(resolve => {
 
 })
 
 
 // TODO: start and end scripts for scenarios 
-const executePostScenarioScripts = (variables, scenario) => new Promise(resolve => {
+const executePostGeneratorScripts = (variables, scenario) => new Promise(resolve => {
 
 })
 
@@ -137,6 +102,104 @@ const executePostScenarioScripts = (variables, scenario) => new Promise(resolve 
 const printScenarioSummary = (scenario, jobId) => new Promise(resolve => {
 
 })
+
+
+/**
+ * Execute the api endpoint when executors are available
+ * 
+ * @param {object} api The api to be executed
+ * callAPI response: 
+ * { timing, response, status, contentType }
+ */
+const executeAPI = (endpoint, endpointVaribles) => new Promise(resolve => {
+    let api = JSON.parse(JSON.stringify(replaceVariablesInApi(endpoint, endpointVaribles)))
+    let expectedStatus = 200
+
+    if (!!api.expect && !!api.expect.status) expectedStatus = api.expect.status
+
+    waitForExecutors()
+        .then(() => { }) // TODO: log api start
+        .then(callApi(api.url, api.method, api.payload, api.system, api.language))
+        .then(endpointResponse => {
+            api._result = endpointResponse
+            api._status = endpointResponse.status === expectedStatus
+            ACTIVE_PARALLEL_EXECUTORS -= 1
+            resolve(api)
+        })
+})
+
+
+const loadDependendentEndpoint = (endpointName, dependency, endpointVariables, loadDependenciesFromMemory) => new Promise(resolve => {
+    let wait = Math.random(10)
+    console.log(ACTIVE_PARALLEL_EXECUTORS + "\t\tdepstart: " + endpoint + ": " + dependency.api + "  " + wait)
+    executeAPI(wait)
+        .then(res => {
+            console.log(ACTIVE_PARALLEL_EXECUTORS + "\t\tdepend: " + endpoint + ": " + dependency.api + "  " + wait)
+            resolve()
+        });
+})
+
+
+const setRangeIndexForEndpoint = (endpoint, index) => {
+    let variables = !!endpoint.variables ? endpoint.variables : {}
+    variables["_range_index"] = index + 1
+    endpoint.variables = variables
+    return endpoint
+}
+
+
+const getApiExecuterPromise = (scenarioVariables, endpoint, loadDependenciesFromMemory, repeatIndex) => new Promise(resolveEndpoint => {
+    let endpointVaribles = executeEndpointPreScripts(scenarioVariables, endpoint.scripts)
+    let dependencyResolver = Promise.resolve();
+
+    endpoint = setRangeIndexForEndpoint(endpoint, repeatIndex)
+
+    if (!!endpoint.dependencies && endpoint.dependencies.length > 0) {
+        endpoint.dependencies.forEach(dependency => {
+            dependencyResolver = dependencyResolver.then(() =>
+                endPointVariables = loadDependendentEndpoint(endpoint.name, dependency, endpointVariables, loadDependenciesFromMemory))
+        });
+    }
+
+    dependencyResolver.then(() => {
+        endpointVaribles = executeEndpointPostDependencyScripts(endpointVaribles, endpoint.scripts)
+        //TODO depenedcy start
+        executeAPI(endpoint, endpointVaribles)
+            .then(result => resolveEndpoint(result));
+    })
+})
+
+
+// TODO: collect and print results
+const processEndpoint = (scenarioVariables, endpoint, loadDependenciesFromMemory = false) => new Promise(resolve => {
+    if (!!endpoint.async) {
+        let endpointExecutors = Array(!!endpoint.repeat ? endpoint.repeat : 1)
+            .map((_, i) => getApiExecuterPromise(scenarioVariables, endpoint, loadDependenciesFromMemory, i))
+        Promise.all(endpointExecutors)
+            .then(results => {
+                endpoint._result = results;
+                endpoint._status = results.every(endpoint => !!endpoint._status)
+                resolve(endpoint)
+            })
+    } else {
+        let endpointResolver = Promise.resolve(), results = [];
+        Array(!!endpoint.repeat ? endpoint.repeat : 1)
+            .forEach((_, i) => {
+                endpointResolver = endpointResolver.then(result => {
+                    results.push(result)
+                    return getApiExecuterPromise(scenarioVariables, endpoint, loadDependenciesFromMemory, i)
+                })
+            })
+        endpointResolver.then(result => {
+            results.push(result)
+            endpoint._result = results;
+            endpoint._status = results.every(endpoint => !!endpoint._status)
+            resolve(endpoint)
+        })
+    }
+})
+
+
 
 
 /**
@@ -160,10 +223,13 @@ const processScenario = async (scenario, jobId, variables, loadDependenciesFromM
     logScenarioStart(scenario, jobId)
 
     // Process Generators and global variables
-    let scenarioVariables = await processGeneratorsAndGlobals(variables, scenario)
+    let scenarioVariables = await executePreScenarioScripts(variables, scenario)
+
+    // Process Generators and global variables
+    scenarioVariables = await processGeneratorsAndGlobals(scenarioVariables, scenario)
 
     // Execute the pre scenario scripts
-    scenarioVariables = await executePreScenarioScripts(scenarioVariables, scenario)
+    scenarioVariables = await executePostGeneratorScripts(scenarioVariables, scenario)
 
     // Take the endpoints that have ignore flag as false and eecute them
     let endpointsToBeProcessed = scenario.endpoints.filter(endpoint => !endpoint.ignore)
@@ -243,7 +309,7 @@ const setSystemDetails = systems => {
             if (sysInfo.length < 2 || !Object.keys(availableSystems).includes(sysInfo[1])) {
                 logger.error("Invalid user provided system")
                 process.exit(1)
-            } 
+            }
             availableSystems[sysInfo[0]] = availableSystems[sysInfo[1]]
         }
     setAvailableSystems(availableSystems)
@@ -281,6 +347,8 @@ const runTests = async (scenarios, executionOptions, loadDependenciesFromMemory 
     console.time("total")
     const jobId = uuid4()
     setSystemDetails(executionOptions.systems)
+
+    if (loadDependenciesFromMemory) allScenarios = scenarios
 
     let globalVariables = loadGlobalVariables(jobId)
     let userVariables = processUserVariables(executionOptions.variables)

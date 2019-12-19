@@ -1,8 +1,15 @@
 const { VM } = require('vm2')
-const { vibPath, userConfig } = require('./constants')
-const { sep } = require('path')
+const uuid4 = require('uuid/v4')
+const { homedir } = require('os')
+const { sep, join } = require('path')
 const { readFile, unlink } = require('fs').promises
-const { existsSync, mkdirSync, writeFileSync } = require('fs')
+const { existsSync, mkdirSync, writeFileSync, readFileSync } = require('fs')
+
+const { vibPath, userConfig } = require('./constants')
+const logHandler = require('./loghandler')
+
+
+const logger = logHandler.moduleLogger('util')
 
 
 /**
@@ -145,6 +152,35 @@ module.exports.getAvailableSystemsFromConfig = () => {
     }
 }
 
+/**
+ * Check if the config is set and Vibranium is cloned
+ */
+module.exports.isVibraniumInitialized = () => {
+    let status = true
+    if (!existsSync(join(homedir(), '.vib', 'config.json'))) {
+        status = false
+    } else {
+        try {
+            let systemConfig = JSON.parse(readFileSync(join(homedir(), '.vib', 'config.json'), 'utf-8'))
+            let workspace = systemConfig.workspace
+            if(!existsSync(join(workspace, 'config.json')) || 
+                !existsSync(join(workspace, 'jobs')) || 
+                !existsSync(join(workspace, 'logs')) || 
+                !existsSync(join(workspace, 'Vibranium-Tests')) || 
+                !existsSync(join(workspace, 'Vibranium-Tests', 'scenarios'))) {
+                status = false
+            }
+        } catch (err) {
+            status = false
+        }
+    }
+
+    if (!status) {
+        logger.error("Vibranium not initialized. Please run the setup command to initialize and then clone/create the tests.")
+        process.exit(1)
+    }
+}
+
 
 /**
  * Execute a given script and return the variables
@@ -158,11 +194,7 @@ module.exports.getAvailableSystemsFromConfig = () => {
 module.exports.executeScript = (script, getApiResponse, variables, logger) => {
     const vm = new VM({
         external: true,
-        sandbox: {
-            variables,
-            getApiResponse,
-            logger
-        }
+        sandbox: { variables, getApiResponse, logger }
     });
     const scriptName = 'usersScript_' + uuid4().replace(/-/g, '');
     vm.run(`

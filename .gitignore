@@ -89,3 +89,4 @@ typings/
 docs/
 .cache
 tryout.js
+.DS_Store

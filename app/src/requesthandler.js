@@ -1,5 +1,5 @@
 const readline = require('readline')
-const { mkdirSync, readFileSync, writeFileSync, existsSync, createReadStream, createWriteStream } = require('fs')
+const { mkdirSync, writeFileSync, existsSync, createReadStream, createWriteStream } = require('fs')
 const { join } = require('path')
 const { hostname, homedir } = require('os')
 
@@ -59,7 +59,6 @@ const handleVibraniumSetup = async (options, workspacePath) => {
         .pipe(createWriteStream(join(workspacePath, 'config.json')));
 
     logger.info(`Please clone your repo in the directory: ${workspacePath}`)
-
 }
 
 
@@ -78,8 +77,10 @@ const createWorksaceAndUserConfig = (userDetails, workspace) => {
 
     let sysConfig = {
         id: hostname(),
-        workspace,
-        ...userDetails
+        userid: userDetails.userid,
+        email: userDetails.email,
+        name: userDetails.name,
+        workspace
     }
     writeFileSync(join(systemConfigDirectory, 'config.json'), JSON.stringify(sysConfig, null, 4))
 }

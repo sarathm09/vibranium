@@ -4,6 +4,7 @@
 	"description": "API testing tool",
 	"author": "Sarath S Menon",
 	"main": "app/index.js",
+	"licence": "ISC",
 	"homepage": "https://github.com/sarathm09/vibranium#readme",
 	"keywords": [
 		"api-automation",

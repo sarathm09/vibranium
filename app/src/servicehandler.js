@@ -1,5 +1,8 @@
 var { isNode } = require('browser-or-node');
+const request = require('request')
+const process = require('process')
 const axios = require('axios')
+
 const constants = require('./constants')
 
 var availableSystems = {}
@@ -22,8 +25,8 @@ const setAvailableSystems = systems => availableSystems = systems
  * @param {object} payload The payload for the api call
  * @param {string} auth Authentication header data
  */
-const getResponse = (url, method, payload, auth, language = 'en') => isNode ?
-    getResponseWithRequest(url, method, payload, auth, language) : getResponseWithAxios(url, method, payload, auth, language)
+const getResponse = (system, url, method, payload, auth, language = 'en') => isNode ?
+    getResponseWithRequest(system, url, method, payload, auth, language) : getResponseWithAxios(system, url, method, payload, auth, language)
 
 
 
@@ -36,11 +39,11 @@ const getResponse = (url, method, payload, auth, language = 'en') => isNode ?
  * @param {object} payload The payload for the api call
  * @param {string} auth Authentication header data
  */
-const getResponseWithAxios = async (url, method, payload, auth, language = 'en') => new Promise((resolve, reject) => {
+const getResponseWithAxios = async (system, url, method, payload, auth, language = 'en') => new Promise((resolve, reject) => {
     let timing = new Date().getTime();
     let request = {
         method: method.toLowerCase(),
-        url: url,
+        url: system.api_url + url,
         data: payload,
         headers: {
             'Authorization': auth,
@@ -81,22 +84,23 @@ const getResponseWithAxios = async (url, method, payload, auth, language = 'en')
  * download: Duration of HTTP download (timings.end - timings.response)
  * total: Duration entire HTTP round-trip (timings.end)
  */
-const getResponseWithRequest = async (url, method, payload, auth, language = 'en') => new Promise((resolve, reject) => {
+const getResponseWithRequest = async (system, url, method, payload, auth, language = 'en') => new Promise((resolve, reject) => {
     let requestOptions = {
         method: method.toUpperCase(),
-        uri: url,
+        uri: system.api_url + url,
         body: JSON.stringify(payload),
         headers: {
             'Authorization': auth,
             'Accept-Language': language
         },
-        time: true
+        time: true,
+        rejectUnauthorized: false
     }
 
     request(requestOptions, function (error, response, body) {
         if (error) reject(error)
 
-        if (response && response.statusCode) {
+        if (!!response && !!response.statusCode) {
             let apiResponse = body
             if (response.headers['content-type'].includes('json')) {
                 apiResponse = JSON.parse(body)
@@ -160,24 +164,24 @@ const processBasicAuthBasedSystemCredentials = system => new Promise((resolve, r
  * @param {object} payload The payload for the api call
  * @param {string} systemName The system on which the api needs to be executed
  */
-const callApi = (url, method, payload, systemName, language='en') => new Promise((resolve, reject) => {
+const callApi = (url, method, payload, systemName, language = 'en') => new Promise((resolve, reject) => {
     let system = availableSystems.default
 
     if (!!systemName && !!availableSystems[systemName]) system = availableSystems[systemName]
-    if (!system.auth_type) system.type = constants.authTypes.oauth2[0]
+    if (!system.method) system.method = constants.authTypes.oauth2[0]
 
-    if (constants.authTypes.oauth2.includes(system.auth_type)) {
+    if (constants.authTypes.oauth2.includes(system.method)) {
         processOauth2BasedSystemCredentials
-            .then(systemWithAuth => getResponse(url, method, payload, `Bearer ${systemWithAuth.jwt}`, language))
+            .then(systemWithAuth => getResponse(system, url, method, payload, `Bearer ${systemWithAuth.jwt}`, language))
             .then(responseWithTiming => resolve(responseWithTiming))
             .catch(err => reject(err))
-    } else if (constants.authTypes.basic.includes(system.auth_type)) {
+    } else if (constants.authTypes.basic.includes(system.method)) {
         processBasicAuthBasedSystemCredentials
-            .then(systemWithAuth => getResponse(url, method, payload, `Basic ${systemWithAuth.auth}`, language))
+            .then(systemWithAuth => getResponse(system, url, method, payload, `Basic ${systemWithAuth.auth}`, language))
             .then(responseWithTiming => resolve(responseWithTiming))
             .catch(err => reject(err))
-    } else if (constants.authTypes.none.includes(system.auth_type)) {
-        getResponse(url, method, payload, `Bearer ${systemWithAuth.jwt}`, language)
+    } else if (constants.authTypes.none.includes(system.method)) {
+        getResponse(system, url, method, payload, '', language)
             .then(responseWithTiming => resolve(responseWithTiming))
             .catch(err => reject(err))
     }

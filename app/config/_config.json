@@ -25,6 +25,7 @@
         }
     },
     "default_account": "system_that_uses_no_auth",
+    "tests_directory": "Vibranium Tests",
     "env_vars": {
         "short_text": "[a-zA-Z 0-9]{5, 20}",
         "lorem_255": "{lorem_255}",

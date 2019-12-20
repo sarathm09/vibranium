@@ -51,27 +51,31 @@ const logScenarioStart = (scenario, jobId) => {
 
 // TODO: log scenario timing
 const logScenarioEnd = (scenario, jobId, variables) => new Promise(resolve => {
-
+    resolve()
 })
 
 
 // TODO: process generators
 // TODO: process variables
 const processGeneratorsAndGlobals = (variables, scenario) => new Promise(resolve => {
-
+    resolve(variables)
 })
 
 
 // TODO: start and end scripts for scenarios 
 const executePreScenarioScripts = (variables, scenario) => new Promise(resolve => {
-    const vm = new VM({
-        sandbox: {
-            scenario,
-            variables,
-            getApiResponse,
-            console
-        }
-    });
+    if (!!scenario.scripts && !!scenario.scripts.pre_scenario) {
+        const vm = new VM({
+            sandbox: {
+                scenario,
+                variables,
+                getApiResponse,
+                console
+            }
+        });
+        vm.run(scenario.scripts.pre_scenario)
+    }
+    resolve(variables)
 })
 
 const executeEndpointPostDependencyScripts = (endPointVariables, scripts) => {
@@ -87,21 +91,26 @@ const executeEndpointPreScripts = (scenarioVariables, scripts) => {
 
 // TODO: start and end scripts for scenarios 
 const executePostScenarioScripts = (variables, scenario) => new Promise(resolve => {
-
+    resolve()
 })
 
 
 // TODO: start and end scripts for scenarios 
 const executePostGeneratorScripts = (variables, scenario) => new Promise(resolve => {
-
+    resolve(variables)
 })
 
 
 // TODO: log scenario timing
 // TODO: collect and print results
 const printScenarioSummary = (scenario, jobId) => new Promise(resolve => {
-
+    resolve()
 })
+
+
+const replaceVariablesInApi = (api, variables) => {
+    return api
+}
 
 
 /**
@@ -119,7 +128,7 @@ const executeAPI = (endpoint, endpointVaribles) => new Promise(resolve => {
 
     waitForExecutors()
         .then(() => { }) // TODO: log api start
-        .then(callApi(api.url, api.method, api.payload, api.system, api.language))
+        .then(() => callApi(api.url, api.method, api.payload, api.system, api.language))
         .then(endpointResponse => {
             api._result = endpointResponse
             api._status = endpointResponse.status === expectedStatus
@@ -172,9 +181,9 @@ const getApiExecuterPromise = (scenarioVariables, endpoint, loadDependenciesFrom
 
 // TODO: collect and print results
 const processEndpoint = (scenarioVariables, endpoint, loadDependenciesFromMemory = false) => new Promise(resolve => {
-    if (!!endpoint.async) {
-        let endpointExecutors = Array(!!endpoint.repeat ? endpoint.repeat : 1)
-            .map((_, i) => getApiExecuterPromise(scenarioVariables, endpoint, loadDependenciesFromMemory, i))
+    if (!endpoint.async) {
+        let endpointExecutors = Array.from(Array(!!endpoint.repeat ? endpoint.repeat : 1).keys())
+            .map(i => getApiExecuterPromise(scenarioVariables, endpoint, loadDependenciesFromMemory, i))
         Promise.all(endpointExecutors)
             .then(results => {
                 endpoint._result = results;
@@ -183,10 +192,10 @@ const processEndpoint = (scenarioVariables, endpoint, loadDependenciesFromMemory
             })
     } else {
         let endpointResolver = Promise.resolve(), results = [];
-        Array(!!endpoint.repeat ? endpoint.repeat : 1)
+        Array.from(Array(!!endpoint.repeat ? endpoint.repeat : 1).keys())
             .forEach((_, i) => {
                 endpointResolver = endpointResolver.then(result => {
-                    results.push(result)
+                    if (!!result) results.push(result)
                     return getApiExecuterPromise(scenarioVariables, endpoint, loadDependenciesFromMemory, i)
                 })
             })
@@ -231,34 +240,39 @@ const processScenario = async (scenario, jobId, variables, loadDependenciesFromM
     // Execute the pre scenario scripts
     scenarioVariables = await executePostGeneratorScripts(scenarioVariables, scenario)
 
-    // Take the endpoints that have ignore flag as false and eecute them
+    // Take the endpoints that have ignore flag as false and execute them
     let endpointsToBeProcessed = scenario.endpoints.filter(endpoint => !endpoint.ignore)
     await Promise.all(endpointsToBeProcessed
         .map(endpoint => processEndpoint(scenarioVariables, endpoint, loadDependenciesFromMemory)))
 
+    let scenarioExecutionEndTime = new Date().getTime()
     // Summarize the results
-    let scenarioResult = scenario.extend({
+    let scenarioResult = {
+        ...scenario,
         _result: {
             scenarioVariables,
             status: scenario.endpoints.every(endpoint => endpoint._status) ? executionStatus.SUCESS : executionStatus.FAIL,
             timing: {
                 start: scenarioExecutionStartTime,
-                end: new Date().getTime()
+                end: scenarioExecutionEndTime,
+                delta: scenarioExecutionEndTime - scenarioExecutionStartTime
             }
         }
-    })
+    }
 
     // Do post scenario tasks
-    Promise.all([
+    await Promise.all([
         executePostScenarioScripts(scenarioVariables, scenarioResult),
         logScenarioEnd(scenarioResult, jobId, scenarioVariables),
         printScenarioSummary(scenarioResult, jobId)
-    ]).then(() => {
-        resolve({
-            scenarioResult,
-            status: scenarioResult._result.status
-        })
-    })
+    ])
+
+    return {
+        ...scenarioResult,
+        status: scenarioResult._result.status,
+        _status: scenarioResult._result.status === executionStatus.SUCESS
+    }
+
 }
 
 
@@ -300,7 +314,7 @@ const loadGlobalVariables = (jobId) => {
  */
 const setSystemDetails = systems => {
     let availableSystemDetails = utils.getAvailableSystemsFromConfig()
-    let availableSystems = availableSystemDetails.systems.reduce((a, c) => a[c.name] = c, {})
+    let availableSystems = availableSystemDetails.systems
     availableSystems.default = availableSystems[availableSystemDetails.default]
 
     if (!!systems)
@@ -324,7 +338,7 @@ const setSystemDetails = systems => {
  */
 const processUserVariables = variables => {
     let parsedVariables = {}
-    if (!!variables)
+    if (!!variables) {
         for (const userProvidedVariable of variables.split(",")) {
             let varInfo = userProvidedVariable.split("=")
             if (varInfo.length < 2) {
@@ -333,6 +347,10 @@ const processUserVariables = variables => {
             }
             parsedVariables[varInfo[0]] = varInfo[1]
         }
+    } else {
+        variables = {}
+    }
+
     return variables
 }
 
@@ -355,12 +373,16 @@ const runTests = async (scenarios, executionOptions, loadDependenciesFromMemory 
 
     let scenariosToExecute = scenarios.filter(scenario => !!scenario && !scenario.ignore)
     scenarios.filter(scenario => !!scenario && !!scenario.ignore).map(scenario => markAsIgnored(scenario))
+    let scenarioExecutors = scenariosToExecute.map(scenario =>
+        processScenario(scenario, jobId, { ...globalVariables, ...userVariables }, loadDependenciesFromMemory))
 
-    const scenarioResults = await Promise.all(scenariosToExecute.map(scenario =>
-        processScenario(scenario, jobId, { ...globalVariables, ...userVariables }, loadDependenciesFromMemory)))
+    const scenarioResults = await Promise.all(scenarioExecutors)
+
+
 
     // const processedResults = await Promise.all(scenarioResults.map(result => processScenarioResult(result)))
     console.timeEnd("total")
+    return scenarioResults
 }
 
 

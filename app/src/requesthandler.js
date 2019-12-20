@@ -23,7 +23,7 @@ const handleRunCommand = async options => {
         log: options.log
     }
     const result = await testexecutor.runTests(scenarioList, executionOptions, loadDependenciesFromMemory);
-    console.log(result)
+    console.log(JSON.stringify(result, null, 4))
     console.timeEnd()
 }
 

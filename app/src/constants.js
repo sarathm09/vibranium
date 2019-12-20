@@ -3,12 +3,13 @@ const { homedir } = require('os')
 const { readFileSync } = require('fs')
 
 
-let workspace, systemConfig, userConfig;
+let workspace, systemConfig, userConfig, testsDirectory;
 try {
     systemConfig = JSON.parse(readFileSync(join(homedir(), '.vib', 'config.json'), 'utf-8'))
     workspace = systemConfig.workspace
     userConfig = JSON.parse(readFileSync(join(workspace, 'config.json'), 'utf-8'))
     userConfig = { ...systemConfig, ...userConfig }
+    testsDirectory = !!userConfig.tests_directory ? userConfig.tests_directory : 'tests'
 } catch (err) {
     console.log("Error reading config file: " + err)
 }
@@ -20,9 +21,9 @@ module.exports = {
 
     vibPath: {
         workspace,
-        scenarios: join(workspace, 'scenarios'),
+        scenarios: join(workspace, testsDirectory, 'scenarios'),
         logs: join(workspace, 'logs'),
-        payloads: join(workspace, 'payloads'),
+        payloads: join(workspace, testsDirectory, 'payloads'),
         cache: join(workspace, '.cache'),
         cachedScenarios: join(workspace, '.cache', 'scenarios.json')
     },

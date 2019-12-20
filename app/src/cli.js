@@ -21,7 +21,6 @@ vibranium
     .action(options => requestHandler.handleRunCommand(options));
 
 
-
 vibranium
     .command('list')
     .alias('l')

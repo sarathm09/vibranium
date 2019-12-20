@@ -143,12 +143,11 @@ module.exports.loadCachedScenarios = async () => {
 
 /**
  * Get available systems defined in the config
- * TODO: system and default keys
  */
 module.exports.getAvailableSystemsFromConfig = () => {
     return {
-        systems: userConfig.systems,
-        default: userConfig.defaultSystem
+        systems: userConfig.accounts,
+        default: userConfig.default_account
     }
 }
 
@@ -163,11 +162,12 @@ module.exports.isVibraniumInitialized = () => {
         try {
             let systemConfig = JSON.parse(readFileSync(join(homedir(), '.vib', 'config.json'), 'utf-8'))
             let workspace = systemConfig.workspace
-            if(!existsSync(join(workspace, 'config.json')) || 
-                !existsSync(join(workspace, 'jobs')) || 
-                !existsSync(join(workspace, 'logs')) || 
-                !existsSync(join(workspace, 'Vibranium-Tests')) || 
-                !existsSync(join(workspace, 'Vibranium-Tests', 'scenarios'))) {
+            if (!existsSync(join(workspace, 'config.json')) || !existsSync(join(workspace, 'jobs')) || !existsSync(join(workspace, 'logs'))) {
+                status = false
+            }
+            let userConfig = JSON.parse(readFileSync(join(workspace, 'config.json'), 'utf-8'))
+            let testsDirectory = !!userConfig.tests_directory ? userConfig.tests_directory : 'tests'
+            if (!existsSync(join(workspace, testsDirectory)) || !existsSync(join(workspace, testsDirectory, 'scenarios'))) {
                 status = false
             }
         } catch (err) {

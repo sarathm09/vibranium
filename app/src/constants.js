@@ -9,9 +9,9 @@ try {
     workspace = systemConfig.workspace
     userConfig = JSON.parse(readFileSync(join(workspace, 'config.json'), 'utf-8'))
     userConfig = { ...systemConfig, ...userConfig }
-    testsDirectory = !!userConfig.tests_directory ? userConfig.tests_directory : 'tests'
+    testsDirectory = userConfig.tests_directory ? userConfig.tests_directory : 'tests'
 } catch (err) {
-    console.log("Error reading config file: " + err)
+    console.log('Error reading config file: ' + err)
 }
 
 
@@ -35,8 +35,17 @@ module.exports = {
     },
 
     executionStatus: {
-        SUCESS: 'SUCCESS',
-        FAIL: 'FAIL',
-        ERROR: 'ERROR'
+        SUCESS: Symbol('SUCCESS'),
+        FAIL: Symbol('FAIL'),
+        ERROR: Symbol('ERROR')
+    },
+
+    scriptTypes: {
+        preScenario: Symbol('preScenario'),
+        postScenario: Symbol('postScenario'),
+        postGlobal: Symbol('postGlobal'),
+        preApi: Symbol('preApi'),
+        postApi: Symbol('postApi'),
+        postDependency: Symbol('postDependency')
     }
 }

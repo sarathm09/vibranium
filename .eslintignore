@@ -1,0 +1,6 @@
+**/tryout.js
+tests/*.js
+config/*.*
+
+// to be removed
+**/dbhandler.js

@@ -1,8 +1,8 @@
 {
     "accounts": {
-        "system_that_uses_no_auth": {
-            "url": "SYSTEM_UI_URL",
-            "api_url": "API_ENDPOINT",
+        "demoSystem": {
+            "url": "https://reqres.in/",
+            "api_url": "https://reqres.in",
             "method": "none"
         },
         "some_random_name_for_my_system_with_basic_auth": {

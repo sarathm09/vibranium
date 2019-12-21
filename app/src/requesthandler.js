@@ -1,17 +1,24 @@
-const readline = require('readline')
-const { mkdirSync, writeFileSync, existsSync, createReadStream, createWriteStream } = require('fs')
+const open = require('open');
+const uuid4 = require('uuid/v4')
 const { join } = require('path')
+const readline = require('readline')
 const { hostname, homedir } = require('os')
+const { mkdirSync, writeFileSync, readFileSync, existsSync, createReadStream, createWriteStream } = require('fs')
 
 const utils = require('./utils')
 const compiler = require('./compiler')
 const testexecutor = require('./testexecutor')
 const logHandler = require('./loghandler')
+const { vibPath, userConfig } = require('./constants')
 
 
 const logger = logHandler.moduleLogger('handler')
 
-
+/**
+ * Run the tests
+ * 
+ * @param {object} options Commander object containing user input
+ */
 const handleRunCommand = async options => {
     console.time()
     const scenarioList = await compiler.search(options.collections, options.scenarios, options.apis)
@@ -22,12 +29,17 @@ const handleRunCommand = async options => {
         color: options.color,
         log: options.log
     }
-    const result = await testexecutor.runTests(scenarioList, executionOptions, loadDependenciesFromMemory);
+    const result = await testexecutor.runTests(scenarioList, executionOptions, loadDependenciesFromMemory)
     console.log(JSON.stringify(result, null, 4))
     console.timeEnd()
 }
 
 
+/**
+ * List the scenarios matching the parameters that user specified
+ * 
+ * @param {object} options Commander object containing user input
+ */
 const handleListCommand = async options => {
     console.time()
     if (options.unfreeze || options.freeze) {
@@ -50,6 +62,12 @@ const handleListCommand = async options => {
 }
 
 
+/**
+ * Setup vibranium in the given path.
+ * 
+ * @param {object} options Commander object containing user input
+ * @param {*} workspacePath Path where vibranium needs to be setup
+ */
 const handleVibraniumSetup = async (options, workspacePath) => {
     const userDetails = (!!options.email && !!options.name) ? options : await getUserDetailsFromConsole()
     createWorksaceAndUserConfig(userDetails, workspacePath)
@@ -59,9 +77,85 @@ const handleVibraniumSetup = async (options, workspacePath) => {
         .pipe(createWriteStream(join(workspacePath, 'config.json')));
 
     logger.info(`Please clone your repo in the directory: ${workspacePath}`)
+    await open(workspacePath);
 }
 
 
+/**
+ * Get the sample scenario file corresponding to the user input
+ * 
+ * @param {object} options Commander object containing user input
+ */
+const getScenarioFileForOptions = options => {
+    let fileName = 'basic_scenario.json'
+    if (options.complex) fileName = 'complex_scenario.json'
+    if (options.withDependency) fileName = 'scenario_dependency.json'
+    return JSON.parse(readFileSync(join(__dirname, '..', 'config', fileName)))
+}
+
+
+/**
+ * Create a new collection/scenario 
+ * 
+ * @param {object} options Commander object containing user input
+ */
+const handleCreateCommand = options => {
+    if (!options.collection || !options.scenario) {
+        logger.error('Please specify the collection and the scenario. Syntax: -c <collection> -s <scenario_name>')
+        process.exit(1)
+    } else if (!utils.isValidName(options.collection) || !utils.isValidName(options.scenario)) {
+        logger.error('Invalid scenario/collection name')
+        process.exit(1)
+    }
+
+    utils.isVibraniumInitialized()
+    if (!existsSync(vibPath.scenarios)) mkdirSync(vibPath.scenarios)
+    if (!existsSync(vibPath.payloads)) mkdirSync(vibPath.payloads)
+
+    const scenarioFileName = join(vibPath.scenarios, options.collection, `${options.scenario}.json`)
+
+    if (!existsSync(join(vibPath.scenarios, options.collection))) mkdirSync(join(vibPath.scenarios, options.collection))
+    if (existsSync(scenarioFileName)) {
+        logger.error('Scenario already exists. File: ' + scenarioFileName)
+        process.exit(1)
+    }
+
+    createAndOpenScenario(options, scenarioFileName)
+}
+
+
+/**
+ * Creates and opens the scenario in the default editor
+ * 
+ * @param {object} options Commander options
+ * @param {string} scenarioFileName Scenario file name
+ */
+const createAndOpenScenario = (options, scenarioFileName) => {
+    let sampleScenario = getScenarioFileForOptions(options), dt = new Date()
+    let dateString = `${dt.getFullYear()}-${dt.getMonth() + 1}-${dt.getDate()} ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`
+    let scenarioData = {
+        id: uuid4(),
+        name: options.scenario,
+        author: userConfig.name,
+        email: userConfig.email,
+        created_on: dateString
+
+    }
+    sampleScenario = { ...sampleScenario, ...scenarioData}
+
+    writeFileSync(scenarioFileName, JSON.stringify(sampleScenario, null, 4).replace('{payloadNameToBeReplaced}', `!${options.scenario}.sample_payload`))
+    writeFileSync(join(vibPath.payloads, `${options.scenario}.sample_payload.json`), JSON.stringify({}, null, 4))
+
+    logger.info('Scenario created. File: ' + scenarioFileName)
+    open(scenarioFileName)
+}
+
+
+/**
+ * Create the directories that vibranium uses for execution
+ * 
+ * @param {string} workspace Vibranium workspace path
+ */
 const createVibraniumDirectories = workspace => {
     if (!existsSync(workspace)) mkdirSync(workspace)
     if (!existsSync(join(workspace, 'jobs'))) mkdirSync(join(workspace, 'jobs'))
@@ -69,6 +163,12 @@ const createVibraniumDirectories = workspace => {
 }
 
 
+/**
+ * Create the bibranium workspace and setup user configuration json file
+ * 
+ * @param {object} userDetails User details
+ * @param {string} workspace Vibranium Workspace
+ */
 const createWorksaceAndUserConfig = (userDetails, workspace) => {
     const systemConfigDirectory = join(homedir(), '.vib')
     if (!existsSync(systemConfigDirectory)) {
@@ -86,6 +186,9 @@ const createWorksaceAndUserConfig = (userDetails, workspace) => {
 }
 
 
+/**
+ * Get the user details, for setting up vibranium for the first time.
+ */
 const getUserDetailsFromConsole = () => new Promise(resolve => {
     const rl = readline.createInterface({
         input: process.stdin,
@@ -105,5 +208,6 @@ const getUserDetailsFromConsole = () => new Promise(resolve => {
 module.exports = {
     handleRunCommand,
     handleListCommand,
+    handleCreateCommand,
     handleVibraniumSetup
 }

@@ -1,11 +1,12 @@
 var { isNode } = require('browser-or-node');
 const request = require('request')
-const process = require('process')
 const axios = require('axios')
 
+const logHandler = require('./loghandler')
 const constants = require('./constants')
 
 var availableSystems = {}
+const logger = logHandler.moduleLogger('servicehandler')
 
 
 /**
@@ -98,7 +99,16 @@ const getResponseWithRequest = async (system, url, method, payload, auth, langua
     }
 
     request(requestOptions, function (error, response, body) {
-        if (error) reject(error)
+        if (error) {
+            if (error.code === 'ECONNREFUSED') {
+                logger.error('Error connecting to server. Check if ')
+                logger.error('\t1. You have a stable internet connection')
+                logger.error('\t2. You have maintained the system configuration correctly')
+                logger.error('\t3. The app is running in the server')
+            }
+            process.exit(1)
+            reject(error)
+        }
 
         if (!!response && !!response.statusCode) {
             let apiResponse = body
@@ -122,7 +132,7 @@ const getResponseWithRequest = async (system, url, method, payload, auth, langua
  * @private
  * @param {object} system The system to be processed
  */
-const processOauth2BasedSystemCredentials = system => new Promise((resolve) => {
+const processOauth2BasedSystemCredentials = (systemName, system) => new Promise((resolve, reject) => {
     if (!!system && !!system.credentials.client && !!system.credentials.secret && !!system.credentials.authUrl) {
         if (!!system.jwt && !!system.jwtTimeout && system.jwtTimeout > new Date().getTime()) {
             resolve(system)
@@ -135,7 +145,7 @@ const processOauth2BasedSystemCredentials = system => new Promise((resolve) => {
                 })
         }
     } else {
-        reject("Invalid system")
+        reject('Invalid system')
     }
 })
 
@@ -151,7 +161,7 @@ const processBasicAuthBasedSystemCredentials = system => new Promise((resolve, r
         system.auth = `Basic ${new Buffer(system.credentials.username + ':' + system.credentials.password).toString('base64')}`
         resolve(system)
     } else {
-        reject("Invalid system")
+        reject('Invalid system')
     }
 })
 
@@ -171,7 +181,7 @@ const callApi = (url, method, payload, systemName, language = 'en') => new Promi
     if (!system.method) system.method = constants.authTypes.oauth2[0]
 
     if (constants.authTypes.oauth2.includes(system.method)) {
-        processOauth2BasedSystemCredentials
+        processOauth2BasedSystemCredentials(systemName, system)
             .then(systemWithAuth => getResponse(system, url, method, payload, `Bearer ${systemWithAuth.jwt}`, language))
             .then(responseWithTiming => resolve(responseWithTiming))
             .catch(err => reject(err))

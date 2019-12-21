@@ -2,16 +2,17 @@ const uuid4 = require('uuid/v4')
 const process = require('process')
 
 const utils = require('./utils')
-const { executionStatus, userConfig } = require('./constants')
-const { callApi, setAvailableSystems } = require('./servicehandler')
+const compiler = require('./compiler')
 const logHandler = require('./loghandler')
+const { executionStatus, userConfig, scriptTypes } = require('./constants')
+const { callApi, setAvailableSystems } = require('./servicehandler')
 
 
 const MAX_PARALLEL_EXECUTORS = (!!userConfig.executor && !!userConfig.executor.max_parallel_executors) ?
     userConfig.executor.max_parallel_executors : 10
 const logger = logHandler.moduleLogger('executor')
 let ACTIVE_PARALLEL_EXECUTORS = 0
-let allScenarios = []
+let allScenarios = [], executionOptions = {}
 
 
 /**
@@ -24,7 +25,7 @@ const waitForExecutors = () => new Promise(resolve => {
         ACTIVE_PARALLEL_EXECUTORS++
         resolve()
     } else {
-        console.log("Waiting..")
+        console.log('Waiting..')
         setTimeout(() => {
             waitForExecutors().then(() => resolve())
         }, 300)
@@ -62,18 +63,30 @@ const processGeneratorsAndGlobals = (variables, scenario) => new Promise(resolve
 })
 
 
+const customApiExecutor = (variables, parentScenario) => {
+    return async (collection, scenario, api) => {
+        try {
+            const scenarioList = await compiler.search(collection, scenario, api)
+            const executionOptions = {
+                ...this.executionOptions,
+                variables
+            }
+            const response = await testexecutor.runTests(scenarioList, executionOptions, this.allScenarios.length > 0)
+            const results = result[0].endpoints[0]._result.map(res => res.response)
+            return results.length == 1 ? results[0] : results
+        } catch (error) {
+            logger.error(`Error executing api [${collection}, ${scenario}, ${api}]: ${error}`)
+            return {}
+        }
+
+    }
+}
+
+
 // TODO: start and end scripts for scenarios 
 const executePreScenarioScripts = (variables, scenario) => new Promise(resolve => {
     if (!!scenario.scripts && !!scenario.scripts.pre_scenario) {
-        const vm = new VM({
-            sandbox: {
-                scenario,
-                variables,
-                getApiResponse,
-                console
-            }
-        });
-        vm.run(scenario.scripts.pre_scenario)
+        utils.executeScript(scenario.scripts.pre_scenario, customApiExecutor(variables, scenario), variables, scenario.name, scriptTypes.preScenario)
     }
     resolve(variables)
 })
@@ -140,18 +153,18 @@ const executeAPI = (endpoint, endpointVaribles) => new Promise(resolve => {
 
 const loadDependendentEndpoint = (endpointName, dependency, endpointVariables, loadDependenciesFromMemory) => new Promise(resolve => {
     let wait = Math.random(10)
-    console.log(ACTIVE_PARALLEL_EXECUTORS + "\t\tdepstart: " + endpoint + ": " + dependency.api + "  " + wait)
+    console.log(ACTIVE_PARALLEL_EXECUTORS + '\t\tdepstart: ' + endpoint + ': ' + dependency.api + '  ' + wait)
     executeAPI(wait)
         .then(res => {
-            console.log(ACTIVE_PARALLEL_EXECUTORS + "\t\tdepend: " + endpoint + ": " + dependency.api + "  " + wait)
-            resolve()
+            console.log(ACTIVE_PARALLEL_EXECUTORS + '\t\tdepend: ' + endpoint + ': ' + dependency.api + '  ' + wait)
+            resolve(endPointVariables)
         });
 })
 
 
 const setRangeIndexForEndpoint = (endpoint, index) => {
-    let variables = !!endpoint.variables ? endpoint.variables : {}
-    variables["_range_index"] = index + 1
+    let variables = endpoint.variables ? endpoint.variables : {}
+    variables['_range_index'] = index + 1
     endpoint.variables = variables
     return endpoint
 }
@@ -159,7 +172,7 @@ const setRangeIndexForEndpoint = (endpoint, index) => {
 
 const getApiExecuterPromise = (scenarioVariables, endpoint, loadDependenciesFromMemory, repeatIndex) => new Promise(resolveEndpoint => {
     let endpointVaribles = executeEndpointPreScripts(scenarioVariables, endpoint.scripts)
-    let dependencyResolver = Promise.resolve();
+    let dependencyResolver = Promise.resolve()
 
     endpoint = setRangeIndexForEndpoint(endpoint, repeatIndex)
 
@@ -179,29 +192,36 @@ const getApiExecuterPromise = (scenarioVariables, endpoint, loadDependenciesFrom
 })
 
 
+const resolveEndpointResponses = (endpoint, results, resolve) => {
+    endpoint._result = results.map(endpoint => endpoint._result);
+    endpoint._status = results.every(endpoint => !!endpoint._status)
+    resolve(endpoint)
+}
+
+
 // TODO: collect and print results
 const processEndpoint = (scenarioVariables, endpoint, loadDependenciesFromMemory = false) => new Promise(resolve => {
     if (!endpoint.async) {
-        let endpointExecutors = Array.from(Array(!!endpoint.repeat ? endpoint.repeat : 1).keys())
+        let endpointExecutors = Array.from(Array(endpoint.repeat ? endpoint.repeat : 1).keys())
             .map(i => getApiExecuterPromise(scenarioVariables, endpoint, loadDependenciesFromMemory, i))
+
         Promise.all(endpointExecutors)
-            .then(results => {
-                endpoint._result = results;
-                endpoint._status = results.every(endpoint => !!endpoint._status)
-                resolve(endpoint)
-            })
+            .then(results => resolveEndpointResponses(endpoint, results, resolve))
+
     } else {
         let endpointResolver = Promise.resolve(), results = [];
-        Array.from(Array(!!endpoint.repeat ? endpoint.repeat : 1).keys())
+
+        Array.from(Array(endpoint.repeat ? endpoint.repeat : 1).keys())
             .forEach((_, i) => {
                 endpointResolver = endpointResolver.then(result => {
-                    if (!!result) results.push(result)
+                    if (result) results.push(result)
                     return getApiExecuterPromise(scenarioVariables, endpoint, loadDependenciesFromMemory, i)
                 })
             })
+
         endpointResolver.then(result => {
             results.push(result)
-            endpoint._result = results;
+            endpoint._result = results.map(endpoint => endpoint._result);
             endpoint._status = results.every(endpoint => !!endpoint._status)
             resolve(endpoint)
         })
@@ -230,15 +250,15 @@ const processEndpoint = (scenarioVariables, endpoint, loadDependenciesFromMemory
 const processScenario = async (scenario, jobId, variables, loadDependenciesFromMemory) => {
     const scenarioExecutionStartTime = new Date().getTime()
     logScenarioStart(scenario, jobId)
-
+    
     // Process Generators and global variables
-    let scenarioVariables = await executePreScenarioScripts(variables, scenario)
-
+    let preScriptVariables = await executePreScenarioScripts(variables, scenario)
     // Process Generators and global variables
-    scenarioVariables = await processGeneratorsAndGlobals(scenarioVariables, scenario)
-
+    let globalVariables = await processGeneratorsAndGlobals(preScriptVariables, scenario)
     // Execute the pre scenario scripts
-    scenarioVariables = await executePostGeneratorScripts(scenarioVariables, scenario)
+    let postScriptVariables = await executePostGeneratorScripts({...preScriptVariables, ...globalVariables}, scenario)
+    // Combine the results
+    let scenarioVariables = {...preScriptVariables, ...globalVariables, ...postScriptVariables}
 
     // Take the endpoints that have ignore flag as false and execute them
     let endpointsToBeProcessed = scenario.endpoints.filter(endpoint => !endpoint.ignore)
@@ -286,7 +306,7 @@ const markAsIgnored = scenario => {
     scenario._result = {
         variables: {},
         status: executionStatus.ERROR,
-        message: "Scenario ignored"
+        message: 'Scenario ignored'
     }
     return scenario
 }
@@ -317,11 +337,11 @@ const setSystemDetails = systems => {
     let availableSystems = availableSystemDetails.systems
     availableSystems.default = availableSystems[availableSystemDetails.default]
 
-    if (!!systems)
-        for (const userProvidedSystem of systems.split(",")) {
-            let sysInfo = userProvidedSystem.split("=")
+    if (systems)
+        for (const userProvidedSystem of systems.split(',')) {
+            let sysInfo = userProvidedSystem.split('=')
             if (sysInfo.length < 2 || !Object.keys(availableSystems).includes(sysInfo[1])) {
-                logger.error("Invalid user provided system")
+                logger.error('Invalid user provided system')
                 process.exit(1)
             }
             availableSystems[sysInfo[0]] = availableSystems[sysInfo[1]]
@@ -338,11 +358,11 @@ const setSystemDetails = systems => {
  */
 const processUserVariables = variables => {
     let parsedVariables = {}
-    if (!!variables) {
-        for (const userProvidedVariable of variables.split(",")) {
-            let varInfo = userProvidedVariable.split("=")
+    if (variables) {
+        for (const userProvidedVariable of variables.split(',')) {
+            let varInfo = userProvidedVariable.split('=')
             if (varInfo.length < 2) {
-                logger.error("Invalid user provided variables")
+                logger.error('Invalid user provided variables')
                 process.exit(1)
             }
             parsedVariables[varInfo[0]] = varInfo[1]
@@ -362,9 +382,11 @@ const processUserVariables = variables => {
  * @returns {boolean} Execution status
  */
 const runTests = async (scenarios, executionOptions, loadDependenciesFromMemory = false) => {
-    console.time("total")
+    console.time('total')
     const jobId = uuid4()
+    
     setSystemDetails(executionOptions.systems)
+    this.executionOptions = executionOptions
 
     if (loadDependenciesFromMemory) allScenarios = scenarios
 
@@ -379,9 +401,8 @@ const runTests = async (scenarios, executionOptions, loadDependenciesFromMemory 
     const scenarioResults = await Promise.all(scenarioExecutors)
 
 
-
     // const processedResults = await Promise.all(scenarioResults.map(result => processScenarioResult(result)))
-    console.timeEnd("total")
+    console.timeEnd('total')
     return scenarioResults
 }
 

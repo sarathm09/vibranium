@@ -32,7 +32,7 @@ const readListOfTestScenarios = async (directoryPath) => {
             });
         } catch (error) {
             reject(error);
-            logger.error(error);
+            logger.error('' + error);
         }
     })
 }
@@ -40,19 +40,20 @@ const readListOfTestScenarios = async (directoryPath) => {
 
 const loadPayloadFiles = async endpoint => {
     let endpointWithPayloadData = endpoint;
-    if (!!endpoint.payload && typeof (endpoint.payload) == 'string' && endpoint.payload.startsWith("!")) {
-        let payloadFilePath = join(vibPath.scenarios, '..', 'payloads', endpoint.payload.replace('!', '')) + ".json";
+    if (!!endpoint.payload && typeof (endpoint.payload) == 'string' && endpoint.payload.startsWith('!')) {
+        let payloadFilePath = join(vibPath.scenarios, '..', 'payloads', endpoint.payload.replace('!', '')) + '.json';
         try {
             let payloadJsonResponse = await utils.readJsonFile(payloadFilePath, true);
             endpointWithPayloadData.payload = payloadJsonResponse.status ? payloadJsonResponse.data : {};
         } catch (error) {
-            logger.error(error)
+            logger.error('' + error)
         }
         return endpointWithPayloadData;
     } else {
         return endpointWithPayloadData;
     }
 }
+
 
 const loadEndpoinsForScenario = (scenario, apis, searchMode = false) => {
     return new Promise(resolve => {

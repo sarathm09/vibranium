@@ -4,6 +4,7 @@ const vibranium = require('commander');
 const { readFileSync } = require('fs')
 const requestHandler = require('./requesthandler')
 
+
 const version = readFileSync(__dirname + '/../config/version.txt', 'utf8');
 
 
@@ -57,6 +58,17 @@ vibranium
     .option('-i --userid [id]', 'User Id')
     .description(`Setup Vibranium with the current directory (${process.cwd()}) as the workspace`)
     .action(options => requestHandler.handleVibraniumSetup(options, process.cwd()));
+
+
+vibranium
+    .command('create')
+    .alias('c')
+    .option('-c --collection <collection>', 'Collection Name')
+    .option('-s --scenario <scenario>', 'Scenario Name')
+    .option('--complex', 'Create scenario with a complex example')
+    .option('--with-dependency', 'Create scenario with example containing dependency')
+    .description('Create a new scenario test file')
+    .action(options => requestHandler.handleCreateCommand(options));
 
 
 vibranium

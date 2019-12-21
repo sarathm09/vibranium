@@ -92,9 +92,9 @@ const parseJsonFile = async (fileToParse, fileData, payload) => {
  * @param {boolean} payload is the file a payload file or not. Used for file parsing
  */
 module.exports.readJsonFile = async (fileToParse, payload = false) => {
-    if (!fileToParse) return { status: false, message: `The filename is not valid.` };
+    if (!fileToParse) return { status: false, message: 'The filename is not valid.' };
 
-    if (!!fileToParse && fileToParse.split(".").pop() != 'json')
+    if (!!fileToParse && fileToParse.split('.').pop() != 'json')
         return { status: false, message: `The file ${fileToParse} does not have the extension '.json'` };
 
     else {
@@ -166,7 +166,7 @@ module.exports.isVibraniumInitialized = () => {
                 status = false
             }
             let userConfig = JSON.parse(readFileSync(join(workspace, 'config.json'), 'utf-8'))
-            let testsDirectory = !!userConfig.tests_directory ? userConfig.tests_directory : 'tests'
+            let testsDirectory = userConfig.tests_directory ? userConfig.tests_directory : 'tests'
             if (!existsSync(join(workspace, testsDirectory)) || !existsSync(join(workspace, testsDirectory, 'scenarios'))) {
                 status = false
             }
@@ -176,7 +176,7 @@ module.exports.isVibraniumInitialized = () => {
     }
 
     if (!status) {
-        logger.error("Vibranium not initialized. Please run the setup command to initialize and then clone/create the tests.")
+        logger.error('Vibranium not initialized. Please run the setup command to initialize and then clone/create the tests.')
         process.exit(1)
     }
 }
@@ -191,12 +191,13 @@ module.exports.isVibraniumInitialized = () => {
  * @param {function} getApiResponse method to get API response. Used inscripts to get api response.
  * @returns {object} modified variables
  */
-module.exports.executeScript = (script, getApiResponse, variables, logger) => {
+module.exports.executeScript = (script, getApiResponse, variables, parent, scriptType) => {
+    scriptType = scriptType.toString().replace('Symbol(', '').replace(')', '')
+    const scriptName = `script_${parent}_${scriptType}_${Date.now()}`;
     const vm = new VM({
         external: true,
-        sandbox: { variables, getApiResponse, logger }
+        sandbox: { variables, getApiResponse, logger: logHandler.moduleLogger(scriptName) }
     });
-    const scriptName = 'usersScript_' + uuid4().replace(/-/g, '');
     vm.run(`
         const ${scriptName} = () => {
             ${script}
@@ -205,4 +206,18 @@ module.exports.executeScript = (script, getApiResponse, variables, logger) => {
         ${scriptName}()
     `)
     return variables
+}
+
+
+module.exports.isValidName = inputText => {
+    if (inputText == undefined || inputText == null || inputText == '') 
+        return false
+
+    if ('|}{[]\\/*&ˆ%$#@!();:,?<>˜`+'.split().filter(char => inputText.includes(char)) > 0) 
+        return false
+
+    if (inputText.length < 2) 
+        return false
+
+    return true
 }

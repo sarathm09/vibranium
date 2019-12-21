@@ -80,8 +80,8 @@ const printApiListAsTree = (apis, color = true) => {
             }
         }
     }
-    logger.info("")
-    logger.info("API list: \n" + treeify.asTree(formattedTree));
+    logger.info('')
+    logger.info('API list: \n' + treeify.asTree(formattedTree));
 }
 
 
@@ -109,7 +109,7 @@ const printApiListAsCSV = apis => {
             }
         }
     }
-    console.log(apisList.join(","))
+    console.log(apisList.join(','))
 }
 
 
@@ -136,7 +136,7 @@ const printApiList = (apis, format = 'tree', color = true) => {
 
 
 const moduleLogger = module => createLoggerObject(module);
-const logger = createLoggerObject("cli");
+const logger = createLoggerObject('cli');
 
 module.exports = {
     logger,

@@ -1,5 +1,4 @@
 const { VM } = require('vm2')
-const uuid4 = require('uuid/v4')
 const { homedir } = require('os')
 const { sep, join } = require('path')
 const { readFile, unlink } = require('fs').promises

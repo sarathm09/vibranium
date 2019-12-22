@@ -1,5 +1,6 @@
 const uuid4 = require('uuid/v4')
 const process = require('process')
+import { LoremIpsum, loremIpsum } from "lorem-ipsum";
 
 const utils = require('./utils')
 const compiler = require('./compiler')
@@ -8,11 +9,11 @@ const { executionStatus, userConfig, scriptTypes } = require('./constants')
 const { callApi, setAvailableSystems } = require('./servicehandler')
 
 
-const MAX_PARALLEL_EXECUTORS = (!!userConfig.executor && !!userConfig.executor.max_parallel_executors) ?
-    userConfig.executor.max_parallel_executors : 10
-const logger = logHandler.moduleLogger('executor')
-let ACTIVE_PARALLEL_EXECUTORS = 0
-let allScenarios = [], executionOptions = {}
+const MAX_PARALLEL_EXECUTORS = getParallelExecutorLimit(),
+    logger = logHandler.moduleLogger('executor'),
+    loremIpsum = initializeLoremIpsum()
+let ACTIVE_PARALLEL_EXECUTORS = 0, scenarioCache = {}, executionOptions = {}
+
 
 
 /**
@@ -29,6 +30,28 @@ const waitForExecutors = () => new Promise(resolve => {
         setTimeout(() => {
             waitForExecutors().then(() => resolve())
         }, 300)
+    }
+})
+
+
+/**
+ * Get the max possible executor limit from user config
+ */
+const getParallelExecutorLimit = () => (!!userConfig.executor && !!userConfig.executor.max_parallel_executors) ?
+    userConfig.executor.max_parallel_executors : 10
+
+
+/**
+ * Initialize the lorem ipsum module
+ */
+const initializeLoremIpsum = () => new LoremIpsum({
+    sentencesPerParagraph: {
+        max: 8,
+        min: 4
+    },
+    wordsPerSentence: {
+        max: 16,
+        min: 4
     }
 })
 
@@ -62,7 +85,12 @@ const processGeneratorsAndGlobals = (variables, scenario) => new Promise(resolve
     resolve(variables)
 })
 
-
+/**
+ * Execute an api from a script
+ * 
+ * @param {object} variables Variables to be used for executing
+ * @param {string} parentScenario Scenario from whcich the script is executed
+ */
 const customApiExecutor = (variables, parentScenario) => {
     return async (collection, scenario, api) => {
         try {
@@ -71,8 +99,8 @@ const customApiExecutor = (variables, parentScenario) => {
                 ...this.executionOptions,
                 variables
             }
-            const response = await testexecutor.runTests(scenarioList, executionOptions, this.allScenarios.length > 0)
-            const results = result[0].endpoints[0]._result.map(res => res.response)
+            const response = await testexecutor.runTests(scenarioList, executionOptions, Object.keys(this.allScenarios).length > 0)
+            const results = response[0].endpoints[0]._result.map(res => res.response)
             return results.length == 1 ? results[0] : results
         } catch (error) {
             logger.error(`Error executing api [${collection}, ${scenario}, ${api}]: ${error}`)
@@ -83,7 +111,12 @@ const customApiExecutor = (variables, parentScenario) => {
 }
 
 
-// TODO: start and end scripts for scenarios 
+/**
+ * Execute the custom js script before scenario execution starts
+ * 
+ * @param {object} variables Variables to be used for executing the script
+ * @param {object} scenario scenaio from which the api is executed.
+ */
 const executePreScenarioScripts = (variables, scenario) => new Promise(resolve => {
     if (!!scenario.scripts && !!scenario.scripts.pre_scenario) {
         utils.executeScript(scenario.scripts.pre_scenario, customApiExecutor(variables, scenario), variables, scenario.name, scriptTypes.preScenario)
@@ -91,25 +124,61 @@ const executePreScenarioScripts = (variables, scenario) => new Promise(resolve =
     resolve(variables)
 })
 
-const executeEndpointPostDependencyScripts = (endPointVariables, scripts) => {
+
+/**
+ * Execute the custom js script after all dependent endpoints are executed
+ * 
+ * @param {object} endPointVariables Variables at the endpoint level
+ * @param {object} endpoint endpoint details
+ */
+const executeEndpointPostDependencyScripts = (endPointVariables, endpoint) => {
+    if (!!endpoint.scripts && !!endpoint.scripts.post_dependency) {
+        utils.executeScript(endpoint.scripts.post_dependency, customApiExecutor(endPointVariables, endpoint.name),
+            endPointVariables, endpoint.name, scriptTypes.postDependency)
+    }
     return endPointVariables;
 }
 
 
-
-const executeEndpointPreScripts = (scenarioVariables, scripts) => {
+/**
+ * Execute the custom js script before the endpoint execution starts
+ * 
+ * @param {object} endPointVariables Variables at the endpoint level
+ * @param {object} endpoint endpoint details
+ */
+const executeEndpointPreScripts = (scenarioVariables, endpoint) => {
+    if (!!endpoint.scripts && !!endpoint.scripts.pre_endpoint) {
+        utils.executeScript(endpoint.scripts.pre_endpoint, customApiExecutor(scenarioVariables, endpoint.name),
+            scenarioVariables, endpoint.name, scriptTypes.preApi)
+    }
     return scenarioVariables;
 }
 
 
-// TODO: start and end scripts for scenarios 
+/**
+ * Execute the custom js script after scenario execution ends
+ * 
+ * @param {object} variables Variables to be used for executing the script
+ * @param {object} scenario scenaio from which the api is executed.
+ */
 const executePostScenarioScripts = (variables, scenario) => new Promise(resolve => {
-    resolve()
+    if (!!scenario.scripts && !!scenario.scripts.post_scenario) {
+        utils.executeScript(scenario.scripts.post_scenario, customApiExecutor(variables, scenario), variables, scenario.name, scriptTypes.postScenario)
+    }
+    resolve(variables)
 })
 
 
-// TODO: start and end scripts for scenarios 
+/**
+ * Execute the custom js script after scenario globals and generator execution ends
+ * 
+ * @param {object} variables Variables to be used for executing the script
+ * @param {object} scenario scenaio from which the api is executed.
+ */
 const executePostGeneratorScripts = (variables, scenario) => new Promise(resolve => {
+    if (!!scenario.scripts && !!scenario.scripts.post_global) {
+        utils.executeScript(scenario.scripts.post_global, customApiExecutor(variables, scenario), variables, scenario.name, scriptTypes.postGlobal)
+    }
     resolve(variables)
 })
 
@@ -171,7 +240,7 @@ const setRangeIndexForEndpoint = (endpoint, index) => {
 
 
 const getApiExecuterPromise = (scenarioVariables, endpoint, loadDependenciesFromMemory, repeatIndex) => new Promise(resolveEndpoint => {
-    let endpointVaribles = executeEndpointPreScripts(scenarioVariables, endpoint.scripts)
+    let endpointVaribles = executeEndpointPreScripts(scenarioVariables, endpoint)
     let dependencyResolver = Promise.resolve()
 
     endpoint = setRangeIndexForEndpoint(endpoint, repeatIndex)
@@ -184,7 +253,7 @@ const getApiExecuterPromise = (scenarioVariables, endpoint, loadDependenciesFrom
     }
 
     dependencyResolver.then(() => {
-        endpointVaribles = executeEndpointPostDependencyScripts(endpointVaribles, endpoint.scripts)
+        endpointVaribles = executeEndpointPostDependencyScripts(endpointVaribles, endpoint)
         //TODO depenedcy start
         executeAPI(endpoint, endpointVaribles)
             .then(result => resolveEndpoint(result));
@@ -250,15 +319,15 @@ const processEndpoint = (scenarioVariables, endpoint, loadDependenciesFromMemory
 const processScenario = async (scenario, jobId, variables, loadDependenciesFromMemory) => {
     const scenarioExecutionStartTime = new Date().getTime()
     logScenarioStart(scenario, jobId)
-    
+
     // Process Generators and global variables
     let preScriptVariables = await executePreScenarioScripts(variables, scenario)
     // Process Generators and global variables
     let globalVariables = await processGeneratorsAndGlobals(preScriptVariables, scenario)
     // Execute the pre scenario scripts
-    let postScriptVariables = await executePostGeneratorScripts({...preScriptVariables, ...globalVariables}, scenario)
+    let postScriptVariables = await executePostGeneratorScripts({ ...preScriptVariables, ...globalVariables }, scenario)
     // Combine the results
-    let scenarioVariables = {...preScriptVariables, ...globalVariables, ...postScriptVariables}
+    let scenarioVariables = { ...preScriptVariables, ...globalVariables, ...postScriptVariables }
 
     // Take the endpoints that have ignore flag as false and execute them
     let endpointsToBeProcessed = scenario.endpoints.filter(endpoint => !endpoint.ignore)
@@ -321,8 +390,53 @@ const markAsIgnored = scenario => {
  */
 const loadGlobalVariables = (jobId) => {
     return {
-        jobId
+        jobId,
+        job_id: jobId,
+
+        timestamp_n: () => new Date().getTime(),
+        timestamp: () => new Date().toISOString(),
+        time: () => new Date().toLocaleTimeString(),
+        time_ms: () => new Date().getMilliseconds(),
+        time_sec: () => new Date().getSeconds(),
+        time_min: () => new Date().getMinutes(),
+        time_hours: () => new Date().getHours(),
+
+        date: () => new Date().toLocaleDateString(),
+        date_date: () => new Date().getDate(),
+        date_month: () => new Date().getMonth(),
+        date_month_name_long: () => new Date().toLocaleString('default', { month: 'long' }),
+        date_month_name: () => new Date().toLocaleString('default', { month: 'short' }),
+        date_year: () => new Date().getFullYear(),
+
+        short_des: loremGenerator(200),
+        long_des: loremGenerator(500)
     }
+}
+
+
+/**
+ * Generate Lorem texts upto a given length
+ * 
+ * @param {integet} limit number of characters in the lorem text
+ */
+const loremGenerator = limit => {
+    let generatedString = ''
+
+    if (limit < 0) generatedString = ''
+    if (limit < 10) generatedString = Array.from(Array(limit).keys()).join()
+
+    else {
+        while (limit > 0) {
+            let tempSentence = loremIpsum.getSentences(10).join('. ')
+
+            if (limit - tempSentence.length > 0) generatedString += tempSentence
+            else generatedString += tempSentence.slice(0, limit - generatedString.length - 3)
+
+            limit -= tempSentence.length
+        }
+    }
+
+    return generatedString
 }
 
 
@@ -354,7 +468,7 @@ const setSystemDetails = systems => {
  * Parses the user provided variables
  * 
  * @param {string} variables User provided variables
- * @returns {object} parsed variables object
+ * @returns {object} parsed variables object 
  */
 const processUserVariables = variables => {
     let parsedVariables = {}
@@ -384,7 +498,7 @@ const processUserVariables = variables => {
 const runTests = async (scenarios, executionOptions, loadDependenciesFromMemory = false) => {
     console.time('total')
     const jobId = uuid4()
-    
+
     setSystemDetails(executionOptions.systems)
     this.executionOptions = executionOptions
 

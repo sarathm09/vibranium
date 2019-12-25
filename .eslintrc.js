@@ -14,6 +14,7 @@ module.exports = {
         "ecmaVersion": 2018
     },
     "rules": {
-        "quotes": ["error", "single"]
+        "quotes": ["error", "single"],
+        "no-control-regex": 0
     }
 };

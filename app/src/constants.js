@@ -47,5 +47,12 @@ module.exports = {
         preApi: Symbol('preApi'),
         postApi: Symbol('postApi'),
         postDependency: Symbol('postDependency')
+    },
+
+    logLevels: {
+        INFO: Symbol('INFO'),
+        WARN: Symbol('WARNING'),
+        DEBUG: Symbol('DEBUG'),
+        ERROR: Symbol('ERROR')
     }
 }

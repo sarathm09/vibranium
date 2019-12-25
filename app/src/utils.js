@@ -1,14 +1,28 @@
 const { VM } = require('vm2')
 const { homedir } = require('os')
 const { sep, join } = require('path')
+const { platform } = require('process')
 const { readFile, unlink } = require('fs').promises
 const { existsSync, mkdirSync, writeFileSync, readFileSync } = require('fs')
 
-const { vibPath, userConfig } = require('./constants')
+const { vibPath, userConfig, logLevels } = require('./constants')
 const logHandler = require('./loghandler')
+const moduleLogger = require('./logger')
+
+const logger = moduleLogger('util')
 
 
-const logger = logHandler.moduleLogger('util')
+/**
+ * Check if the system is a Mac or not
+ */
+module.exports.isMac = platform === 'darwin';
+
+
+/**
+ * Get the loglevel object from the string
+ */
+module.exports.getLogLevel = level => level.toLowerCase() === 'error' ? logLevels.ERROR :
+    level.toLowerCase() === 'debug' ? logLevels.DEBUG : level.toLowerCase() === 'warn' ? logLevels.WARN : logLevels.INFO
 
 
 /**
@@ -195,7 +209,7 @@ module.exports.executeScript = (script, getApiResponse, variables, parent, scrip
     const scriptName = `script_${parent}_${scriptType}_${Date.now()}`;
     const vm = new VM({
         external: true,
-        sandbox: { variables, getApiResponse, logger: logHandler.moduleLogger(scriptName) }
+        sandbox: { variables, getApiResponse, logger: moduleLogger(scriptName) }
     });
     vm.run(`
         const ${scriptName} = () => {
@@ -209,17 +223,20 @@ module.exports.executeScript = (script, getApiResponse, variables, parent, scrip
 
 
 module.exports.isValidName = inputText => {
-    if (inputText == undefined || inputText == null || inputText == '') 
+    if (inputText == undefined || inputText == null || inputText == '')
         return false
 
-    if ('|}{[]\\/*&ˆ%$#@!();:,?<>˜`+'.split().filter(char => inputText.includes(char)) > 0) 
+    if ('|}{[]\\/*&ˆ%$#@!();:,?<>˜`+'.split().filter(char => inputText.includes(char)) > 0)
         return false
 
-    if (inputText.length < 2) 
+    if (inputText.length < 2)
         return false
 
     return true
 }
 
 module.exports.getParallelExecutorLimit = () => (!!userConfig.executor && !!userConfig.executor.max_parallel_executors) ?
-   userConfig.executor.max_parallel_executors : 10
+    userConfig.executor.max_parallel_executors : 10
+
+
+module.exports.printSpaces = (text, max=15) => Array.from(Array(max - text.length)).map(_ => ' ').join('')

@@ -6,24 +6,24 @@ const { LoremIpsum } = require('lorem-ipsum')
 const utils = require('./utils')
 const compiler = require('./compiler')
 const logHandler = require('./loghandler')
+const logger = require('./logger')('runner')
 const { executionStatus, scriptTypes } = require('./constants')
 const { callApi, setAvailableSystems } = require('./servicehandler')
 
 
-const MAX_PARALLEL_EXECUTORS = utils.getParallelExecutorLimit(),
-    logger = logHandler.moduleLogger('executor')
+const MAX_PARALLEL_EXECUTORS = utils.getParallelExecutorLimit()
 let ACTIVE_PARALLEL_EXECUTORS = 0,
-    scenarioCache = {}
-const lorem = new LoremIpsum({
-    sentencesPerParagraph: {
-        max: 8,
-        min: 4
-    },
-    wordsPerSentence: {
-        max: 16,
-        min: 4
-    }
-});
+    scenarioCache = {},
+    lorem = new LoremIpsum({
+        sentencesPerParagraph: {
+            max: 8,
+            min: 4
+        },
+        wordsPerSentence: {
+            max: 16,
+            min: 4
+        }
+    });
 
 
 /**
@@ -55,14 +55,19 @@ const processScenarioResult = result => new Promise(resolve => {
  * @param {object} scenario Scenario details
  * @param {string} jobId Job execution Id
  */
-const logScenarioStart = (scenario, jobId) => {
+const logScenarioStart = (scenario, jobId) => new Promise(resolve => {
+    logHandler.logScenarioStart(logger, scenario, jobId)
+})
 
-}
 
-
-// TODO: log scenario timing
-const logScenarioEnd = (scenario, jobId, variables) => new Promise(resolve => {
-    resolve()
+/**
+ * Log the end of scenario
+ * 
+ * @param {obejct} scenario scenario result
+ * @param {object} variables scenario variables
+ */
+const logScenarioEnd = (scenario, variables) => new Promise(resolve => {
+    logHandler.logScenarioEnd(logger, scenario, variables)
 })
 
 
@@ -249,13 +254,14 @@ const executeAPI = (endpoint, endpointVaribles) => new Promise(resolve => {
     if (!!api.expect && !!api.expect.status) expectedStatus = api.expect.status
 
     waitForExecutors()
-        .then(() => { }) // TODO: log api start
+        .then(() => logHandler.printApiExecutionStart(logger, api, endpointVaribles))
         .then(() => callApi(api.url, api.method, api.payload, api.system, api.language))
         .then(endpointResponse => {
             api._result = endpointResponse
             api._status = endpointResponse.status === expectedStatus,
-            api._variables = endpointVaribles
+                api._variables = endpointVaribles
             ACTIVE_PARALLEL_EXECUTORS -= 1
+            logHandler.printApiExecutionEnd(logger, api)
             resolve(api)
         })
 })
@@ -498,7 +504,7 @@ const performScenarioExecutionSteps = async (scenario, variables, overrideIgnore
  */
 const processScenario = async (scenario, jobId, variables) => {
     const scenarioExecutionStartTime = new Date().getTime()
-    logScenarioStart(scenario, jobId)
+    logScenarioStart(scenario)
 
     const { scenarioResponse, scenarioVariables } = await performScenarioExecutionSteps(scenario, variables)
 
@@ -520,7 +526,7 @@ const processScenario = async (scenario, jobId, variables) => {
     // Do post scenario tasks
     await Promise.all([
         executePostScenarioScripts(scenarioVariables, scenarioResult),
-        logScenarioEnd(scenarioResult, jobId, scenarioVariables),
+        logScenarioEnd(scenarioResult, scenarioVariables),
         printScenarioSummary(scenarioResult, jobId)
     ])
 
@@ -664,9 +670,8 @@ const processUserVariables = variables => {
  * @returns {boolean} Execution status
  */
 const runTests = async (scenarios, executionOptions) => {
-    console.time('total')
     const jobId = uuid4()
-
+    logHandler.logExecutionStart(logger, jobId)
     setSystemDetails(executionOptions.systems)
     this.executionOptions = executionOptions
 
@@ -684,7 +689,7 @@ const runTests = async (scenarios, executionOptions) => {
     const scenarioResults = await Promise.all(scenarioExecutors)
 
     // const processedResults = await Promise.all(scenarioResults.map(result => processScenarioResult(result)))
-    console.timeEnd('total')
+    logHandler.logExecutionEnd(logger, jobId, scenarioResults)
     return scenarioResults
 }
 

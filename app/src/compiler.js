@@ -1,12 +1,11 @@
-const { readdir, stat } = require('fs').promises;
 const { join } = require('path');
 const pathResolve = require('path').resolve;
-const { vibPath } = require('./constants');
-const logHandler = require('./loghandler')
+const { readdir, stat } = require('fs').promises;
+
 const utils = require('./utils')
+const { vibPath } = require('./constants')
+const logger = require('./logger')('compiler')
 
-
-const logger = logHandler.moduleLogger('compiler')
 
 
 const readListOfTestScenarios = async (directoryPath) => {

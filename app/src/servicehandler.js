@@ -2,11 +2,11 @@ var { isNode } = require('browser-or-node');
 const request = require('request')
 const axios = require('axios')
 
-const logHandler = require('./loghandler')
 const constants = require('./constants')
+const logger = require('./logger')('service')
 
 var availableSystems = {}
-const logger = logHandler.moduleLogger('servicehandler')
+
 
 
 /**
@@ -111,7 +111,6 @@ const getResponseWithRequest = async (system, url, method, payload, auth, langua
                 logger.error('\t3. The app is running in the server')
             }
             process.exit(1)
-            reject(error)
         }
 
         if (!!response && !!response.statusCode) {

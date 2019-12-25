@@ -9,10 +9,9 @@ const utils = require('./utils')
 const compiler = require('./compiler')
 const testexecutor = require('./testexecutor')
 const logHandler = require('./loghandler')
+const logger = require('./logger')('cli')
 const { vibPath, userConfig } = require('./constants')
 
-
-const logger = logHandler.moduleLogger('handler')
 
 /**
  * Run the tests
@@ -51,7 +50,7 @@ const handleListCommand = async options => {
     if (options.format == 'tree' || options.format == 'csv') {
         apiList = compiler.convertApiListToTreeStructure(apiList)
     }
-    logHandler.printApiList(apiList, options.format, options.color)
+    logHandler.printApiList(logger, apiList, options.format, options.color)
 
     if (options.freeze) {
         utils.freezeScenarios(scenarios)

@@ -6,16 +6,14 @@ const { LoremIpsum } = require('lorem-ipsum')
 const utils = require('./utils')
 const compiler = require('./compiler')
 const logHandler = require('./loghandler')
-const { executionStatus, userConfig, scriptTypes } = require('./constants')
+const { executionStatus, scriptTypes } = require('./constants')
 const { callApi, setAvailableSystems } = require('./servicehandler')
 
 
 const MAX_PARALLEL_EXECUTORS = utils.getParallelExecutorLimit(),
     logger = logHandler.moduleLogger('executor')
 let ACTIVE_PARALLEL_EXECUTORS = 0,
-    scenarioCache = {},
-    executionOptions = {},
-    loadDependenciesFromMemory
+    scenarioCache = {}
 const lorem = new LoremIpsum({
     sentencesPerParagraph: {
         max: 8,
@@ -88,11 +86,11 @@ const customApiExecutor = (variables, parentScenario) => {
                 ...this.executionOptions,
                 variables
             }
-            const response = await testexecutor.runTests(scenarioList, executionOptions)
+            const response = await runTests(scenarioList, executionOptions)
             const results = response[0].endpoints[0]._result.map(res => res.response)
             return results.length == 1 ? results[0] : results
         } catch (error) {
-            logger.error(`Error executing api [${collection}, ${scenario}, ${api}]: ${error}`)
+            logger.error(`Error executing api [${collection}, ${scenario}, ${api}] from ${parentScenario}: ${error}`)
             return {}
         }
 

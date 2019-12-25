@@ -12,7 +12,7 @@
                 "<node_internals>/**"
             ],
             "program": "${workspaceFolder}/app/index.js",
-            "args": ["list", "-s", "matrix_crud", "-d"]
+            "args": ["l"]
         }
     ]
 }

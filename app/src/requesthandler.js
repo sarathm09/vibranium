@@ -22,14 +22,13 @@ const logger = logHandler.moduleLogger('handler')
 const handleRunCommand = async options => {
     console.time()
     const scenarioList = await compiler.search(options.collections, options.scenarios, options.apis)
-    const loadDependenciesFromMemory = (options.collections === 'all' && options.scenarios === 'all' && options.apis === 'all')
     const executionOptions = {
         variables: options.variables,
         systems: options.systems,
         color: options.color,
         log: options.log
     }
-    const result = await testexecutor.runTests(scenarioList, executionOptions, loadDependenciesFromMemory)
+    const result = await testexecutor.runTests(scenarioList, executionOptions)
     console.log(JSON.stringify(result, null, 4))
     console.timeEnd()
 }

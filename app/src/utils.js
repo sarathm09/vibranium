@@ -220,3 +220,6 @@ module.exports.isValidName = inputText => {
 
     return true
 }
+
+module.exports.getParallelExecutorLimit = () => (!!userConfig.executor && !!userConfig.executor.max_parallel_executors) ?
+   userConfig.executor.max_parallel_executors : 10

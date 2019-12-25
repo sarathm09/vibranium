@@ -90,3 +90,4 @@ docs/
 .cache
 tryout.js
 .DS_Store
+.idea/*

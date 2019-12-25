@@ -55,6 +55,10 @@ const getResponseWithAxios = async (system, url, method, payload, auth, language
         .then(response => {
             timing = new Date().getTime() - timing
             resolve({
+                url,
+                method,
+                payload,
+                auth,
                 timing,
                 response: response.data,
                 status: response.status,
@@ -116,6 +120,10 @@ const getResponseWithRequest = async (system, url, method, payload, auth, langua
                 apiResponse = JSON.parse(body)
             }
             resolve({
+                url,
+                method,
+                payload,
+                auth,
                 timing: response.timingPhases,
                 response: apiResponse,
                 status: response.statusCode,

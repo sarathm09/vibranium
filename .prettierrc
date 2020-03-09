@@ -1,0 +1,7 @@
+{
+    printWidth: 150,
+    useTabs: true,
+    singleQuote: true,
+    bracketSpacing: true,
+    arrowParens: avoid
+}

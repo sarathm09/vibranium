@@ -1,13 +1,17 @@
+const { join } = require('path');
 const uuid4 = require('uuid/v4');
 const process = require('process');
 const RandExp = require('randexp');
+const { existsSync } = require('fs')
 const { LoremIpsum } = require('lorem-ipsum');
+const { green, yellow } = require('chalk')
+const { mkdir, writeFile } = require('fs').promises
 
 const utils = require('./utils');
 const compiler = require('./compiler');
 const logHandler = require('./loghandler');
 const logger = require('./logger')('runner');
-const { executionStatus, scriptTypes, loremGeneratorConfig } = require('./constants');
+const { vibPath, executionStatus, scriptTypes, loremGeneratorConfig } = require('./constants');
 const { callApi, setAvailableSystems } = require('./servicehandler');
 
 let ACTIVE_PARALLEL_EXECUTORS = 0, scenarioCache = {}, lorem = new LoremIpsum(loremGeneratorConfig);
@@ -30,42 +34,48 @@ const waitForExecutors = () => new Promise(resolve => {
 	}
 });
 
-// TODO
-const processScenarioResult = result =>
-	new Promise(resolve => {
-		resolve();
-	});
 
-
-// TODO: log scenario timing
 /**
  * Log the start of execution for the scenario in the given job id
  *
  * @param {object} scenario Scenario details
  * @param {string} jobId Job execution Id
  */
-const logScenarioStart = (scenario, jobId) => new Promise(resolve => {
-	logHandler.logScenarioStart(logger, scenario, jobId);
-});
+const logScenarioStart = async (scenario, jobId) => logHandler.logScenarioStart(logger, scenario, jobId);
+
 
 /**
  * Log the end of scenario
  *
- * @param {obejct} scenario scenario result
+ * @param {object} scenario scenario result
  * @param {object} variables scenario variables
  */
-const logScenarioEnd = (scenario, variables) =>
-	new Promise(resolve => {
-		logHandler.logScenarioEnd(logger, scenario, variables);
-		resolve()
-	});
+const logScenarioEnd = async (scenario, variables) => logHandler.logScenarioEnd(logger, scenario, variables);
 
-// TODO: process generators
-// TODO: process variables
-const processGeneratorsAndGlobals = (variables, scenario) =>
-	new Promise(resolve => {
-		resolve(variables);
-	});
+
+
+/**
+ * Evaluate global variables and apis
+ * 
+ * @param {object} variables Current variables
+ * @param {object} globals Generate object in the scenario
+ */
+const processGeneratorsAndGlobals = async (variables, globals, isDependency) => {
+	if (!!globals && typeof (globals) === 'object') {
+		for (let globalVar of Object.keys(globals)) {
+			if (typeof (globals[globalVar]) === 'object' && !isDependency) {
+				globals[globalVar].variable = globalVar
+				// TODO execute api
+				let dependencyExecutionResult = await loadDependendentEndpoint({}, globals[globalVar], { ...variables })
+				// eslint-disable-next-line require-atomic-updates
+				variables[globalVar] = dependencyExecutionResult[globalVar]
+			} else if (typeof (globals[globalVar]) === 'string') {
+				variables[globalVar] = replacePlaceholderInString(globals[globalVar], variables)
+			}
+		}
+	}
+	return variables
+};
 
 /**
  * Execute an api from a script
@@ -181,9 +191,9 @@ const executePostScenarioScripts = (variables, scenario) =>
  */
 const executePostGeneratorScripts = (variables, scenario) =>
 	new Promise(resolve => {
-		if (!!scenario.scripts && !!scenario.scripts.post_global) {
+		if (!!scenario.scripts && !!scenario.scripts.post_globals) {
 			utils.executeScript(
-				scenario.scripts.post_global,
+				scenario.scripts.post_globals,
 				customApiExecutor(variables, scenario),
 				variables,
 				scenario.name,
@@ -357,48 +367,98 @@ const searchForEndpointInCache = (collection, scenario, api) => {
 /**
  * Parse the endpoint response object and get the element that is availabe in the given path 
  * to get value for the variable
- * TODO: add parsing logic
  * 
  * @param {array} endpointResult Result of the execution
  * @param {string} dependencyPath Path to the key in the response tha needs to be parsed and stored as a variable
  */
 const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
-	return endpointResult.map(e => e.hello);
+	let parsedResponse = { ...endpointResult }
+	if (!dependencyPath || dependencyPath === '' || typeof (endpointResult) === 'string') {
+		return endpointResult
+	}
+	dependencyPath = dependencyPath.split('/').join('.')
+	let path = dependencyPath.split('.')
+
+	try {
+		if (path[0] === 'response') path.shift()
+		logger.debug(`Parsing ${yellow(path.join('.'))} from ${green(JSON.stringify(parsedResponse))}`)
+		const pathLength = path.length
+		for (let index = 0; index < pathLength; index++) {
+			let key = path[index] ? path[index].trim() : undefined
+			if (!key || key === '') continue
+
+			if (['ANY', 'ANY_OBJECT', 'RANDOM', 'RANDOM_OBJECT'].includes(key.toLocaleUpperCase())) {
+				key = Math.floor(Math.random() * Math.floor(Object.values(parsedResponse).length))
+				parsedResponse = parsedResponse[Math.abs(parseInt(key))]
+			}
+
+			if (key.toLocaleUpperCase() === 'ALL') {
+				++index
+				parsedResponse = Object.values(parsedResponse).map(r => r[path[index]])
+			}
+
+			if (!isNaN(key) && Math.abs(parseInt(key)) < Object.values(parsedResponse).length) {
+				parsedResponse = parsedResponse[Math.abs(parseInt(key))]
+			}
+
+			if (Object.keys(parsedResponse).includes(key)) {
+				parsedResponse = parsedResponse[key]
+			}
+		}
+		logger.debug(`Parsed ${yellow(path.join('.'))} as ${green(typeof (parsedResponse) === 'object' ? JSON.stringify(parsedResponse) : parsedResponse)}`)
+	} catch (error) {
+		logger.error(`Could not parse ${yellow(path.join('.'))} from ${green(typeof (parsedResponse) === 'object' ? JSON.stringify(parsedResponse) : parsedResponse)}` + error)
+	}
+
+	return parsedResponse;
 };
 
+/**
+ * Execute and parse dependent endpoint
+ * 
+ * @param {object} endpoint Endpoint from which dependency is executed
+ * @param {object} dependency dependendent endpoint details
+ * @param {object} endpointVariables List of endpoint variables
+ */
+const loadDependendentEndpoint = (endpoint, dependency, endpointVariables) => new Promise((resolve, reject) => {
+	let searchResult = searchForEndpointInCache(dependency.collection, dependency.scenario, dependency.api);
+	if (searchResult === undefined) {
+		reject({ message: `Endpoint ${dependency.collection}.${dependency.scenario}.${dependency.api} not found` });
+	}
+	searchResult = JSON.parse(JSON.stringify(searchResult))
+	if (!!dependency.repeat && dependency.repeat > 0) searchResult.scenario.endpoints[0].repeat = dependency.repeat
 
-const loadDependendentEndpoint = (endpoint, dependency, endpointVariables) =>
-	new Promise((resolve, reject) => {
-		const searchResult = searchForEndpointInCache(dependency.collection, dependency.scenario, dependency.api);
-		if (searchResult === undefined) {
-			reject({
-				message: `Endpoint ${dependency.collection}.${dependency.scenario}.${dependency.api} not found`
-			});
-		}
-
-		performScenarioExecutionSteps(searchResult.scenario, endpointVariables, true).then(response => {
-			const scenarioResponse = response.scenarioResponse;
-
-			if (scenarioResponse.endpoints.filter(endpoint => !endpoint._status).length > 0) {
-				reject({
-					message: `Endpoint ${dependency.collection}.${dependency.scenario}.${dependency.api} execution failed`
-				});
+	logger.debug(`Executing dependency ${dependency.collection}.${dependency.scenario}.${dependency.api} for variable ${yellow(dependency.variable)}`)
+	performScenarioExecutionSteps(searchResult.scenario, endpointVariables, true, true).then(response => {
+		const scenarioResponse = response.scenarioResponse;
+		if (scenarioResponse.endpoints.filter(endpoint => !endpoint._status).length > 0) {
+			reject({ message: `Endpoint ${dependency.collection}.${dependency.scenario}.${dependency.api} execution failed` });
+		} else {
+			logger.debug(`Executing dependency ${dependency.collection}.${dependency.scenario}.${dependency.api} for variable ${yellow(dependency.variable)}: ${green('SUCCESS')}`)
+			let endpointResults = scenarioResponse.endpoints.find(_ => _.name === dependency.api)._result, endpointResponse;
+			if (endpointResults.length == 1) {
+				endpointResponse = endpointResults[0].response;
 			} else {
-				let endpointResults = scenarioResponse.endpoints.find(_ => _.name === dependency.api)._result,
-					endpointResponse;
-				if (endpointResults.length == 1) {
-					endpointResponse = endpointResults[0].response;
-				} else {
-					endpointResponse = endpointResults.map(res => res.response);
-				}
-
-				let parsedValue = parseResponseVariableFromPath(endpointResponse, dependency.path);
-				endpointVariables[dependency.variable] = parsedValue;
-
-				resolve(endpointVariables);
+				endpointResponse = endpointResults.map(res => res.response);
 			}
-		});
+			dependency._response = endpointResponse
+
+			if (typeof (dependency.variable) === 'string') {
+				let responseCopy = JSON.parse(JSON.stringify(endpointResponse))
+				let parsedValue = parseResponseVariableFromPath(responseCopy, dependency.path);
+				endpointVariables[dependency.variable] = parsedValue;
+			} else if (typeof (dependency.variable) === 'object') {
+				for (let [variable, path] of Object.entries(dependency.variable)) {
+					let responseCopy = JSON.parse(JSON.stringify(endpointResponse))
+					let parsedValue = parseResponseVariableFromPath(responseCopy, path);
+					endpointVariables[variable] = parsedValue;
+				}
+			}
+			resolve(endpointVariables);
+		}
 	});
+});
+
 
 /**
  * Sets the repeat index as a variable available in the endpoint
@@ -428,13 +488,12 @@ const getApiExecuterPromise = (scenarioVariables, endpoint, repeatIndex) =>
 		let endPointVariables = executeEndpointPreScripts(scenarioVariables, endpoint);
 		let dependencyResolver = Promise.resolve();
 
-		endpoint = JSON.parse(JSON.stringify(setRangeIndexForEndpoint(endpoint, repeatIndex)));
+		endpoint = { ...setRangeIndexForEndpoint(endpoint, repeatIndex) };
 
 		if (!!endpoint.dependencies && endpoint.dependencies.length > 0) {
 			endpoint.dependencies.forEach(dependency => {
 				dependencyResolver = dependencyResolver.then(response => {
 					if (response) endPointVariables = { ...endPointVariables, ...response };
-
 					return loadDependendentEndpoint(endpoint, dependency, endPointVariables);
 				});
 			});
@@ -443,9 +502,7 @@ const getApiExecuterPromise = (scenarioVariables, endpoint, repeatIndex) =>
 		dependencyResolver
 			.then(response => {
 				if (response) endPointVariables = { ...endPointVariables, ...response };
-
 				endPointVariables = executeEndpointPostDependencyScripts(endPointVariables, endpoint);
-				//TODO depenedcy start
 				executeAPI(endpoint, endPointVariables)
 					.then(result => resolveEndpoint(result));
 			})
@@ -476,19 +533,19 @@ const resolveEndpointResponses = (endpoint, results) => {
 
 
 // TODO: collect and print results
-// TODO: collect and print results
-const processEndpoint = async (scenarioVariables, endpoint) => {
+const processEndpoint = async (scenarioVariables, endpoint, scenarioName, collection) => {
 	let results = []
-	if (!endpoint.async) {
-		let endpointExecutors = Array.from(Array(endpoint.repeat ? endpoint.repeat : 1).keys()).map(i =>
+	endpoint.scenario = scenarioName
+	endpoint.collection = collection
+	if (!!endpoint.async && !this.executionOptions.sync) {
+		let endpointExecutors = [...(endpoint.repeat || 1)].map(i =>
 			getApiExecuterPromise(scenarioVariables, endpoint, i)
 		);
-
 		results = await Promise.all(endpointExecutors)
-	} else {
-		let endpointResolver = Promise.resolve(), results = [];
 
-		Array.from(Array(endpoint.repeat ? endpoint.repeat : 1).keys()).forEach((_, i) => {
+	} else {
+		let endpointResolver = Promise.resolve();
+		[...(endpoint.repeat || 1)].forEach(i => {
 			endpointResolver = endpointResolver.then(result => {
 				if (result) results.push(result);
 				return getApiExecuterPromise(scenarioVariables, endpoint, i);
@@ -498,7 +555,6 @@ const processEndpoint = async (scenarioVariables, endpoint) => {
 		const result = await endpointResolver;
 		results.push(result);
 	}
-
 	return resolveEndpointResponses(endpoint, results);
 }
 
@@ -510,11 +566,11 @@ const processEndpoint = async (scenarioVariables, endpoint) => {
  * @param {object} variables List of global and user variables provided
  * @param {boolean} overrideIgnoreFlag Consider ignore flag in endpoint or not
  */
-const performScenarioExecutionSteps = async (scenario, variables, overrideIgnoreFlag = false) => {
+const performScenarioExecutionSteps = async (scenario, variables, overrideIgnoreFlag = false, isDependency = false) => {
 	// Execute the pre scenario scripts
 	let preScriptVariables = await executePreScenarioScripts(variables, scenario);
 	// Process Generators and global variables
-	let globalVariables = await processGeneratorsAndGlobals(preScriptVariables, scenario);
+	let globalVariables = await processGeneratorsAndGlobals(preScriptVariables, scenario.generate, isDependency);
 	// Execute the post generator scripts
 	let postScriptVariables = await executePostGeneratorScripts({ ...preScriptVariables, ...globalVariables }, scenario);
 	// Combine the results
@@ -530,7 +586,8 @@ const performScenarioExecutionSteps = async (scenario, variables, overrideIgnore
 		: scenario.endpoints.filter(endpoint => !endpoint.ignore);
 
 	await Promise.all(endpointsToBeProcessed
-		.map(endpoint => processEndpoint(scenarioVariables, endpoint)));
+		.map(endpoint => processEndpoint(scenarioVariables, endpoint, scenario.name, scenario.collection)));
+
 
 	return {
 		scenarioResponse: scenario,
@@ -556,12 +613,12 @@ const performScenarioExecutionSteps = async (scenario, variables, overrideIgnore
  * @returns {Promise} Execution status
  */
 const processScenario = async (scenario, jobId, variables) => {
-	const scenarioExecutionStartTime = new Date().getTime();
+	const scenarioExecutionStartTime = Date.now();
 	logScenarioStart(scenario);
 
 	const { scenarioResponse, scenarioVariables } = await performScenarioExecutionSteps(scenario, variables);
 
-	let scenarioExecutionEndTime = new Date().getTime();
+	let scenarioExecutionEndTime = Date.now();
 	// Summarize the results
 	let scenarioResult = {
 		...scenarioResponse,
@@ -675,13 +732,13 @@ const loremGenerator = limit => {
  * Combines the systems obtained from config file with the sytems that user provided for the execution
  *
  * @param {string} systems User provided system variables
+ * @param {string} cred User provided system details in base64 format
  */
-const setSystemDetails = systems => {
+const setSystemDetails = (systems, cred) => {
 	let availableSystemDetails = utils.getAvailableSystemsFromConfig();
 	let availableSystems = availableSystemDetails.systems;
 	availableSystems.default = availableSystems[availableSystemDetails.default];
-
-	if (systems)
+	if (!!systems && systems.length > 3) {
 		for (const userProvidedSystem of systems.split(',')) {
 			let sysInfo = userProvidedSystem.split('=');
 			if (sysInfo.length < 2 || !Object.keys(availableSystems).includes(sysInfo[1])) {
@@ -690,6 +747,14 @@ const setSystemDetails = systems => {
 			}
 			availableSystems[sysInfo[0]] = availableSystems[sysInfo[1]];
 		}
+	}
+	if (!!cred && cred.length > 3) {
+		let decodedCredentials = new Buffer(cred, 'base64').toString('ascii');
+		let systemDetails = JSON.parse(decodedCredentials)
+		availableSystems.user_provided = systemDetails
+		availableSystems.default = systemDetails
+		availableSystemDetails.default = 'user_provided'
+	}
 	setAvailableSystems(availableSystems);
 };
 
@@ -710,16 +775,59 @@ const processUserVariables = variables => {
 				logger.error('Invalid user provided variables');
 				process.exit(1);
 			}
-			parsedVariables[varInfo[0]] = varInfo[1];
+			parsedVariables[varInfo[0]] = replacePlaceholderInString(varInfo[1])
 		}
 	} else {
 		variables = {};
-
 	}
 
-	return variables;
+	return parsedVariables;
 };
 
+
+/**
+ * Save the scenario list for a file
+ * 
+ * @param {string} jobId Job Id
+ * @param {object} scenarios list of all scenarios
+ */
+const savePreExecutionData = async (jobId, scenarios) => {
+	let jobDirPath = join(vibPath.jobs, jobId), latestDirPath = join(vibPath.jobs, 'latest')
+
+	let scenariosJson = JSON.stringify(scenarios, null, 2)
+
+	if (!existsSync(vibPath.jobs)) await mkdir(vibPath.jobs)
+	if (!existsSync(jobDirPath)) await mkdir(jobDirPath)
+	if (!existsSync(latestDirPath)) await mkdir(latestDirPath)
+
+	await writeFile(join(jobDirPath, 'scenarios.json'), scenariosJson)
+	await writeFile(join(latestDirPath, 'scenarios.json'), scenariosJson)
+}
+
+/**
+ * Save the scenario results to a file
+ * 
+ * @param {string} jobId Job Id
+ * @param {object} scenarios list of all scenarios
+ */
+const savePostExecutionData = async (jobId, scenarios) => {
+	let jobDirPath = join(vibPath.jobs, jobId), latestDirPath = join(vibPath.jobs, 'latest')
+
+	let scenariosJson = JSON.stringify(scenarios, null, 2)
+
+	if (!existsSync(vibPath.jobs)) await mkdir(vibPath.jobs)
+	if (!existsSync(jobDirPath)) await mkdir(jobDirPath)
+	if (!existsSync(latestDirPath)) await mkdir(latestDirPath)
+
+	await writeFile(join(jobDirPath, 'scenarios_result.json'), scenariosJson)
+	await writeFile(join(latestDirPath, 'scenarios_result.json'), scenariosJson)
+}
+
+// TODO
+const processScenarioResult = async result => {
+	
+	return
+}
 
 /**
  * Trigger point for all scenario executions
@@ -729,8 +837,9 @@ const processUserVariables = variables => {
  */
 const runTests = async (scenarios, executionOptions) => {
 	const jobId = uuid4();
-	logHandler.logExecutionStart(logger, jobId);
-	setSystemDetails(executionOptions.systems);
+	logHandler.logExecutionStart(logger, jobId, scenarios, utils.getParallelExecutorLimit());
+	savePreExecutionData(jobId, scenarios)
+	setSystemDetails(executionOptions.systems, executionOptions.cred);
 	this.executionOptions = executionOptions;
 
 	this.scenarioCache = createScenarioCache(scenarios);
@@ -748,7 +857,8 @@ const runTests = async (scenarios, executionOptions) => {
 		processScenario(scenario, jobId, { ...globalVariables, ...userVariables })
 	));
 
-	// const processedResults = await Promise.all(scenarioResults.map(result => processScenarioResult(result)))
+	savePostExecutionData(jobId, scenarios)
+	await Promise.all(scenarioResults.map(result => processScenarioResult(jobId, result)))
 	logHandler.logExecutionEnd(logger, jobId, scenarioResults);
 	return scenarioResults;
 };

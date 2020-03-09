@@ -38,6 +38,8 @@ vibranium
 	.option('-l --log [loglevel]', 'Logging level [info, debug, error], default is info')
 	.option('-p --parallel [number_of_parallel_tasks]', 'Number of parallel tasks. Default is 10')
 	.option('-v --variables [variables]', 'Variables to be used for executions. usage: var1=value1,var2=value2...')
+	.option('--cred [cred]', 'Credentials provided in base64 format')
+	.option('--sync', 'Run endpoints in synchronous mode')
 	.option(
 		'--system [systems]',
 		'The system on which the apis need to be executed. The sytem name should be defined in the config file'

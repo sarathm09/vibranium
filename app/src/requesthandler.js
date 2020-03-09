@@ -24,9 +24,11 @@ const handleRunCommand = async options => {
 	const scenarioList = await compiler.search(options.collections, options.scenarios, options.apis);
 	const executionOptions = {
 		variables: options.variables,
-		systems: options.systems,
+		systems: options.system,
 		color: options.color,
-		log: options.log
+		log: options.log,
+		cred: options.cred,
+		sync: options.sync
 	};
 
 	const result = await testexecutor.runTests(scenarioList, executionOptions);

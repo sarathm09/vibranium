@@ -70,9 +70,28 @@ const printApiList = (logger, apis, format = 'tree', color = true) => new Promis
 	resolve();
 });
 
+/**
+ * Print the execution start
+ * 
+ * @param {Logger} logger logger object
+ * @param {string} jobId Execution job Id
+ * @param {object} scenarios List of scenarios to execute
+ */
+const logExecutionStart = async (logger, jobId, scenarios, executorCount) => {
+	logger.info('#' + prettyPrint('jobId', jobId))
+	logger.info(`Starting execution at ${prettyPrint('date')} with ${chalk.blue(executorCount)} parallel thread(s), ${scenarios.length} scenario(s) and ${scenarios.map(sc => sc.endpoints.length).reduce((a, c) => a + c, 0)} API(s)`)
+}
+
+/**
+ * Log scenario start
+ * 
+ * @param {Logger} logger logger object
+ * @param {object} scenario Scenario details
+ */
 const logScenarioStart = (logger, scenario) => {
-	logger.info(`${prettyPrint('scenario', scenario.name)} started`);
+	logger.info(`${prettyPrint('scenario', scenario.name)} [${scenario.file}] started`);
 };
+
 
 const logScenarioEnd = (logger, scenario, variables) => {
 	if (scenario._result.status == executionStatus.ERROR) {
@@ -86,21 +105,44 @@ const logScenarioEnd = (logger, scenario, variables) => {
 	);
 };
 
-const printApiExecutionStart = (logger, api, variables) =>
-	new Promise(resolve => {
-		logger.info(
-			`\t${prettyPrint('api', api.name)} ${api.variables._range_index}/${api.repeat ? api.repeat : 1} started`
-		);
-		logger.info(`\t[${chalk.blue(api.method ? api.method.toUpperCase() : 'GET')}] ${api.url}`);
-		logger.debug(`\tpayload: ${JSON.stringify(api.payload)}`);
-		logger.debug('\texecution variables: ');
-		prettyPrintJson(variables, logger.debug);
-		prettyPrintJson(api.variables, logger.debug);
-		resolve();
-	});
+const getAPIIndex = api => {
+	if (api.repeat) {
+		return api.variables._range_index + '/' + (api.repeat ? api.repeat : '1')
+	} else {
+		return '1/1'
+	}
+}
+
+const printApiExecutionStart = async (logger, api, variables, dependencyLevel=0) => {
+	let details = {
+		'Name': prettyPrint('api', api.name),
+		'Collection': prettyPrint('collection', api.collection),
+		'Scenario': prettyPrint('scenario', api.scenario),
+		'Method': chalk.blue(api.method ? api.method.toUpperCase() : 'GET'),
+		'Url': api.url,
+		'Payload': (!!api.payload && typeof (api.payload) === 'object') ? JSON.stringify(api.payload, null, 2) : '{}',
+		'Variables': JSON.stringify(variables, null, 2),
+		'Repeat Index': getAPIIndex(api)
+	}
+	logger.info()
+	for (let [key, value] of Object.entries(details)) {
+		if (key === 'Payload') {
+			logger.debug(utils.printSpaces('', dependencyLevel*2) + 'Payload' + utils.printSpaces('Payload') + ': ' + value.split('\n')
+				.map((line, i) => (i > 0 ? utils.printSpaces('Payload', 42) : '') + syntaxHighlight(line))
+				.join('\n'));
+		} else if (key === 'Variables') {
+			logger.debug(utils.printSpaces('', dependencyLevel*2) + 'Variables' + utils.printSpaces('Variables') + ': ' + value.split('\n')
+				.map((line, i) =>  (i > 0 ? utils.printSpaces('Variables', 45) : '') + syntaxHighlight(line))
+				.join('\n'));
+		} else {
+			logger.info(utils.printSpaces('', dependencyLevel*2) + key + utils.printSpaces(key) + ': ' + value)
+		}
+	}
+	return
+};
 
 const printApiExecutionEnd = (logger, apiResult) => {
-	logger.info(`\t${prettyPrint('api', apiResult.name)} completed: ${prettyPrint('status', apiResult._status)}`);
+	logger.info(`${prettyPrint('scenario', apiResult.scenario)}.${prettyPrint('api', apiResult.name)} completed: ${prettyPrint('status', apiResult._status)}`);
 	if (apiResult._status) {
 		logger.debug(`\t${prettyPrint('api', apiResult.name)} Response:`);
 		prettyPrintJson(apiResult._result.response, logger.debug);
@@ -112,9 +154,6 @@ const printApiExecutionEnd = (logger, apiResult) => {
 	}
 };
 
-const logExecutionStart = (logger, jobId) => {
-	logger.info(`Starting execution for #${prettyPrint('jobId', jobId)} at ${prettyPrint('date')}`);
-}
 
 const logExecutionEnd = (logger, jobId, result) => {
 	logger.info(jobId);

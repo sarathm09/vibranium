@@ -443,7 +443,7 @@ const findObjectFromKeyHierarchy = (hierarchy, path) => {
 		if (path[hierarchyIndex] === 'payload') path[hierarchyIndex] = 'payloadKey'
 		if (path[hierarchyIndex] === 'length') parsedObject = parsedObject.length
 
-		if (typeof (parsedObject) === 'object' && Object.keys(parsedObject).includes(path[hierarchyIndex])) {
+		if (!!parsedObject && typeof (parsedObject) === 'object') {
 			parsedObject = parsedObject[path[hierarchyIndex]]
 		}
 	}
@@ -459,7 +459,7 @@ const findObjectFromKeyHierarchy = (hierarchy, path) => {
  * @param {string} comparator Comparator. Can be <, > or =
  */
 const compareObjects = (o1, o2, comparator) => {
-	if (!o1 || !o2) {
+	if (!o1) {
 		return false
 	} else if (comparator === '=') {
 		return o1 == o2
@@ -467,6 +467,8 @@ const compareObjects = (o1, o2, comparator) => {
 		return o1 < o2
 	} else if (comparator === '>') {
 		return o1 > o2
+	} else {
+		return !!o1
 	}
 }
 
@@ -478,7 +480,7 @@ const compareObjects = (o1, o2, comparator) => {
  * @param {string} keyValue The expected value at the path
  * @param {string} comparator The comparision operator
  */
-const filterScenariosMatchingScenarioKeys = (scenarios, keyFilter, keyValue, comparator) => {
+const filterScenariosMatchingScenarioKeys = (scenarios, keyFilter, keyValue = '', comparator = '') => {
 	let filteredScenarios = []
 	for (let scenario of scenarios) {
 		let parsedObject = findObjectFromKeyHierarchy(scenario, keyFilter.split('.'))
@@ -497,7 +499,7 @@ const filterScenariosMatchingScenarioKeys = (scenarios, keyFilter, keyValue, com
  * @param {string} keyValue The expected value at the path
  * @param {string} comparator The comparision operator
  */
-const filterScenariosMatchingEndpointKeys = (scenarios, keyFilter, keyValue, comparator) => {
+const filterScenariosMatchingEndpointKeys = (scenarios, keyFilter, keyValue = '', comparator = '') => {
 	let filteredScenarios = []
 	for (let scenario of scenarios) {
 		let filteredEndpoints = []
@@ -523,7 +525,7 @@ const filterScenariosMatchingEndpointKeys = (scenarios, keyFilter, keyValue, com
  * @param {string} keyValue The expected value at the path
  * @param {string} comparator The comparision operator
  */
-const filterScenariosMatchingDependencyKeys = (scenarios, keyFilter, keyValue, comparator) => {
+const filterScenariosMatchingDependencyKeys = (scenarios, keyFilter, keyValue = '', comparator ='') => {
 	let filteredScenarios = []
 	for (let scenario of scenarios) {
 		let filteredEndpoints = []
@@ -567,6 +569,12 @@ const filterScenariosMatchingKeys = (scenarios, keys) => {
 		for (let filter of Object.keys(filters)) {
 			if (keyFilter.startsWith(filter)) {
 				return filters[filter](scenarios, keyFilter, keyValue, comparator[0])
+			}
+		}
+	} else {
+		for (let filter of Object.keys(filters)) {
+			if (keys.startsWith(filter)) {
+				return filters[filter](scenarios, keys)
 			}
 		}
 	}

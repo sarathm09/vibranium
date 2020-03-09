@@ -1,6 +1,8 @@
 const { join } = require('path');
 const { homedir } = require('os');
+const { env } = require('process');
 const { readFileSync } = require('fs');
+
 
 let workspace = '', systemConfig = {}, userConfig = {}, testsDirectory = '';
 try {
@@ -10,7 +12,8 @@ try {
 	userConfig = { ...systemConfig, ...userConfig };
 	testsDirectory = userConfig.tests_directory ? userConfig.tests_directory : 'Vibranium-Tests';
 } catch (err) {
-	console.log('Error reading config file: ' + err);
+	if (env.LOG_LEVEL === 'debug')
+		console.log('Error reading config file: ' + err);
 }
 
 module.exports = {
@@ -19,6 +22,7 @@ module.exports = {
 	vibPath: {
 		workspace,
 		scenarios: join(workspace, testsDirectory, 'scenarios'),
+		jobs: join(workspace, 'jobs'),
 		logs: join(workspace, 'logs'),
 		payloads: join(workspace, testsDirectory, 'payloads'),
 		cache: join(workspace, '.cache'),

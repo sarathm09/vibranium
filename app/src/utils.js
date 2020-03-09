@@ -10,6 +10,16 @@ const moduleLogger = require('./logger');
 
 const logger = moduleLogger('util');
 
+
+/**
+ * Create a custom iterator for number ranges
+ */
+Number.prototype[Symbol.iterator] = function* () {
+	for (let i = 0; i < this; i++) {
+		yield i;
+	}
+}
+
 /**
  * Check if the system is a Mac or not
  */
@@ -249,7 +259,5 @@ module.exports.getParallelExecutorLimit = () => {
 }
 
 
-module.exports.printSpaces = (text, max = 15) =>
-	Array.from(Array(max - text.length))
-		.map(' ')
-		.join('');
+module.exports.printSpaces = (text, max = 15) => [...(max - text.length)].map(_ => ' ').join('');
+

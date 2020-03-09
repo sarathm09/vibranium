@@ -39,6 +39,9 @@ const getResponse = (system, url, method, payload, auth, language = 'en') =>
  */
 const getResponseWithAxios = async (system, url, method, payload, auth, language = 'en') =>
 	new Promise((resolve, reject) => {
+		if (system.api_url.endsWith('/')) system.api_url = system.api_url.slice(0, -1);
+		if (!url.startsWith('/')) url = `/${url}`
+		
 		let timing = new Date().getTime();
 		let request = {
 			method: method.toLowerCase(),

@@ -825,7 +825,6 @@ const savePostExecutionData = async (jobId, scenarios) => {
 
 // TODO
 const processScenarioResult = async result => {
-	
 	return
 }
 

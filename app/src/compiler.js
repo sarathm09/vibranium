@@ -8,36 +8,6 @@ const logger = require('./logger')('compiler');
 
 
 /**
- * @deprecated
-const readListOfTestScenarios = async directoryPath => {
-	let results = [];
-	let filesInDir = await readdir(directoryPath, { withFileTypes: true });
-	let pending = filesInDir.length;
-
-	return new Promise((resolve, reject) => {
-		if (!pending) resolve(results);
-		try {
-			filesInDir.forEach(async file => {
-				let absoluteFilePath = pathResolve(directoryPath, file.name);
-
-				if (file.isDirectory()) {
-					let scenarioFiles = await readListOfTestScenarios(absoluteFilePath);
-					results.push(...scenarioFiles);
-					if (!--pending) resolve(results);
-				} else {
-					results.push(absoluteFilePath);
-					if (!--pending) resolve(results);
-				}
-			});
-		} catch (error) {
-			reject(error);
-			logger.error('' + error);
-		}
-	});
-}; */
-
-
-/**
  * Read all the files in a directory recursively
  * 
  * @param {string} directoryPath The starting directory path

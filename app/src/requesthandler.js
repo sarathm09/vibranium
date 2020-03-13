@@ -1,7 +1,6 @@
 const open = require('open');
 const uuid4 = require('uuid/v4');
 const { join } = require('path');
-const { env } = require('process')
 const readline = require('readline');
 const { hostname, homedir } = require('os');
 const { mkdirSync, writeFileSync, readFileSync, existsSync, createReadStream, createWriteStream } = require('fs');
@@ -32,7 +31,7 @@ const handleRunCommand = async options => {
 	};
 
 	const result = await testexecutor.runTests(scenarioList, executionOptions);
-	//onsole.log(JSON.stringify(result, null, 4));
+	console.log(JSON.stringify(result, null, 4));
 	console.timeEnd();
 };
 
@@ -73,7 +72,7 @@ const handleListCommand = async options => {
  */
 const handleVibraniumSetup = async (options, workspacePath) => {
 	const userDetails = !!options.email && !!options.name ? options : await getUserDetailsFromConsole();
-	createWorksaceAndUserConfig(userDetails, workspacePath);
+	createWorkspaceAndUserConfig(userDetails, workspacePath);
 	createVibraniumDirectories(workspacePath);
 
 	createReadStream(join(__dirname, '..', 'config', '_config.json')).pipe(
@@ -169,12 +168,12 @@ const createVibraniumDirectories = workspace => {
 };
 
 /**
- * Create the bibranium workspace and setup user configuration json file
+ * Create the vibranium workspace and setup user configuration json file
  *
  * @param {object} userDetails User details
  * @param {string} workspace Vibranium Workspace
  */
-const createWorksaceAndUserConfig = (userDetails, workspace) => {
+const createWorkspaceAndUserConfig = (userDetails, workspace) => {
 	const systemConfigDirectory = join(homedir(), '.vib');
 	if (!existsSync(systemConfigDirectory)) {
 		mkdirSync(systemConfigDirectory);
@@ -193,21 +192,21 @@ const createWorksaceAndUserConfig = (userDetails, workspace) => {
 /**
  * Get the user details, for setting up vibranium for the first time.
  */
-const getUserDetailsFromConsole = () =>
-	new Promise(resolve => {
-		const rl = readline.createInterface({
-			input: process.stdin,
-			output: process.stdout
-		});
-		rl.question('Please enter your user id: ', userid => {
-			rl.question('Please enter your email id: ', email => {
-				rl.question('Please enter your name: ', name => {
-					rl.close();
-					resolve({ userid, email, name });
-				});
-			});
-		});
-	});
+const getUserDetailsFromConsole = async () => {
+	const rl = readline.createInterface({
+		input: process.stdin,
+		output: process.stdout
+	})
+
+	const getUserInput = utils.readlinePromise(rl)
+
+	const userid = await getUserInput('Please enter your user id: ')
+	const email = await getUserInput('Please enter your email id: ')
+	const name = await getUserInput('Please enter your name: ')
+
+	rl.close()
+	return ({ userid, email, name })
+}
 
 module.exports = {
 	handleRunCommand,

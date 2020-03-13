@@ -259,5 +259,17 @@ module.exports.getParallelExecutorLimit = () => {
 }
 
 
+// eslint-disable-next-line no-unused-vars
 module.exports.printSpaces = (text, max = 15) => [...(max - text.length)].map(_ => ' ').join('');
 
+/**
+ * Promisify readline to read user inputs
+ * 
+ * @param readlineObject implementation of readline interface
+ * @param question The text to printed in the console when getting user input
+ */
+module.exports.readlinePromise = readlineObject => question => new Promise(resolve => {
+	readlineObject.question(question, inputText => {
+		resolve(inputText)
+	})
+})

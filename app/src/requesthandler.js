@@ -208,9 +208,50 @@ const getUserDetailsFromConsole = async () => {
 	return ({ userid, email, name })
 }
 
+/**
+ * Handle the debug command to print paths and open the corresponding directories
+ */
+const handleDebugCommand = async options => {
+	let paths = {
+		workspace: vibPath.workspace,
+		src: __dirname,
+		vibconfig: join(homedir(), '.vib', 'config.json'),
+		config: join(vibPath.workspace, 'config.json'),
+		log: vibPath.logs,
+		payloads: vibPath.payloads,
+		scenarios: vibPath.scenarios
+	}
+	
+	for (const option of Object.keys(paths)) {
+		if (options[option]) {
+			open(paths[option])
+			process.exit(0)
+		}
+	}
+	console.table(paths)
+	const rl = readline.createInterface({
+		input: process.stdin,
+		output: process.stdout
+	})
+
+	const getUserInput = utils.readlinePromise(rl)
+	const input = await getUserInput('index : ')
+
+	if (input !== 'q') {
+		if (Object.keys(paths).includes(input)) {
+			open(paths[input])
+		} else {
+			console.log('Invalid input.')
+		}
+	}
+	rl.close()
+}
+
+
 module.exports = {
 	handleRunCommand,
 	handleListCommand,
+	handleDebugCommand,
 	handleCreateCommand,
 	handleVibraniumSetup
 };

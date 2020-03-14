@@ -77,12 +77,12 @@ vibranium
 	.description('Enter debug mode')
 	.option('-w --workspace', 'Open the vibranium workspace')
 	.option('-s --src', 'Open the source directory for vibranium')
-	.option('-v --vib-config', 'Open the central configuration files for vibranium')
+	.option('-v --vibconfig', 'Open the central configuration files for vibranium')
 	.option('-c --config', 'Open the configuration files for vibranium')
 	.option('-l --log', 'Open the log files for vibranium')
 	.action(options => {
 		setEnvironmentVariables(options)
-		console.log(options.opts());
+		requestHandler.handleDebugCommand(options)
 	});
 
 vibranium

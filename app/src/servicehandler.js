@@ -14,6 +14,36 @@ var availableSystems = {};
  */
 const setAvailableSystems = systems => (availableSystems = systems);
 
+
+/**
+ * Parse the response and form the return structure with all the details
+ * 
+ * @param {string} url url that was invoked
+ * @param {string} method HTTP request method
+ * @param {object} payload request payload
+ * @param {string} auth Authorization header
+ * @param {obejct} response Response object
+ * @param {string} body Response data
+ */
+const parseAndSendResponse = (url, method, payload, auth, response, body) => {
+	let apiResponse = body;
+	if (response.statusCode != 204 && !!response.headers['content-type'] &&
+		response.headers['content-type'].toLowerCase().includes('json')) {
+		apiResponse = JSON.parse(body);
+	}
+	return {
+		url,
+		method,
+		payload,
+		auth,
+		timing: response.timingPhases,
+		response: apiResponse,
+		status: response.statusCode,
+		contentType: response.headers['content-type']
+	}
+}
+
+
 /**
  * Execute the API endpoint. Select the framework to use based on the type of environment
  *
@@ -28,6 +58,7 @@ const getResponse = (system, url, method, payload, auth, language = 'en') =>
 		? getResponseWithRequest(system, url, method, payload, auth, language)
 		: getResponseWithAxios(system, url, method, payload, auth, language);
 
+
 /**
  * Execute the API endpoint and return a promise with the response. (Uses Axios)
  *
@@ -41,7 +72,7 @@ const getResponseWithAxios = async (system, url, method, payload, auth, language
 	new Promise((resolve, reject) => {
 		if (system.api_url.endsWith('/')) system.api_url = system.api_url.slice(0, -1);
 		if (!url.startsWith('/')) url = `/${url}`
-		
+
 		let timing = new Date().getTime();
 		let request = {
 			method: method.toLowerCase(),
@@ -69,6 +100,7 @@ const getResponseWithAxios = async (system, url, method, payload, auth, language
 			.catch(err => reject(err));
 	});
 
+
 /**
  * Execute the API endpoint and return a promise with the response. (Uses Node request module)
  *
@@ -89,48 +121,33 @@ const getResponseWithAxios = async (system, url, method, payload, auth, language
  * download: Duration of HTTP download (timings.end - timings.response)
  * total: Duration entire HTTP round-trip (timings.end)
  */
-const getResponseWithRequest = (system, url, method, payload, auth, language = 'en') =>
-	new Promise((resolve, reject) => {
-		if (system.api_url.endsWith('/')) system.api_url = system.api_url.slice(0, -1);
-		if (!url.startsWith('/')) url = `/${url}`
+const getResponseWithRequest = (system, url, method, payload, auth, language = 'en') => new Promise((resolve, reject) => {
+	if (system.api_url.endsWith('/')) system.api_url = system.api_url.slice(0, -1);
+	if (!url.startsWith('/')) url = `/${url}`
 
-		let requestOptions = {
-			method: method.toUpperCase(),
-			uri: system.api_url + url,
-			body: JSON.stringify(payload),
-			headers: {
-				'Authorization': auth,
-				'Accept-Language': language
-			},
-			time: true,
-			rejectUnauthorized: false
-		};
+	let requestOptions = {
+		method: method.toUpperCase(),
+		uri: system.api_url + url,
+		body: JSON.stringify(payload),
+		headers: {
+			'Authorization': auth,
+			'Accept-Language': language,
+			'Content-Type': 'application/json'
+		},
+		time: true,
+		rejectUnauthorized: false
+	};
 
-		request(requestOptions, function (error, response, body) {
-			if (error) printErrorAndExit(error)
+	request(requestOptions, function (error, response, body) {
+		if (error) printErrorAndExit(error)
 
-			if (!!response && !!response.statusCode) {
-				let apiResponse = body;
-				if (!!response.headers['content-type']
-					&& response.headers['content-type'].includes('json')
-					&& response.statusCode != 204) {
-					apiResponse = JSON.parse(body);
-				}
-				resolve({
-					url,
-					method,
-					payload,
-					auth,
-					timing: response.timingPhases,
-					response: apiResponse,
-					status: response.statusCode,
-					contentType: response.headers['content-type']
-				});
-			} else {
-				reject(response);
-			}
-		});
+		if (!!response && !!response.statusCode) {
+			resolve(parseAndSendResponse(url, method, payload, auth, response, body))
+		} else {
+			reject(response);
+		}
 	});
+})
 
 
 const printErrorAndExit = error => {
@@ -143,30 +160,29 @@ const printErrorAndExit = error => {
 	process.exit(1);
 }
 
+
 /**
  * Get the outh2 credentials and fetch the token
  *
  * @private
  * @param {object} system The system to be processed
  */
-const processOauth2BasedSystemCredentials = (systemName, system) =>
-	new Promise((resolve, reject) => {
-		if (!!system && !!system.credentials.client && !!system.credentials.secret && !!system.credentials.authUrl) {
-			if (!!system.jwt && !!system.jwtTimeout && system.jwtTimeout > new Date().getTime()) {
-				resolve(system);
-			} else {
-				fetchJwtToken(system.credentials.authUrl, system.credentials.client, system.credentials.secret).then(
-					authDetails => {
-						availableSystems[systemName].jwt = authDetails.jwt;
-						availableSystems[systemName].jwtTimeout = authDetails.jwtTimeout + new Date().getTime();
-						resolve(availableSystems[systemName]);
-					}
-				);
-			}
+const processOauth2BasedSystemCredentials = async (systemName, system) => {
+	if (!!system && !!system.credentials.clientid && !!system.credentials.secret && !!system.oauth_url) {
+		if (!!system.jwt && !!system.jwtTimeout && system.jwtTimeout > new Date().getTime()) {
+			return (system);
 		} else {
-			reject('Invalid system');
+			let authDetails = await fetchJwtToken(system.oauth_url, system.credentials.clientid, system.credentials.secret)
+			return {
+				...system,
+				jwt: authDetails.jwt,
+				jwtTimeout: authDetails.jwtTimeout + new Date().getTime()
+			}
 		}
-	});
+	} else {
+		throw ('Invalid system. System name in API: ' + systemName + ', System object: ' + JSON.stringify(system));
+	}
+}
 
 /**
  * Get the basic auth credentials and fetch the token
@@ -174,16 +190,14 @@ const processOauth2BasedSystemCredentials = (systemName, system) =>
  * @private
  * @param {object} system The system to be processed
  */
-const processBasicAuthBasedSystemCredentials = system =>
-	new Promise((resolve, reject) => {
-		if (!!system && !!system.credentials.username && !!system.credentials.password) {
-			system.auth = new Buffer(system.credentials.username + ':' +
-				system.credentials.password).toString('base64');
-			resolve(system);
-		} else {
-			reject('Invalid system');
-		}
-	});
+const processBasicAuthBasedSystemCredentials = async system => {
+	if (!!system && !!system.credentials.username && !!system.credentials.password) {
+		system.auth = new Buffer(system.credentials.username + ':' + system.credentials.password).toString('base64');
+		return system;
+	} else {
+		throw ('Invalid system for basic auth: ' + JSON.stringify(system));
+	}
+}
 
 /**
  * fetch the system/auth details and call the api endpoint
@@ -193,28 +207,27 @@ const processBasicAuthBasedSystemCredentials = system =>
  * @param {object} payload The payload for the api call
  * @param {string} systemName The system on which the api needs to be executed
  */
-const callApi = (url, method, payload, systemName, language = 'en') =>
-	new Promise((resolve, reject) => {
-		let system = availableSystems.default;
-		if (!!systemName && !!availableSystems[systemName]) system = availableSystems[systemName];
-		if (!system.method) system.method = constants.authTypes.oauth2[0];
+const callApi = (url, method, payload, systemName, language = 'en') => new Promise((resolve, reject) => {
+	let system = availableSystems.default;
+	if (!!systemName && !!availableSystems[systemName]) system = availableSystems[systemName];
+	if (!system.method) system.method = constants.authTypes.oauth2[0];
 
-		if (constants.authTypes.oauth2.includes(system.method)) {
-			processOauth2BasedSystemCredentials(systemName, system)
-				.then(systemWithAuth => getResponse(system, url, method, payload, `Bearer ${systemWithAuth.jwt}`, language))
-				.then(responseWithTiming => resolve(responseWithTiming))
-				.catch(err => reject(err));
-		} else if (constants.authTypes.basic.includes(system.method)) {
-			processBasicAuthBasedSystemCredentials(system)
-				.then(systemWithAuth => getResponse(system, url, method, payload, `Basic ${systemWithAuth.auth}`, language))
-				.then(responseWithTiming => resolve(responseWithTiming))
-				.catch(err => reject(err));
-		} else if (constants.authTypes.none.includes(system.method)) {
-			getResponse(system, url, method, payload, '', language)
-				.then(responseWithTiming => resolve(responseWithTiming))
-				.catch(err => reject(err));
-		}
-	});
+	if (constants.authTypes.oauth2.includes(system.method)) {
+		processOauth2BasedSystemCredentials(systemName, system)
+			.then(systemWithAuth => getResponse(system, url, method, payload, `Bearer ${systemWithAuth.jwt}`, language))
+			.then(resolve)
+			.catch(reject);
+	} else if (constants.authTypes.basic.includes(system.method)) {
+		processBasicAuthBasedSystemCredentials(system)
+			.then(systemWithAuth => getResponse(system, url, method, payload, `Basic ${systemWithAuth.auth}`, language))
+			.then(resolve)
+			.catch(reject);
+	} else if (constants.authTypes.none.includes(system.method)) {
+		getResponse(system, url, method, payload, '', language)
+			.then(resolve)
+			.catch(reject);
+	}
+});
 
 /**
  * Fetch the jwt token for the system with the client credentials flow.
@@ -225,25 +238,32 @@ const callApi = (url, method, payload, systemName, language = 'en') =>
  * @param {string} clientSecret client secret for the client id
  * @returns Promise object with token and jwt timeout
  */
-const fetchJwtToken = (url, clientId, clientSecret) =>
-	new Promise((resolve, reject) => {
-		if (!url.includes('grant_type')) {
-			if (!url.includes('/oauth/token')) {
-				if (!url.endsWith('/')) url += '/';
-				url += 'oauth/token?grant_type=client_credentials';
-			}
-			url += '?grant_type=client_credentials';
+const fetchJwtToken = async (url, clientId, clientSecret) => {
+	if (!url.includes('grant_type')) {
+		if (!url.includes('/oauth/token')) {
+			if (!url.endsWith('/')) url += '/';
+			url += 'oauth/token?grant_type=client_credentials';
 		}
-		getResponse(url, 'GET', undefined, `Basic ${new Buffer(clientId + ':' + clientSecret).toString('base64')}`)
-			.then(resp => {
-				resolve({
-					jwt: resp.response.access_token,
-					scopes: resp.response.scopes,
-					jwtTimeout: resp.response.timeout // TODO
-				});
-			})
-			.catch(err => reject(err));
-	});
+		url += '?grant_type=client_credentials';
+	}
+
+	const jwtResponse = await axios({
+		method: 'get',
+		url,
+		headers: {
+			Authorization: `Basic ${new Buffer(clientId + ':' + clientSecret).toString('base64')}`
+		}
+	})
+	if (jwtResponse.status === 200) {
+		return {
+			jwt: jwtResponse.data.access_token,
+			scopes: jwtResponse.data.scope,
+			jwtTimeout: jwtResponse.data.expires_in // TODO
+		}
+	} else {
+		throw(`Could not fetch JWT token. Please check url: ${url}, clientId: ${clientId}, clientSecret: ${clientSecret}`)
+	}
+}
 
 module.exports = {
 	callApi,

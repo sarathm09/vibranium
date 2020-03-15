@@ -189,7 +189,7 @@ const processOauth2BasedSystemCredentials = async (systemName, system) => {
  */
 const processBasicAuthBasedSystemCredentials = async system => {
 	if (!!system && !!system.credentials.username && !!system.credentials.password) {
-		system.auth = new Buffer(system.credentials.username + ':' + system.credentials.password).toString('base64');
+		system.auth = Buffer.from(system.credentials.username + ':' + system.credentials.password).toString('base64');
 		return system;
 	} else {
 		throw ('Invalid system for basic auth: ' + JSON.stringify(system));
@@ -248,7 +248,7 @@ const fetchJwtToken = async (url, clientId, clientSecret) => {
 		method: 'get',
 		url,
 		headers: {
-			Authorization: `Basic ${new Buffer(clientId + ':' + clientSecret).toString('base64')}`
+			Authorization: `Basic ${Buffer.from(clientId + ':' + clientSecret).toString('base64')}`
 		}
 	})
 	if (jwtResponse.status === 200) {

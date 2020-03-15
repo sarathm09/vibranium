@@ -30,8 +30,9 @@ const handleRunCommand = async options => {
 		sync: options.sync
 	};
 
+	// eslint-disable-next-line no-unused-vars
 	const result = await testexecutor.runTests(scenarioList, executionOptions);
-	console.log(JSON.stringify(result, null, 4));
+	//console.log(JSON.stringify(result, null, 4));
 	console.timeEnd();
 };
 
@@ -63,8 +64,8 @@ const handleListCommand = async options => {
 		utils.freezeScenarios(scenarios);
 	}
 
-	console.log(`\nLoaded ${new Set(scenarios.map(sc => sc.collection)).size} collection(s), ${scenarios.length} scenario(s) and ${scenarios.map(sc => 
-		sc.endpoints).reduce((a,c) => [...a, ...c], []).length} api(s) in ${Date.now() - startTime} ms`)
+	console.log(`\nLoaded ${new Set(scenarios.map(sc => sc.collection)).size} collection(s), ${scenarios.length} scenario(s) and ${scenarios.map(sc =>
+		sc.endpoints).reduce((a, c) => [...a, ...c], []).length} api(s) in ${Date.now() - startTime} ms`)
 };
 
 /**
@@ -231,7 +232,10 @@ const handleDebugCommand = async options => {
 			process.exit(0)
 		}
 	}
-	console.table(paths)
+	console.table(Object.entries(paths)
+		.map(([key, value]) => [`[${key[0].toUpperCase()}]${key.slice(1)}`, value])
+		.reduce((a, [k, v]) => { a[k] = v; return a }, {}))
+
 	const rl = readline.createInterface({
 		input: process.stdin,
 		output: process.stdout
@@ -244,7 +248,12 @@ const handleDebugCommand = async options => {
 		if (Object.keys(paths).includes(input)) {
 			open(paths[input])
 		} else {
-			console.log('Invalid input.')
+			let matchingKey = Object.keys(paths).find(key => key.toLocaleUpperCase().startsWith(input.toLocaleUpperCase()))
+			if (matchingKey) {
+				open(paths[matchingKey])
+			} else {
+				console.log('Invalid Input...')
+			}
 		}
 	}
 	rl.close()

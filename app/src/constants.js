@@ -1,7 +1,20 @@
+const Ajv = require('ajv');
 const { join } = require('path');
 const { homedir } = require('os');
 const { env } = require('process');
 const { readFileSync } = require('fs');
+
+const validateConfigSchema = config => {
+	const ajv = new Ajv({allErrors: true})
+	ajv.addMetaSchema(JSON.parse(readFileSync(join(__dirname, '..', 'res', 'schemas', 'draft-06-schema.json'))))
+	let schema = JSON.parse(readFileSync(join(__dirname, '..', 'res', 'schemas', 'config_schema.json')))
+
+	if (!ajv.validate(schema, config)) {
+		console.log('Following errors were found in the config file. Please fix them.')
+		console.log(ajv.errors)
+		process.exit(1)
+	}
+}
 
 
 let workspace = '', systemConfig = {}, userConfig = {}, testsDirectory = '';
@@ -9,11 +22,16 @@ try {
 	systemConfig = JSON.parse(readFileSync(join(homedir(), '.vib', 'config.json'), 'utf-8'));
 	workspace = systemConfig.workspace;
 	userConfig = JSON.parse(readFileSync(join(workspace, 'config.json'), 'utf-8'));
+
+	validateConfigSchema(userConfig)
+
 	userConfig = { ...systemConfig, ...userConfig };
 	testsDirectory = userConfig.tests_directory ? userConfig.tests_directory : 'Vibranium-Tests';
 } catch (err) {
-	if (env.LOG_LEVEL === 'debug')
-		console.log('Error reading config file: ' + err);
+	if (env.LOG_LEVEL === 'debug' || err instanceof SyntaxError) {
+		console.log('Error reading config file: ' + err)
+		process.exit(1)
+	}
 }
 
 module.exports = {

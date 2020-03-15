@@ -29,6 +29,7 @@
 		"url": "https://github.com/sarathm09/vibranium/issues"
 	},
 	"dependencies": {
+		"ajv": "^6.12.0",
 		"axios": "^0.19.0",
 		"browser-or-node": "^1.2.1",
 		"chalk": "^3.0.0",

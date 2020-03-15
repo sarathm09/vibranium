@@ -203,14 +203,6 @@ const executePostGeneratorScripts = (variables, scenario) =>
 		resolve(variables);
 	});
 
-// TODO: log scenario timing
-// TODO: collect and print results
-const printScenarioSummary = (scenarioResult, jobId) =>
-	new Promise(resolve => {
-		console.log(jobId)
-		console.log(JSON.stringify(scenarioResult, null, 4))
-		resolve();
-	});
 
 /**
  * Replace the available placeholders with the value of the corresponding variables
@@ -284,24 +276,27 @@ const replaceVariablesInApi = (api, variables) => {
  * callAPI response:
  * { timing, response, status, contentType }
  */
-const executeAPI = (endpoint, endpointVaribles) =>
-	new Promise((resolve, reject) => {
-		let api = replaceVariablesInApi(endpoint, endpointVaribles);
-		let expectedStatus = 200;
-		if (!!api.expect && !!api.expect.status) expectedStatus = api.expect.status;
+const executeAPI = async (endpoint, endpointVaribles) => {
+	let api = replaceVariablesInApi(endpoint, endpointVaribles);
+	let expectedStatus = 200;
 
-		waitForExecutors()
-			.then(() => logHandler.printApiExecutionStart(logger, api, endpointVaribles))
-			.then(() => callApi(api.url, api.method, api.payload, api.system, api.language))
-			.then(endpointResponse => {
-				api._result = endpointResponse;
-				(api._status = endpointResponse.status === expectedStatus), (api._variables = endpointVaribles);
-				ACTIVE_PARALLEL_EXECUTORS -= 1;
-				logHandler.printApiExecutionEnd(logger, api);
-				resolve(api);
-			})
-			.catch(e => reject(e));
-	});
+	if (!!api.expect && !!api.expect.status) expectedStatus = api.expect.status;
+
+	await waitForExecutors()
+	logHandler.printApiExecutionStart(logger, api, endpointVaribles)
+
+	const endpointResponse = callApi(api.url, api.method, api.payload, api.system, api.language)
+	api = {
+		...api,
+		_result: endpointResponse,
+		_status: endpointResponse.status === expectedStatus,
+		_variables: endpointVaribles
+	}
+
+	ACTIVE_PARALLEL_EXECUTORS -= 1;
+	logHandler.printApiExecutionEnd(logger, api);
+	return api;
+}
 
 /**
  * Convert list of scenarios to cache
@@ -483,40 +478,39 @@ const setRangeIndexForEndpoint = (endpoint, index) => {
  * @param {object} endpoint endpoint object
  * @param {integer} repeatIndex index if the endpoint is reunning in repeat
  */
-const getApiExecuterPromise = (scenarioVariables, endpoint, repeatIndex) =>
-	new Promise(resolveEndpoint => {
-		let endPointVariables = executeEndpointPreScripts(scenarioVariables, endpoint);
-		let dependencyResolver = Promise.resolve();
+const getApiExecuterPromise = (scenarioVariables, endpoint, repeatIndex) => new Promise(resolveEndpoint => {
+	let endPointVariables = executeEndpointPreScripts(scenarioVariables, endpoint);
+	let dependencyResolver = Promise.resolve();
 
-		endpoint = { ...setRangeIndexForEndpoint(endpoint, repeatIndex) };
+	endpoint = { ...setRangeIndexForEndpoint(endpoint, repeatIndex) };
 
-		if (!!endpoint.dependencies && endpoint.dependencies.length > 0) {
-			endpoint.dependencies.forEach(dependency => {
-				dependencyResolver = dependencyResolver.then(response => {
-					if (response) endPointVariables = { ...endPointVariables, ...response };
-					return loadDependendentEndpoint(endpoint, dependency, endPointVariables);
-				});
-			});
-		}
-
-		dependencyResolver
-			.then(response => {
+	if (!!endpoint.dependencies && endpoint.dependencies.length > 0) {
+		endpoint.dependencies.forEach(dependency => {
+			dependencyResolver = dependencyResolver.then(response => {
 				if (response) endPointVariables = { ...endPointVariables, ...response };
-				endPointVariables = executeEndpointPostDependencyScripts(endPointVariables, endpoint);
-				executeAPI(endpoint, endPointVariables)
-					.then(result => resolveEndpoint(result));
-			})
-			.catch(error => {
-				endpoint._result = {
-					response: {},
-					status: -1,
-					message: error.message
-				};
-
-				endpoint._status = false;
-				resolveEndpoint(endpoint);
+				return loadDependendentEndpoint(endpoint, dependency, endPointVariables);
 			});
-	});
+		});
+	}
+
+	dependencyResolver
+		.then(response => {
+			if (response) endPointVariables = { ...endPointVariables, ...response };
+			endPointVariables = executeEndpointPostDependencyScripts(endPointVariables, endpoint);
+			executeAPI(endpoint, endPointVariables)
+				.then(result => resolveEndpoint(result));
+		})
+		.catch(error => {
+			endpoint._result = {
+				response: {},
+				status: -1,
+				message: error.message
+			};
+
+			endpoint._status = false;
+			resolveEndpoint(endpoint);
+		});
+});
 
 /**
  * Resolve with the results set in the endpoint
@@ -708,7 +702,7 @@ const loremGenerator = limit => {
 	let generatedString = '';
 
 	if (limit < 0) generatedString = '';
-	if (limit < 10) generatedString = Array.from(Array(limit).keys()).join();
+	if (limit < 10) generatedString = [...limit].join();
 	else {
 		while (limit > 0) {
 			let tempSentence = lorem
@@ -824,9 +818,14 @@ const savePostExecutionData = async (jobId, scenarios) => {
 }
 
 // TODO
+// TODO: log scenario timing
+// TODO: collect and print results
+// if --report -> junit, html and console report
+// eslint-disable-next-line no-unused-vars
 const processScenarioResult = async result => {
 	return
 }
+
 
 /**
  * Trigger point for all scenario executions

@@ -24,7 +24,8 @@ const printApiListAsTree = (logger, apis, color = true) => {
 		}
 	}
 	logger.info('');
-	logger.info('API list: \n' + treeify.asTree(formattedTree));
+	logger.info('API list: \n');
+	console.log(treeify.asTree(formattedTree))
 };
 
 /**
@@ -154,7 +155,8 @@ const printApiExecutionEnd = (logger, apiResult) => {
 	}
 };
 
-
+// TODO
+// eslint-disable-next-line no-unused-vars
 const logExecutionEnd = (logger, jobId, result) => {
 	logger.info(jobId);
 };

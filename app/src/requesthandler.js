@@ -41,7 +41,8 @@ const handleRunCommand = async options => {
  * @param {object} options Commander object containing user input
  */
 const handleListCommand = async options => {
-	console.time();
+	let startTime = Date.now()
+
 	if (options.unfreeze || options.freeze) {
 		utils.unfreezeScenarios();
 	}
@@ -50,6 +51,7 @@ const handleListCommand = async options => {
 	if (!utils.isAll(options.keys)) {
 		scenarios = compiler.filterScenariosMatchingKeys(scenarios, options.keys)
 	}
+
 	let apiList = await compiler.convertScenarios(scenarios);
 
 	if (options.format == 'tree' || options.format == 'csv') {
@@ -61,7 +63,8 @@ const handleListCommand = async options => {
 		utils.freezeScenarios(scenarios);
 	}
 
-	console.timeEnd();
+	console.log(`\nLoaded ${new Set(scenarios.map(sc => sc.collection)).size} collection(s), ${scenarios.length} scenario(s) and ${scenarios.map(sc => 
+		sc.endpoints).reduce((a,c) => [...a, ...c], []).length} api(s) in ${Date.now() - startTime} ms`)
 };
 
 /**
@@ -75,7 +78,7 @@ const handleVibraniumSetup = async (options, workspacePath) => {
 	createWorkspaceAndUserConfig(userDetails, workspacePath);
 	createVibraniumDirectories(workspacePath);
 
-	createReadStream(join(__dirname, '..', 'config', '_config.json')).pipe(
+	createReadStream(join(__dirname, '..', 'res', 'config', '_config.json')).pipe(
 		createWriteStream(join(workspacePath, 'config.json'))
 	);
 
@@ -92,7 +95,7 @@ const getScenarioFileForOptions = options => {
 	let fileName = 'basic_scenario.json';
 	if (options.complex) fileName = 'complex_scenario.json';
 	if (options.withDependency) fileName = 'scenario_dependency.json';
-	return JSON.parse(readFileSync(join(__dirname, '..', 'config', fileName)));
+	return JSON.parse(readFileSync(join(__dirname, '..', 'res', 'config', fileName)));
 };
 
 /**
@@ -221,7 +224,7 @@ const handleDebugCommand = async options => {
 		payloads: vibPath.payloads,
 		scenarios: vibPath.scenarios
 	}
-	
+
 	for (const option of Object.keys(paths)) {
 		if (options[option]) {
 			open(paths[option])

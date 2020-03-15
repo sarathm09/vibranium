@@ -68,37 +68,34 @@ const getResponse = (system, url, method, payload, auth, language = 'en') =>
  * @param {object} payload The payload for the api call
  * @param {string} auth Authentication header data
  */
-const getResponseWithAxios = async (system, url, method, payload, auth, language = 'en') =>
-	new Promise((resolve, reject) => {
-		if (system.api_url.endsWith('/')) system.api_url = system.api_url.slice(0, -1);
-		if (!url.startsWith('/')) url = `/${url}`
+const getResponseWithAxios = async (system, url, method, payload, auth, language = 'en') => {
+	if (system.api_url.endsWith('/')) system.api_url = system.api_url.slice(0, -1);
+	if (!url.startsWith('/')) url = `/${url}`
 
-		let timing = new Date().getTime();
-		let request = {
-			method: method.toLowerCase(),
-			url: system.api_url + url,
-			data: payload,
-			headers: {
-				Authorization: auth,
-				'Accept-Language': language
-			}
-		};
-		axios(request)
-			.then(response => {
-				timing = new Date().getTime() - timing;
-				resolve({
-					url,
-					method,
-					payload,
-					auth,
-					timing,
-					response: response.data,
-					status: response.status,
-					contentType: response.headers['content-type']
-				});
-			})
-			.catch(err => reject(err));
-	});
+	let timing = new Date().getTime();
+
+	const response = await axios({
+		method: method.toLowerCase(),
+		url: system.api_url + url,
+		data: payload,
+		headers: {
+			Authorization: auth,
+			'Accept-Language': language,
+			'Content-Type': 'application/json'
+		}
+	})
+	timing = new Date().getTime() - timing;
+	return {
+		url,
+		method,
+		payload,
+		auth,
+		timing,
+		response: response.data,
+		status: response.status,
+		contentType: response.headers['content-type']
+	}
+}
 
 
 /**
@@ -261,7 +258,7 @@ const fetchJwtToken = async (url, clientId, clientSecret) => {
 			jwtTimeout: jwtResponse.data.expires_in // TODO
 		}
 	} else {
-		throw(`Could not fetch JWT token. Please check url: ${url}, clientId: ${clientId}, clientSecret: ${clientSecret}`)
+		throw (`Could not fetch JWT token. Please check url: ${url}, clientId: ${clientId}, clientSecret: ${clientSecret}`)
 	}
 }
 

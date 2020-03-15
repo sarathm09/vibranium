@@ -5,7 +5,7 @@ const vibranium = require('commander');
 const { readFileSync } = require('fs');
 const requestHandler = require('./requesthandler');
 
-const version = readFileSync(__dirname + '/../config/version.txt', 'utf8');
+const version = readFileSync(__dirname + '/../res/version.txt', 'utf8');
 
 /**
  * Set the environment variables according to user input
@@ -107,10 +107,11 @@ vibranium
 	.description('Create a new scenario test file')
 	.action(options => requestHandler.handleCreateCommand(options));
 
-vibranium.command('ui').action(options => {
-	setEnvironmentVariables(options)
-	console.log(options.opts());
-});
+// TODO
+// vibranium.command('ui').action(options => {
+// 	setEnvironmentVariables(options)
+// 	console.log(options.opts());
+// });
 
 vibranium.version(`${version}`);
 vibranium.parse(process.argv);

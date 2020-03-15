@@ -1,6 +1,6 @@
-const { join } = require('path');
+const { join, sep } = require('path');
 const { env } = require('process')
-const { readdirSync, existsSync } = require('fs')
+const { readdirSync } = require('fs')
 
 const utils = require('./utils');
 const { vibPath } = require('./constants');
@@ -18,6 +18,7 @@ const readFilesInDirectory = directoryPath => readdirSync(directoryPath, { withF
 		return file.isDirectory() ? [...files, ...readFilesInDirectory(name)] : [...files, name]
 	}, [])
 
+
 /**
  * Read the payload files corresponding to each endpoint
  * 
@@ -28,27 +29,19 @@ const loadPayloadFiles = async (endpoint, scenarioName) => {
 	let endpointWithPayloadData = endpoint;
 
 	if (!!endpoint.payload && typeof endpoint.payload == 'string' && endpoint.payload.startsWith('!')) {
-		let payloadFilePath = join(vibPath.payloads, endpoint.payload.replace('!', '')) + '.json';
+		let payloadFilePath = join(vibPath.payloads, endpoint.payload.replace('!', '').split('/').join(sep)) + '.json';
 		try {
 			let payloadJsonResponse = await utils.readJsonFile(payloadFilePath, true);
 			endpointWithPayloadData.payloadKey = endpointWithPayloadData.payload
 			endpointWithPayloadData.payload = payloadJsonResponse.status ? payloadJsonResponse.data : {};
 		} catch (error) {
-			if (!existsSync(payloadFilePath)) {
-				payloadFilePath = join(vibPath.payloads, scenarioName, endpoint.payload.replace('!', '')) + '.json'
-				try {
-					let payloadJsonResponse = await utils.readJsonFile(payloadFilePath, true);
-					endpointWithPayloadData.payload = payloadJsonResponse.status ? payloadJsonResponse.data : {};
-				} catch (error) {
-					logger.error('' + error);
-				}
-			}
+			logger.error(`Error loading payload for ${scenarioName}.${endpoint.name} [${endpoint.payload}]: ${error}`)
 		}
 		return endpointWithPayloadData;
 	} else {
 		return endpointWithPayloadData;
 	}
-};
+}
 
 
 /**
@@ -426,17 +419,23 @@ const findObjectFromKeyHierarchy = (hierarchy, path) => {
  * 
  * @param {object} o1 Object 1
  * @param {object} o2 Object 2
- * @param {string} comparator Comparator. Can be <, > or =
+ * @param {string} comparator Comparator. Can be <, >,˜ , != or =
  */
 const compareObjects = (o1, o2, comparator) => {
 	if (!o1) {
 		return false
+	} else if (comparator === '=' && !o2) {
+		return !!o1
 	} else if (comparator === '=') {
 		return o1 == o2
 	} else if (comparator === '<') {
 		return o1 < o2
 	} else if (comparator === '>') {
 		return o1 > o2
+	} else if (comparator === '˜') {
+		return o1.includes(o2)
+	} else if (comparator === '!=') {
+		return o1 != o2
 	} else {
 		return !!o1
 	}
@@ -495,7 +494,7 @@ const filterScenariosMatchingEndpointKeys = (scenarios, keyFilter, keyValue = ''
  * @param {string} keyValue The expected value at the path
  * @param {string} comparator The comparision operator
  */
-const filterScenariosMatchingDependencyKeys = (scenarios, keyFilter, keyValue = '', comparator ='') => {
+const filterScenariosMatchingDependencyKeys = (scenarios, keyFilter, keyValue = '', comparator = '') => {
 	let filteredScenarios = []
 	for (let scenario of scenarios) {
 		let filteredEndpoints = []
@@ -530,12 +529,12 @@ const filterScenariosMatchingKeys = (scenarios, keys) => {
 		scenario: filterScenariosMatchingScenarioKeys,
 		endpoint: filterScenariosMatchingEndpointKeys,
 		dependency: filterScenariosMatchingDependencyKeys
-	}, comparators = ['=', '<', '>']
+	}, comparators = ['<', '>', '˜', '!=', '=']
 
 	let comparator = comparators.filter(c => keys.includes(c))
-
-	if (comparator.length == 1) {
+	if (comparator.length >= 1) {
 		let [keyFilter, keyValue] = keys.split(comparator[0])
+
 		for (let filter of Object.keys(filters)) {
 			if (keyFilter.startsWith(filter)) {
 				return filters[filter](scenarios, keyFilter, keyValue, comparator[0])

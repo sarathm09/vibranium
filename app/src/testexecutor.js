@@ -4,14 +4,14 @@ const process = require('process');
 const RandExp = require('randexp');
 const { existsSync } = require('fs')
 const { LoremIpsum } = require('lorem-ipsum');
-const { green, yellow } = require('chalk')
 const { mkdir, writeFile } = require('fs').promises
+const { green, yellow, yellowBright, red } = require('chalk')
 
 const utils = require('./utils');
 const compiler = require('./compiler');
 const logHandler = require('./loghandler');
 const logger = require('./logger')('runner');
-const { vibPath, executionStatus, scriptTypes, loremGeneratorConfig } = require('./constants');
+const { vibPath, executionStatus, scriptTypes, loremGeneratorConfig, userConfig } = require('./constants');
 const { callApi, setAvailableSystems } = require('./servicehandler');
 
 let ACTIVE_PARALLEL_EXECUTORS = 0, scenarioCache = {}, lorem = new LoremIpsum(loremGeneratorConfig);
@@ -42,16 +42,6 @@ const waitForExecutors = () => new Promise(resolve => {
  * @param {string} jobId Job execution Id
  */
 const logScenarioStart = async (scenario, jobId) => logHandler.logScenarioStart(logger, scenario, jobId);
-
-
-/**
- * Log the end of scenario
- *
- * @param {object} scenario scenario result
- * @param {object} variables scenario variables
- */
-const logScenarioEnd = async (scenario, variables) => logHandler.logScenarioEnd(logger, scenario, variables);
-
 
 
 /**
@@ -241,11 +231,14 @@ const replacePlaceholderInString = (objectToBeParsed, variables) => {
 				.split(`{${loremVariable}}`)
 				.join(loremGenerator(parseInt(loremVariable.split('_')[1])));
 		}
-		if (typeof objectToBeParsed === 'string' && objectToBeParsed !== '{}')
+		if (typeof objectToBeParsed === 'string' && objectToBeParsed !== '{}' && objectToBeParsed.length < 99) {
 			stringToBeReplaced = new RandExp(stringToBeReplaced).gen();
+		}
 	}
 
-	return typeof objectToBeParsed === 'object' ? JSON.parse(stringToBeReplaced) : stringToBeReplaced;
+	return typeof objectToBeParsed === 'object' ?
+		JSON.parse(stringToBeReplaced) :
+		stringToBeReplaced;
 };
 
 
@@ -285,7 +278,7 @@ const executeAPI = async (endpoint, endpointVaribles) => {
 	await waitForExecutors()
 	logHandler.printApiExecutionStart(logger, api, endpointVaribles)
 
-	const endpointResponse = callApi(api.url, api.method, api.payload, api.system, api.language)
+	const endpointResponse = await callApi(api.url, api.method, api.payload, api.system, api.language)
 	api = {
 		...api,
 		_result: endpointResponse,
@@ -303,7 +296,7 @@ const executeAPI = async (endpoint, endpointVaribles) => {
  *
  * @param {array} scenarios List of all scenarios
  */
-const createScenarioCache = scenarios => {
+const createScenarioCache = async scenarios => {
 	scenarios.forEach(scenario => {
 		if (!Object.keys(scenarioCache).includes(scenario.collection)) {
 			scenarioCache[scenario.collection] = {
@@ -313,7 +306,7 @@ const createScenarioCache = scenarios => {
 		} else if (scenarioCache[scenario.collection][scenario.name]) {
 			scenarioCache[scenario.collection][scenario.name].endpoints = [
 				...scenarioCache[scenario.collection][scenario.name].endpoints,
-				scenario.enpoints
+				...scenario.endpoints
 			];
 		} else scenarioCache[scenario.collection][scenario.name] = scenario;
 	});
@@ -327,27 +320,26 @@ const createScenarioCache = scenarios => {
  * @param {string} scenario Scenario name
  * @param {string} api Api name
  */
-const searchForEndpointInCache = (collection, scenario, api) => {
-	if (scenarioCache[collection]) {
-		if (scenarioCache[collection][scenario]) {
-			for (const endpoint of scenarioCache[collection][scenario].endpoints) {
-				if (endpoint.name === api) {
-					let searchResult = { ...scenarioCache[collection][scenario] };
+const searchForEndpointInCache = async (collection, scenario, api) => {
+	if (scenarioCache[collection] && scenarioCache[collection][scenario]) {
+		for (const endpoint of scenarioCache[collection][scenario].endpoints) {
+			if (!!endpoint && endpoint.name === api) {
+				let searchResult = { ...scenarioCache[collection][scenario] };
 
-					searchResult.endpoints = [endpoint];
-					return {
-						scenario: searchResult,
-						api: endpoint
-					};
-
-				}
+				searchResult.endpoints = [endpoint];
+				return {
+					scenario: searchResult,
+					api: endpoint
+				};
 			}
 		}
+
 	}
-	const searchResult = compiler.compile(collection, scenario, api);
+	const searchResult = await compiler.compile(collection, scenario, api);
+
 	if (searchResult.length > 0) {
 		createScenarioCache(searchResult);
-		searchResult[0].endpoints = searchResult[0].endpoints.find(endpoint => endpoint.name === api);
+		searchResult[0].endpoints = [searchResult[0].endpoints.find(endpoint => endpoint.name === api)];
 		return {
 			scenario: searchResult[0],
 			api: searchResult[0].endpoints.find(endpoint => endpoint.name === api)
@@ -406,7 +398,77 @@ const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
 	}
 
 	return parsedResponse;
-};
+}
+
+const getFormattedEndpointName = (collection, scenario, endpoint) =>
+	logHandler.prettyPrint('collection', collection) + '.' +
+	logHandler.prettyPrint('scenario', scenario) + '.' +
+	logHandler.prettyPrint('api', endpoint)
+
+/**
+ * Load the variable data from the dependency's variables
+ * 
+ * @param {string} variableName variable to be loaded from the dependency
+ * @param {object} variables list of variables
+ */
+const loadVariableFromDependencyToParentEndpoint = (variableName, variables) => {
+	variableName = variableName.replace('{', '').replace('}', '')
+	return (variables[variableName]) ? variables[variableName] : ''
+}
+
+
+/**
+ *  Parse dependent endpoint result and return variable data
+ * 
+ * @param {object} scenarioResponse Dependency execution result
+ * @param {object} endpoint Endpoint from which dependency is executed
+ * @param {object} dependency dependendent endpoint details
+ * @param {object} endpointVariables List of endpoint variables
+ */
+const processDependencyExecutionResult = (scenarioResponse, endpoint, dependency, endpointVariables) => {
+	logger.info(`Executing dependency ${getFormattedEndpointName(dependency.collection, dependency.scenario, dependency.api)} : ${green('SUCCESS')}`)
+	let endpointResults = scenarioResponse.endpoints.find(_ => _.name === dependency.api)._result, endpointResponse;
+	if (endpointResults.length == 1) {
+		endpointResponse = endpointResults[0].response;
+	} else {
+		endpointResponse = endpointResults.map(res => res.response);
+	}
+	// eslint-disable-next-line require-atomic-updates
+	dependency._response = endpointResponse
+
+	if (typeof (dependency.variable) === 'string') {
+		let responseCopy = JSON.parse(JSON.stringify(endpointResponse))
+		let parsedValue = dependency.path.startsWith('{') && dependency.path.endsWith('}') ?
+			loadVariableFromDependencyToParentEndpoint(dependency.path, scenarioResponse.endpoints[0].variables) :
+			parseResponseVariableFromPath(responseCopy, dependency.path);
+		// eslint-disable-next-line require-atomic-updates
+		endpointVariables[dependency.variable] = parsedValue;
+		logger.info(`Setting value ${yellow(parsedValue)} for ${yellowBright(dependency.variable)}`)
+		if (endpoint.variables) {
+			Object.keys(endpoint.variables)
+				.filter(key => endpoint.variables[key] === dependency.variable)
+				.forEach(key => endpoint.variables[key] = parsedValue)
+		}
+	} else if (typeof (dependency.variable) === 'object') {
+		for (let [variable, path] of Object.entries(dependency.variable)) {
+			let responseCopy = JSON.parse(JSON.stringify(endpointResponse))
+			let parsedValue = path.startsWith('{') && path.endsWith('}') ?
+				loadVariableFromDependencyToParentEndpoint(path, scenarioResponse.endpoints[0].variables) :
+				parseResponseVariableFromPath(responseCopy, path);
+
+			endpointVariables[variable] = parsedValue;
+			logger.info(`Setting value ${yellow(parsedValue)} for ${yellowBright(variable)}`)
+			if (endpoint.variables) {
+				Object.keys(endpoint.variables)
+					.filter(key => endpoint.variables[key] === variable)
+					.forEach(key => endpoint.variables[key] = parsedValue)
+			}
+		}
+	}
+	logger.info()
+	return endpointVariables;
+}
+
 
 /**
  * Execute and parse dependent endpoint
@@ -415,44 +477,32 @@ const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
  * @param {object} dependency dependendent endpoint details
  * @param {object} endpointVariables List of endpoint variables
  */
-const loadDependendentEndpoint = (endpoint, dependency, endpointVariables) => new Promise((resolve, reject) => {
-	let searchResult = searchForEndpointInCache(dependency.collection, dependency.scenario, dependency.api);
-	if (searchResult === undefined) {
-		reject({ message: `Endpoint ${dependency.collection}.${dependency.scenario}.${dependency.api} not found` });
+const loadDependendentEndpoint = async (endpoint, dependency, endpointVariables) => {
+	let searchResult = await searchForEndpointInCache(dependency.collection, dependency.scenario, dependency.api);
+	let dependencyVariables = !!dependency.variables && typeof (dependency.variables) === 'object' ? { ...endpointVariables, ...dependency.variables } : endpointVariables
+
+	if (searchResult === undefined || !searchResult.scenario || !searchResult.api) {
+		throw ({ message: `Endpoint ${dependency.collection}.${dependency.scenario}.${dependency.api} not found` });
 	}
+
 	searchResult = JSON.parse(JSON.stringify(searchResult))
 	if (!!dependency.repeat && dependency.repeat > 0) searchResult.scenario.endpoints[0].repeat = dependency.repeat
+	logger.info(`Executing dependency ${getFormattedEndpointName(dependency.collection, dependency.scenario, dependency.api)} ` +
+		`for endpoint ${getFormattedEndpointName(endpoint.collection, endpoint.scenario, endpoint.name)}`)
 
-	logger.debug(`Executing dependency ${dependency.collection}.${dependency.scenario}.${dependency.api} for variable ${yellow(dependency.variable)}`)
-	performScenarioExecutionSteps(searchResult.scenario, endpointVariables, true, true).then(response => {
-		const scenarioResponse = response.scenarioResponse;
-		if (scenarioResponse.endpoints.filter(endpoint => !endpoint._status).length > 0) {
-			reject({ message: `Endpoint ${dependency.collection}.${dependency.scenario}.${dependency.api} execution failed` });
-		} else {
-			logger.debug(`Executing dependency ${dependency.collection}.${dependency.scenario}.${dependency.api} for variable ${yellow(dependency.variable)}: ${green('SUCCESS')}`)
-			let endpointResults = scenarioResponse.endpoints.find(_ => _.name === dependency.api)._result, endpointResponse;
-			if (endpointResults.length == 1) {
-				endpointResponse = endpointResults[0].response;
-			} else {
-				endpointResponse = endpointResults.map(res => res.response);
-			}
-			dependency._response = endpointResponse
+	searchResult.scenario.endpoints[0].variables = { ...searchResult.scenario.endpoints[0].variables, ...dependencyVariables }
+	let response = await performScenarioExecutionSteps(searchResult.scenario, dependencyVariables, true, true)
+	const scenarioResponse = response.scenarioResponse;
+	// eslint-disable-next-line require-atomic-updates
+	dependency._result = scenarioResponse.endpoints[0]
 
-			if (typeof (dependency.variable) === 'string') {
-				let responseCopy = JSON.parse(JSON.stringify(endpointResponse))
-				let parsedValue = parseResponseVariableFromPath(responseCopy, dependency.path);
-				endpointVariables[dependency.variable] = parsedValue;
-			} else if (typeof (dependency.variable) === 'object') {
-				for (let [variable, path] of Object.entries(dependency.variable)) {
-					let responseCopy = JSON.parse(JSON.stringify(endpointResponse))
-					let parsedValue = parseResponseVariableFromPath(responseCopy, path);
-					endpointVariables[variable] = parsedValue;
-				}
-			}
-			resolve(endpointVariables);
-		}
-	});
-});
+	if (scenarioResponse.endpoints.filter(endpoint => !endpoint._status).length > 0) {
+		logger.error(`Executing dependency ${getFormattedEndpointName(dependency.collection, dependency.scenario, dependency.api)} : ${red('FAIL')}`)
+		throw ({ message: `Endpoint ${dependency.collection}.${dependency.scenario}.${dependency.api} execution failed` });
+	} else {
+		return processDependencyExecutionResult(scenarioResponse, endpoint, dependency, endpointVariables)
+	}
+}
 
 
 /**
@@ -489,7 +539,7 @@ const getApiExecuterPromise = (scenarioVariables, endpoint, repeatIndex) => new 
 			dependencyResolver = dependencyResolver.then(response => {
 				if (response) endPointVariables = { ...endPointVariables, ...response };
 				return loadDependendentEndpoint(endpoint, dependency, endPointVariables);
-			});
+			})
 		});
 	}
 
@@ -498,7 +548,7 @@ const getApiExecuterPromise = (scenarioVariables, endpoint, repeatIndex) => new 
 			if (response) endPointVariables = { ...endPointVariables, ...response };
 			endPointVariables = executeEndpointPostDependencyScripts(endPointVariables, endpoint);
 			executeAPI(endpoint, endPointVariables)
-				.then(result => resolveEndpoint(result));
+				.then(resolveEndpoint);
 		})
 		.catch(error => {
 			endpoint._result = {
@@ -506,6 +556,7 @@ const getApiExecuterPromise = (scenarioVariables, endpoint, repeatIndex) => new 
 				status: -1,
 				message: error.message
 			};
+			logger.error(`Dependency execution failed: ${error.message}`)
 
 			endpoint._status = false;
 			resolveEndpoint(endpoint);
@@ -522,22 +573,24 @@ const getApiExecuterPromise = (scenarioVariables, endpoint, repeatIndex) => new 
 const resolveEndpointResponses = (endpoint, results) => {
 	endpoint._result = results.map(endpoint => endpoint._result);
 	endpoint._status = results.every(endpoint => !!endpoint._status);
-	return (endpoint);
+	return endpoint;
 };
 
 
 // TODO: collect and print results
 const processEndpoint = async (scenarioVariables, endpoint, scenarioName, collection) => {
 	let results = []
+
 	endpoint.scenario = scenarioName
 	endpoint.collection = collection
-	if (!!endpoint.async && !this.executionOptions.sync) {
+	if (!!endpoint.async && !this.executionOptions.sync && !endpoint.globals) {
 		let endpointExecutors = [...(endpoint.repeat || 1)].map(i =>
 			getApiExecuterPromise(scenarioVariables, endpoint, i)
 		);
 		results = await Promise.all(endpointExecutors)
 
 	} else {
+
 		let endpointResolver = Promise.resolve();
 		[...(endpoint.repeat || 1)].forEach(i => {
 			endpointResolver = endpointResolver.then(result => {
@@ -549,6 +602,7 @@ const processEndpoint = async (scenarioVariables, endpoint, scenarioName, collec
 		const result = await endpointResolver;
 		results.push(result);
 	}
+
 	return resolveEndpointResponses(endpoint, results);
 }
 
@@ -573,7 +627,6 @@ const performScenarioExecutionSteps = async (scenario, variables, overrideIgnore
 		...globalVariables,
 		...postScriptVariables
 	};
-
 	// Take the endpoints that have ignore flag as false and execute them
 	let endpointsToBeProcessed = overrideIgnoreFlag
 		? scenario.endpoints
@@ -581,7 +634,6 @@ const performScenarioExecutionSteps = async (scenario, variables, overrideIgnore
 
 	await Promise.all(endpointsToBeProcessed
 		.map(endpoint => processEndpoint(scenarioVariables, endpoint, scenario.name, scenario.collection)));
-
 
 	return {
 		scenarioResponse: scenario,
@@ -618,7 +670,7 @@ const processScenario = async (scenario, jobId, variables) => {
 		...scenarioResponse,
 		_result: {
 			scenarioVariables,
-			status: scenarioResponse.endpoints.every(endpoint => endpoint._status)
+			status: scenarioResponse.endpoints.filter(e => !!e).every(endpoint => endpoint._status)
 				? executionStatus.SUCESS
 				: executionStatus.FAIL,
 			timing: {
@@ -632,7 +684,7 @@ const processScenario = async (scenario, jobId, variables) => {
 	// Do post scenario tasks
 	await Promise.all([
 		executePostScenarioScripts(scenarioVariables, scenarioResult),
-		logScenarioEnd(scenarioResult, scenarioVariables)
+		logHandler.logScenarioEnd(logger, scenarioResult)
 	])
 
 	return {
@@ -685,10 +737,9 @@ const loadGlobalVariables = jobId => {
 		date_month_name_long: () => new Date().toLocaleString('default', { month: 'long' }),
 		date_month_name: () => new Date().toLocaleString('default', { month: 'short' }),
 		date_year: () => new Date().getFullYear(),
-
-		short_des: loremGenerator(200),
-		long_des: loremGenerator(500)
+		...userConfig.env_vars
 	};
+
 
 };
 
@@ -705,10 +756,12 @@ const loremGenerator = limit => {
 	if (limit < 10) generatedString = [...limit].join();
 	else {
 		while (limit > 0) {
-			let tempSentence = lorem
-				.generateSentences(10)
-				.split('"')
-				.join('\'');
+			let tempSentence = lorem.generateSentences(10)
+				.split('"').join('\'')
+				.split('{').join('\'')
+				.split('}').join('\'')
+				.split('[').join('\'')
+				.split(']').join('\'')
 
 			if (limit - tempSentence.length > 0) generatedString += tempSentence;
 			else generatedString += tempSentence.slice(0, limit - generatedString.length - 1);
@@ -819,7 +872,7 @@ const savePostExecutionData = async (jobId, scenarios) => {
 
 // TODO
 // TODO: log scenario timing
-// TODO: collect and print results
+// TODO: collect and print results 
 // if --report -> junit, html and console report
 // eslint-disable-next-line no-unused-vars
 const processScenarioResult = async result => {

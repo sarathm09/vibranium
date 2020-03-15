@@ -8,6 +8,7 @@
         "some_random_name_for_my_system_with_basic_auth": {
             "url": "SYSTEM_UI_URL",
             "api_url": "API_ENDPOINT",
+            "method": "basic",
             "credentials": {
                 "username": "MY_SUPER_SECRET_USERNAME",
                 "password": "MY_SUPER_SECRET_PASSWORD"
@@ -25,7 +26,7 @@
         }
     },
     "default_account": "system_that_uses_no_auth",
-    "tests_directory": "Vibranium Tests",
+    "tests_directory": "Vibranium-Tests",
     "env_vars": {
         "short_text": "[a-zA-Z 0-9]{5, 20}",
         "lorem_255": "{lorem_255}",

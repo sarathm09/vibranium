@@ -81,6 +81,7 @@ const printApiList = (logger, apis, format = 'tree', color = true) => new Promis
 const logExecutionStart = async (logger, jobId, scenarios, executorCount) => {
 	logger.info('#' + prettyPrint('jobId', jobId))
 	logger.info(`Starting execution at ${prettyPrint('date')} with ${chalk.blue(executorCount)} parallel thread(s), ${scenarios.length} scenario(s) and ${scenarios.map(sc => sc.endpoints.length).reduce((a, c) => a + c, 0)} API(s)`)
+	logger.info()
 }
 
 /**
@@ -90,20 +91,18 @@ const logExecutionStart = async (logger, jobId, scenarios, executorCount) => {
  * @param {object} scenario Scenario details
  */
 const logScenarioStart = (logger, scenario) => {
-	logger.info(`${prettyPrint('scenario', scenario.name)} [${scenario.file}] started`);
+	logger.info(`Scenario ${prettyPrint('scenario', scenario.name)} [${scenario.file}] started`);
+	logger.info()
 };
 
 
-const logScenarioEnd = (logger, scenario, variables) => {
-	if (scenario._result.status == executionStatus.ERROR) {
-		logger.error(`${prettyPrint('scenario', scenario.name)} execution variables:`);
-		prettyPrintJson(variables, logger.debug);
-	}
+const logScenarioEnd = async (logger, scenario) => {
 	logger.info(
 		`${prettyPrint('scenario', scenario.name)} status: ${prettyPrint('status', scenario._result.status)} [${
-		scenario.endpoints.filter(e => e._status).length
+		scenario.endpoints.filter(e => !!e && e._status).length
 		}/${scenario.endpoints.length}] time: ${scenario._result.timing.delta / 1000} sec`
 	);
+	return
 };
 
 const getAPIIndex = api => {
@@ -114,58 +113,54 @@ const getAPIIndex = api => {
 	}
 }
 
-const printApiExecutionStart = async (logger, api, variables, dependencyLevel=0) => {
+const printApiExecutionStart = async (logger, api, variables) => {
+	logger.info(`${prettyPrint('scenario', api.scenario)}.${prettyPrint('api', api.name)} started`);
+	logger.debug('Variables' + utils.printSpaces('Variables') + ': ' + JSON.stringify(variables, null, 2)
+		.split('\n')
+		.map((line, i) => (i > 0 ? utils.printSpaces('Variables', 45) : '') + syntaxHighlight(line))
+		.join('\n'));
+};
+
+const printApiExecutionEnd = async (logger, api) => {
 	let details = {
 		'Name': prettyPrint('api', api.name),
 		'Collection': prettyPrint('collection', api.collection),
 		'Scenario': prettyPrint('scenario', api.scenario),
-		'Method': chalk.blue(api.method ? api.method.toUpperCase() : 'GET'),
+		'Method': api.method ? api.method.toUpperCase() : 'GET',
 		'Url': api.url,
 		'Payload': (!!api.payload && typeof (api.payload) === 'object') ? JSON.stringify(api.payload, null, 2) : '{}',
-		'Variables': JSON.stringify(variables, null, 2),
-		'Repeat Index': getAPIIndex(api)
+		'Repeat Index': getAPIIndex(api),
+		'StatusCode': api._result.status,
+		'Status': prettyPrint('status', api._status),
+		'Response': (!!api._result.response && typeof (api._result.response) === 'object') ? JSON.stringify(api._result.response, null, 2) : '{}',
+		'Timing': api._result.timing ? Object.entries(api._result.timing).map(([key, value]) => chalk.yellowBright(key) + ': ' +
+			chalk.yellowBright(parseFloat(value).toFixed(2))).join(', ') : 'not available',
+		'_result': (!api._status && !!api._result && typeof (api._result) === 'object') ? JSON.stringify(api._result, null, 2) : '{}'
 	}
 	logger.info()
 	for (let [key, value] of Object.entries(details)) {
-		if (key === 'Payload') {
-			logger.debug(utils.printSpaces('', dependencyLevel*2) + 'Payload' + utils.printSpaces('Payload') + ': ' + value.split('\n')
-				.map((line, i) => (i > 0 ? utils.printSpaces('Payload', 42) : '') + syntaxHighlight(line))
-				.join('\n'));
-		} else if (key === 'Variables') {
-			logger.debug(utils.printSpaces('', dependencyLevel*2) + 'Variables' + utils.printSpaces('Variables') + ': ' + value.split('\n')
-				.map((line, i) =>  (i > 0 ? utils.printSpaces('Variables', 45) : '') + syntaxHighlight(line))
-				.join('\n'));
+		if (['Payload', 'Response', '_result'].includes(key)) {
+			if (!api._status || process.env.LOG_LEVEL === 'debug') {
+				let dataToBePrinted = key + utils.printSpaces(key) + ': ' + value.split('\n')
+					.map((line, i) => (i > 0 ? utils.printSpaces(key, 42) : '') + syntaxHighlight(line))
+					.join('\n')
+				api._status ? logger.debug(dataToBePrinted) : logger.error(dataToBePrinted);
+			}
 		} else {
-			logger.info(utils.printSpaces('', dependencyLevel*2) + key + utils.printSpaces(key) + ': ' + value)
+			logger.info(key + utils.printSpaces(key) + ': ' + value)
 		}
 	}
-	return
-};
 
-const printApiExecutionEnd = (logger, apiResult) => {
-	logger.info(`${prettyPrint('scenario', apiResult.scenario)}.${prettyPrint('api', apiResult.name)} completed: ${prettyPrint('status', apiResult._status)}`);
-	if (apiResult._status) {
-		logger.debug(`\t${prettyPrint('api', apiResult.name)} Response:`);
-		prettyPrintJson(apiResult._result.response, logger.debug);
-	} else {
-		logger.error(`\t${prettyPrint('api', apiResult.name)} Response:`);
-		prettyPrintJson(apiResult._result.response, logger.error);
-		logger.error('Endpoint response object: ');
-		prettyPrintJson(apiResult._result, logger.error);
-	}
+	logger.info()
+	return
 };
 
 // TODO
 // eslint-disable-next-line no-unused-vars
 const logExecutionEnd = (logger, jobId, result) => {
 	logger.info(jobId);
-};
+}
 
-const prettyPrintJson = (json, log) => {
-	JSON.stringify(json, null, 2)
-		.split('\n')
-		.forEach(line => log('\t' + syntaxHighlight(line)));
-};
 
 const syntaxHighlight = json => {
 	json = json
@@ -213,11 +208,12 @@ const prettyPrint = (type, text = '', color = true) => {
 	if (type == 'loglevel' && text == 'warn') return color ? chalk.keyword('orange')(text) : text;
 	if (type == 'loglevel' && text == 'error') return color ? chalk.redBright(text) : text;
 	if (type == 'loglevel' && text == 'success') return color ? chalk.greenBright(text) : text;
-	if (type == 'status' && (text == executionStatus.SUCESS || text == true))
-		return color ? chalk.greenBright('SUCCESS') : text;
-	if (type == 'status' && (text == executionStatus.FAIL || text == false))
-		return color ? chalk.redBright('FAIL') : text;
-	if (type == 'status' && text == executionStatus.ERROR) return color ? chalk.redBright('ERROR') : text;
+	if (type == 'status' && (text == executionStatus.SUCESS || text === true))
+		return color ? (isMac ? '🟢 ' : '') + chalk.greenBright('SUCCESS') : text;
+	if (type == 'status' && (text == executionStatus.FAIL || text === false))
+		return color ? (isMac ? '🔴 ' : '') + chalk.redBright('FAIL') : text;
+	if (type == 'status' && text == executionStatus.ERROR)
+		return color ? (isMac ? '🟠 ' : '') + chalk.redBright('ERROR') : text;
 };
 
 module.exports = {

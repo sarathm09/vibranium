@@ -212,23 +212,24 @@ const fetchDependentApis = (apis, api) => {
  * @param {string} apis csv containing api names to be filtered
  * @param {boolean} searchMode If search mode is true, the filter is based on regex and else it is based on full match
  */
-const processScenarioFiles = (scenarioFiles, apis, searchMode) => new Promise(resolve => {
-	Promise.all(scenarioFiles)
-		.then(result => {
-			if (!env.SILENT) {
-				result.filter(obj => !obj.status)
-					.map(obj => logger.warn(`${obj.message}`, { ignored: true }));
-			}
+const processScenarioFiles = async (scenarioFiles, apis, searchMode) => {
+	try {
+		let result = await Promise.all(scenarioFiles)
+		if (!env.SILENT) {
+			result.filter(obj => !obj.status)
+				.map(obj => logger.warn(`${obj.message}`, { ignored: true }));
+		}
 
-			let scenarios = result.filter(obj => obj.status).map(obj => obj.data);
-			let scenariosToBeProcessed = scenarios
-				.filter(scenario => !!scenario)
-				.map(scenario => loadEndpoinsForScenario(scenario, apis, searchMode));
-			return Promise.all(scenariosToBeProcessed);
-		})
-		.then(processedScenarios => resolve(processedScenarios))
-		.catch(error => logger.error(error.message));
-});
+		let scenarios = result.filter(obj => obj.status).map(obj => obj.data);
+		let scenariosToBeProcessed = scenarios
+			.filter(scenario => !!scenario)
+			.map(scenario => loadEndpoinsForScenario(scenario, apis, searchMode));
+
+		return Promise.all(scenariosToBeProcessed);
+	} catch (error) { 
+		logger.error(`Error processing scenario file with error: ${error}`)
+	}
+}
 
 
 /**
@@ -271,7 +272,10 @@ const loadAllScenariosFromCache = async (collections, scenarios, apis) => {
  * @param {string} apis csv of api names to filter
  */
 const loadAllScenariosFromSystem = async (collections, scenarios, apis) => {
-	const scenarioFiles = await readFilesInDirectory(vibPath.scenarios)
+	let startPath = collections.split(',').length === 1 ?
+		join(vibPath.scenarios, collections) :
+		vibPath.scenarios
+	const scenarioFiles = await readFilesInDirectory(startPath)
 
 	let filteredScenarios = scenarioFiles
 		.filter(scenarioFile =>
@@ -279,7 +283,7 @@ const loadAllScenariosFromSystem = async (collections, scenarios, apis) => {
 				? true
 				: utils.splitAndTrimInput(collections).includes(utils.getCollectionNameForScenario(scenarioFile))
 		)
-		.map(file => new Promise(resolve => utils.readJsonFile(file).then(() => resolve())));
+		.map(file => new Promise(resolve => utils.readJsonFile(file).then(resolve)));
 
 	filteredScenarios = await processScenarioFiles(filteredScenarios, apis);
 	filteredScenarios = filteredScenarios.filter(scenarioFile =>
@@ -289,7 +293,7 @@ const loadAllScenariosFromSystem = async (collections, scenarios, apis) => {
 			utils.splitAndTrimInput(scenarios).includes(utils.getScenarioFileNameFromPath(scenarioFile.file))
 	);
 
-	return filteredScenarios;
+	return filteredScenarios.filter(scenario => scenario.endpoints.length > 0);
 };
 
 
@@ -350,7 +354,7 @@ const searchForApiFromSystem = async (collections, scenarios, apis) => {
 			utils.includesRegex(utils.splitAndTrimInput(scenarios), utils.getScenarioFileNameFromPath(scenarioFile.file))
 	);
 
-	return filteredScenarios;
+	return filteredScenarios.filter(scenario => scenario.endpoints.length > 0);
 };
 
 /**
@@ -362,14 +366,12 @@ const searchForApiFromSystem = async (collections, scenarios, apis) => {
  * @param {string} apis csv of api names to filter
  */
 const loadAllScenarios = async (collections, scenarios, apis) => {
-	let details;
 	utils.isVibraniumInitialized();
 
-	if (utils.cacheExists()) {
-		details = await loadAllScenariosFromCache(collections, scenarios, apis);
-	} else {
-		details = await loadAllScenariosFromSystem(collections, scenarios, apis);
-	}
+	let details = utils.cacheExists() ?
+		await loadAllScenariosFromCache(collections, scenarios, apis) :
+		await loadAllScenariosFromSystem(collections, scenarios, apis)
+
 	return details;
 };
 
@@ -382,14 +384,12 @@ const loadAllScenarios = async (collections, scenarios, apis) => {
  * @param {string} apis csv of api names to filter
  */
 const searchForApi = async (collections, scenarios, apis) => {
-	let details;
 	utils.isVibraniumInitialized();
 
-	if (utils.cacheExists()) {
-		details = await searchForApiFromCache(collections, scenarios, apis);
-	} else {
-		details = await searchForApiFromSystem(collections, scenarios, apis);
-	}
+	let details = utils.cacheExists() ?
+		await searchForApiFromCache(collections, scenarios, apis) :
+		await searchForApiFromSystem(collections, scenarios, apis);
+
 	return details;
 };
 

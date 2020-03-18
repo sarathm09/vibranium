@@ -72,16 +72,24 @@ const handleListCommand = async options => {
  * Setup vibranium in the given path.
  *
  * @param {object} options Commander object containing user input
- * @param {*} workspacePath Path where vibranium needs to be setup
+ * @param {string} workspacePath Path where vibranium needs to be setup
  */
 const handleVibraniumSetup = async (options, workspacePath) => {
 	const userDetails = !!options.email && !!options.name ? options : await getUserDetailsFromConsole();
+	let configTemplatePath = join(__dirname, '..', 'res', 'config', '_config.json'),
+		userConfigPath = join(workspacePath, 'config.json')
+
 	createWorkspaceAndUserConfig(userDetails, workspacePath);
 	createVibraniumDirectories(workspacePath);
 
-	createReadStream(join(__dirname, '..', 'res', 'config', '_config.json')).pipe(
-		createWriteStream(join(workspacePath, 'config.json'))
-	);
+	if (!existsSync(userConfigPath)) {
+		createReadStream(configTemplatePath).pipe(createWriteStream(userConfigPath))
+	} else {
+		let configTemplate = JSON.parse(readFileSync(configTemplatePath)),
+			userConfigData = JSON.parse(readFileSync(userConfigPath))
+
+		writeFileSync(userConfigPath, JSON.stringify({ ...configTemplate, ...userConfigData }))
+	}
 
 	logger.info(`Please clone your repo in the directory: ${workspacePath}`);
 	await open(workspacePath);
@@ -105,6 +113,7 @@ const getScenarioFileForOptions = options => {
  * @param {object} options Commander object containing user input
  */
 const handleCreateCommand = options => {
+	utils.isVibraniumInitialized()
 	if (!options.collection || !options.scenario) {
 		logger.error('Please specify the collection and the scenario. Syntax: -c <collection> -s <scenario_name>');
 		process.exit(1);
@@ -139,8 +148,7 @@ const handleCreateCommand = options => {
 const createAndOpenScenario = (options, scenarioFileName) => {
 	let sampleScenario = getScenarioFileForOptions(options),
 		dt = new Date();
-	let dateString = `${dt.getFullYear()}-${dt.getMonth() +
-		1}-${dt.getDate()} ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`;
+	let dateString = `${dt.getFullYear()}-${dt.getMonth() + 1}-${dt.getDate()} ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`;
 	let scenarioData = {
 		id: uuid4(),
 		name: options.scenario,
@@ -152,7 +160,7 @@ const createAndOpenScenario = (options, scenarioFileName) => {
 
 	writeFileSync(
 		scenarioFileName,
-		JSON.stringify(sampleScenario, null, 4).replace('{payloadNameToBeReplaced}', '!sample_payload')
+		JSON.stringify(sampleScenario, null, 4).replace('{payloadNameToBeReplaced}', `!${options.scenario}/sample_payload`)
 	);
 	writeFileSync(join(vibPath.payloads, options.scenario, 'sample_payload.json'), JSON.stringify({}, null, 4));
 
@@ -219,8 +227,8 @@ const handleDebugCommand = async options => {
 	let paths = {
 		workspace: vibPath.workspace,
 		src: __dirname,
-		vibconfig: join(homedir(), '.vib', 'config.json'),
-		config: join(vibPath.workspace, 'config.json'),
+		vibconfig: vibPath.workspace ? join(homedir(), '.vib', 'config.json') : '',
+		config: vibPath.workspace ? join(vibPath.workspace, 'config.json') : '',
 		log: vibPath.logs,
 		payloads: vibPath.payloads,
 		scenarios: vibPath.scenarios
@@ -232,9 +240,13 @@ const handleDebugCommand = async options => {
 			process.exit(0)
 		}
 	}
+
 	console.table(Object.entries(paths)
+		.filter(([, value]) => !!value && value.length > 0)
 		.map(([key, value]) => [`[${key[0].toUpperCase()}]${key.slice(1)}`, value])
 		.reduce((a, [k, v]) => { a[k] = v; return a }, {}))
+
+	console.log('\nEnter "q" to exit.\n')
 
 	const rl = readline.createInterface({
 		input: process.stdin,
@@ -244,7 +256,7 @@ const handleDebugCommand = async options => {
 	const getUserInput = utils.readlinePromise(rl)
 	const input = await getUserInput('index : ')
 
-	if (input !== 'q') {
+	if (input.toLowerCase() !== 'q') {
 		if (Object.keys(paths).includes(input)) {
 			open(paths[input])
 		} else {

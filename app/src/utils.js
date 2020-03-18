@@ -1,5 +1,6 @@
 const { VM } = require('vm2');
 const { homedir } = require('os');
+const { green } = require('chalk');
 const { sep, join } = require('path');
 const { platform, env } = require('process');
 const { readFile, unlink } = require('fs').promises;
@@ -203,9 +204,9 @@ module.exports.isVibraniumInitialized = () => {
 	}
 
 	if (!status) {
-		logger.error(
-			'Vibranium not initialized. Please run the setup command to initialize and then clone/create the tests.'
-		);
+		logger.error('Vibranium not initialized.')
+		logger.error('Please run the setup command to initialize and then clone/create the tests.')
+		logger.error('For more info, please run ' + green('vc setup --help'))
 		process.exit(1);
 	}
 };

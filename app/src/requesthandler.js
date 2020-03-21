@@ -34,6 +34,7 @@ const handleRunCommand = async options => {
 	const result = await testexecutor.runTests(scenarioList, executionOptions);
 	//console.log(JSON.stringify(result, null, 4));
 	console.timeEnd();
+	
 };
 
 /**
@@ -64,6 +65,7 @@ const handleListCommand = async options => {
 		utils.freezeScenarios(scenarios);
 	}
 
+
 	console.log(`\nLoaded ${new Set(scenarios.map(sc => sc.collection)).size} collection(s), ${scenarios.length} scenario(s) and ${scenarios.map(sc =>
 		sc.endpoints).reduce((a, c) => [...a, ...c], []).length} api(s) in ${Date.now() - startTime} ms`)
 };
@@ -88,11 +90,12 @@ const handleVibraniumSetup = async (options, workspacePath) => {
 		let configTemplate = JSON.parse(readFileSync(configTemplatePath)),
 			userConfigData = JSON.parse(readFileSync(userConfigPath))
 
-		writeFileSync(userConfigPath, JSON.stringify({ ...configTemplate, ...userConfigData }))
+		writeFileSync(userConfigPath, JSON.stringify({ ...configTemplate, ...userConfigData }, null, 4))
 	}
 
 	logger.info(`Please clone your repo in the directory: ${workspacePath}`);
 	await open(workspacePath);
+	
 };
 
 /**
@@ -137,6 +140,7 @@ const handleCreateCommand = options => {
 	}
 
 	createAndOpenScenario(options, scenarioFileName);
+	
 };
 
 /**
@@ -269,6 +273,7 @@ const handleDebugCommand = async options => {
 		}
 	}
 	rl.close()
+	
 }
 
 

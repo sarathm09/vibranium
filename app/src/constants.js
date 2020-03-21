@@ -84,5 +84,14 @@ module.exports = {
 			max: 16,
 			min: 4
 		}
+	},
+	
+	colorCodeRegex: /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
+
+	logRotationConstants: {
+		h: 60 * 60 * 1000,
+		d: 24 * 60 * 60 * 1000,
+		y: 365 * 24 * 60 * 60 * 1000
 	}
+
 };

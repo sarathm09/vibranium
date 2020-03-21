@@ -7,9 +7,7 @@ const { readFile, unlink } = require('fs').promises;
 const { existsSync, mkdirSync, writeFileSync, readFileSync } = require('fs');
 
 const { vibPath, userConfig, logLevels } = require('./constants');
-const moduleLogger = require('./logger');
-
-const logger = moduleLogger('util');
+const logger = require('./logger')('util');
 
 
 /**
@@ -149,7 +147,7 @@ module.exports.freezeScenarios = scenarios => {
  * Remove all cache. Triggered by the --unfreeze option
  */
 module.exports.unfreezeScenarios = async () => {
-	await unlink(vibPath.cachedScenarios);
+	if (existsSync(vibPath.cachedScenarios)) await unlink(vibPath.cachedScenarios);
 };
 
 /**

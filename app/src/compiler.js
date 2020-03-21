@@ -215,12 +215,13 @@ const fetchDependentApis = (apis, api) => {
 const processScenarioFiles = async (scenarioFiles, apis, searchMode) => {
 	try {
 		let result = await Promise.all(scenarioFiles)
+		
 		if (!env.SILENT) {
 			result.filter(obj => !obj.status)
 				.map(obj => logger.warn(`${obj.message}`, { ignored: true }));
 		}
-
 		let scenarios = result.filter(obj => obj.status).map(obj => obj.data);
+
 		let scenariosToBeProcessed = scenarios
 			.filter(scenario => !!scenario)
 			.map(scenario => loadEndpoinsForScenario(scenario, apis, searchMode));
@@ -228,6 +229,7 @@ const processScenarioFiles = async (scenarioFiles, apis, searchMode) => {
 		return Promise.all(scenariosToBeProcessed);
 	} catch (error) { 
 		logger.error(`Error processing scenario file with error: ${error}`)
+		return []
 	}
 }
 
@@ -345,6 +347,7 @@ const searchForApiFromSystem = async (collections, scenarios, apis) => {
 				: utils.includesRegex(utils.splitAndTrimInput(collections), utils.getCollectionNameForScenario(scenarioFile))
 		)
 		.map(file => new Promise(resolve => utils.readJsonFile(file).then(data => resolve(data))));
+
 
 	filteredScenarios = await processScenarioFiles(filteredScenarios, apis, true);
 	filteredScenarios = filteredScenarios.filter(scenarioFile =>

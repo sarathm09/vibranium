@@ -6,8 +6,9 @@ const { platform, env } = require('process');
 const { readFile, unlink } = require('fs').promises;
 const { existsSync, mkdirSync, writeFileSync, readFileSync } = require('fs');
 
-const { vibPath, userConfig, logLevels } = require('./constants');
-const logger = require('./logger')('util');
+const { vibPath, userConfig, logLevels } = require('./constants')
+const moduleLogger = require('./logger')
+const logger = moduleLogger('util')
 
 
 /**

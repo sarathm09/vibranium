@@ -26,6 +26,8 @@ const setEnvironmentVariables = options => {
 				options[option].toLowerCase()
 		}
 	}
+	if (!env.LOG_LEVEL)
+		env.LOG_LEVEL = 'info'
 }
 
 vibranium
@@ -36,6 +38,7 @@ vibranium
 	.option('-s --scenarios [scenarios]', 'Scenarios to run, separated by comma(,)', 'all')
 	.option('-a --apis [apis]', 'API endpoints to run, separated by comma(,)', 'all')
 	.option('-l --log [loglevel]', 'Logging level [info, debug, error], default is info')
+	.option('-r --report [reportType]', 'Generate reports for the execution. Values can be any of junit, html and json', 'json')
 	.option('-p --parallel [number_of_parallel_tasks]', 'Number of parallel tasks. Default is 10')
 	.option('-v --variables [variables]', 'Variables to be used for executions. usage: var1=value1,var2=value2...')
 	.option('--cred [cred]', 'Credentials provided in base64 format')
@@ -45,7 +48,7 @@ vibranium
 		'The system on which the apis need to be executed. The sytem name should be defined in the config file'
 	)
 	.option('--no-color', 'Plain text output without colors')
-	.option('--silent', 'Silent Mode')
+	.option('--silent', 'Print only the endpoint result')
 	.action(options => {
 		setEnvironmentVariables(options)
 		requestHandler.handleRunCommand(options)

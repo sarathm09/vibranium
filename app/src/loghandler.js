@@ -1,7 +1,14 @@
 const chalk = require('chalk');
+const { join } = require('path')
 const treeify = require('treeify');
+const { env } = require('process')
+const { create } = require('xmlbuilder2');
+const { existsSync, mkdirSync } = require('fs')
+const { writeFile, rmdir } = require('fs').promises;
+
 const { executionStatus } = require('./constants');
 const utils = require('./utils');
+
 
 /**
  * Print the API tree in a formatted tree structure.
@@ -79,7 +86,7 @@ const printApiList = (logger, apis, format = 'tree', color = true) => new Promis
  * @param {object} scenarios List of scenarios to execute
  */
 const logExecutionStart = async (logger, jobId, scenarios, executorCount) => {
-	logger.info('#' + prettyPrint('jobId', jobId))
+	logger.info('Job Execution ID: ' + prettyPrint('jobId', jobId))
 	logger.info(`Starting execution at ${prettyPrint('date')} with ${chalk.blue(executorCount)} parallel thread(s), ${scenarios.length} scenario(s) and ${scenarios.map(sc => sc.endpoints.length).reduce((a, c) => a + c, 0)} API(s)`)
 	logger.info()
 }
@@ -147,7 +154,8 @@ const printApiExecutionEnd = async (logger, api) => {
 				api._status ? logger.debug(dataToBePrinted) : logger.error(dataToBePrinted);
 			}
 		} else {
-			logger.info(key + utils.printSpaces(key) + ': ' + value)
+			api._status ? logger.info(key + utils.printSpaces(key) + ': ' + value) :
+				logger.error(key + utils.printSpaces(key) + ': ' + value)
 		}
 	}
 
@@ -155,10 +163,77 @@ const printApiExecutionEnd = async (logger, api) => {
 	return
 };
 
-// TODO
-// eslint-disable-next-line no-unused-vars
+/**
+ * Summary of all scenario responses
+ * @param {Logger} logger Logger object
+ * @param {string} jobId job Id string
+ * @param {object} result List of all scenario responses
+ */
 const logExecutionEnd = (logger, jobId, result) => {
-	logger.info(jobId);
+	logger.info()
+	logger.info(`Execution summary for job #${jobId}`)
+
+	let endpointResult = [], scenariosCount = result.length;
+
+	for (let i = 0; i < scenariosCount; i++) {
+		const scenario = result[i]
+		endpointResult = scenario.endpoints
+			.filter(e => !e._status)
+			.map(e => {
+				return {
+					scenario: scenario.name,
+					name: e.name,
+					statusCode: e._result.statusCode
+				}
+			})
+	}
+
+	if (endpointResult.length > 0) {
+		logger.info()
+		logger.error(chalk.redBright('Failed Tests'))
+		endpointResult
+			.map(e => `\t${e.scenario}.${chalk.redBright(e.name)}`)
+			.map(logger.error)
+	} else {
+		logger.info(prettyPrint('status', true))
+	}
+}
+
+// TODO
+// TODO: log scenario timing
+// TODO: collect and print results 
+// if --report -> junit, html and console report
+// eslint-disable-next-line no-unused-vars
+const processScenarioResult = async (jobId, result, report, jobsPath) => {
+	if (env.SILENT) return
+
+	if (!!report && report.split(',').includes('junit')) {
+		let junitReport = await generateJunitReportForScenario(result)
+		let junitReportpaths = ['latest', jobId]
+			.map(path => join(jobsPath, path, 'reports', 'junit', result.collection))
+
+		if (existsSync(join(jobsPath, 'latest', 'reports', 'junit'))) {
+			await rmdir(join(jobsPath, 'latest', 'reports', 'junit'), { recursive: true })
+		}
+		junitReportpaths.map(path => {
+			if (!existsSync(path))
+				mkdirSync(path, { recursive: true });
+		})
+
+		let tasks = junitReportpaths.map(path => join(path, `${result.collection}.${result.name}.${jobId}.xml`))
+			.map(p => writeFile(p, junitReport))
+		await (Promise.all(tasks))
+
+	} else if (!!report && report.split(',').includes('html')) {
+		let junitReport = await generateJunitReportForScenario(result)
+
+		if (existsSync(join(jobsPath, 'latest', 'reports', 'html'))) {
+			await rmdir(join(jobsPath, 'latest', 'reports', 'html'), { recursive: true })
+		}
+	}
+
+
+	return
 }
 
 
@@ -203,11 +278,11 @@ const prettyPrint = (type, text = '', color = true) => {
 	if (type == 'scenario') return color ? (isMac ? '📄 ' : ' ') + chalk.cyanBright(text) : text;
 	if (type == 'api') return color ? (isMac ? '🌐 ' : ' ') + chalk.greenBright(text) : text;
 	if (type == 'date') return color ? `${chalk.grey(new Date().toLocaleTimeString('en'))}` : text;
-	if (type == 'loglevel' && text == 'info') return color ? chalk.blue(text) : text;
-	if (type == 'loglevel' && text == 'debug') return color ? chalk.yellow(text) : text;
-	if (type == 'loglevel' && text == 'warn') return color ? chalk.keyword('orange')(text) : text;
-	if (type == 'loglevel' && text == 'error') return color ? chalk.redBright(text) : text;
-	if (type == 'loglevel' && text == 'success') return color ? chalk.greenBright(text) : text;
+	if (type == 'loglevel' && (text == 'info' || text == 'i')) return color ? chalk.blue(text) : text;
+	if (type == 'loglevel' && (text == 'debug' || text == 'd')) return color ? chalk.yellow(text) : text;
+	if (type == 'loglevel' && (text == 'warn' || text == 'w')) return color ? chalk.keyword('orange')(text) : text;
+	if (type == 'loglevel' && (text == 'error' || text == 'e')) return color ? chalk.redBright(text) : text;
+	if (type == 'loglevel' && (text == 'success' || text == 's')) return color ? chalk.greenBright(text) : text;
 	if (type == 'status' && (text == executionStatus.SUCESS || text === true))
 		return color ? (isMac ? '🟢 ' : '') + chalk.greenBright('SUCCESS') : text;
 	if (type == 'status' && (text == executionStatus.FAIL || text === false))
@@ -215,6 +290,53 @@ const prettyPrint = (type, text = '', color = true) => {
 	if (type == 'status' && text == executionStatus.ERROR)
 		return color ? (isMac ? '🟠 ' : '') + chalk.redBright('ERROR') : text;
 };
+
+
+const generateJunitReportForScenario = async (scenario) => {
+	let endpoints = scenario.endpoints
+	let endpointsCount = endpoints.length, failedEndpointsCount =
+		endpoints.filter(e => !e._status).length
+
+	let testReport = create({ version: '1.0' })
+		.ele('testsuites', { errors: 0, failures: failedEndpointsCount, tests: endpointsCount })
+		.ele('testsuite', {
+			name: [scenario.collection, scenario.name].join('.'),
+			id: scenario.id,
+			hostname: '',
+			package: scenario.collection,
+			tests: endpointsCount,
+			failures: failedEndpointsCount,
+			errors: 0,
+			skipped: endpoints.filter(e => e.ignore),
+			timestamp: new Date().toISOString()
+		})
+
+	for (const endpoint of endpoints) {
+		const testCase = testReport.ele('testcase', {
+			name: endpoint.name,
+			classname: [scenario.collection, scenario.name, endpoint.name].join('.'),
+			assertions: 1,
+			time: endpoint._result.map(res => res.timing.total).reduce((a, c) => a + c, 0)
+		})
+		if (!endpoint._status) {
+			let endpointResponses = endpoint._result
+				.map(res => res.response)
+				.map(res => typeof (res) === 'object' ? JSON.stringify(res) : res)
+				.map(res => res.replace(/&/g, '&amp;')
+					.replace(/</g, '&lt;')
+					.replace(/>/g, '&gt;')
+					.replace(/"/g, '&quot;')
+					.replace(/'/g, '&apos;'))
+				.join(',')
+
+			testCase.ele('failure', {
+				message: `Failed [status: ${endpoint._result.map(res => res.status).join(',')}]`
+			}).txt(endpointResponses)
+		}
+	}
+	return testReport.end({ prettyPrint: true })
+};
+
 
 module.exports = {
 	printApiList,
@@ -224,5 +346,6 @@ module.exports = {
 	printApiExecutionStart,
 	printApiExecutionEnd,
 	logExecutionStart,
+	processScenarioResult,
 	logExecutionEnd
 };

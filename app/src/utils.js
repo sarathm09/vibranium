@@ -30,12 +30,12 @@ module.exports.isMac = platform === 'darwin';
  */
 module.exports.getLogLevel = level =>
 	level.toLowerCase() === 'error'
-		? logLevels.ERROR
+		? logLevels.error
 		: level.toLowerCase() === 'debug'
-			? logLevels.DEBUG
+			? logLevels.debug
 			: level.toLowerCase() === 'warn'
-				? logLevels.WARN
-				: logLevels.INFO;
+				? logLevels.warn
+				: logLevels.info;
 
 /**
  * Get the collection name from the absolute file path

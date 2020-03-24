@@ -69,11 +69,13 @@ module.exports = {
 	},
 
 	logLevels: {
-		INFO: Symbol('INFO'),
-		WARN: Symbol('WARNING'),
-		DEBUG: Symbol('DEBUG'),
-		ERROR: Symbol('ERROR')
+		error: 0,
+		warn: 1,
+		log: 2,
+		info: 3,
+		debug: 4
 	},
+	
 
 	loremGeneratorConfig: {
 		sentencesPerParagraph: {
@@ -89,9 +91,9 @@ module.exports = {
 	colorCodeRegex: /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
 
 	logRotationConstants: {
-		h: 60 * 60 * 1000,
-		d: 24 * 60 * 60 * 1000,
-		y: 365 * 24 * 60 * 60 * 1000
+		h: 60 * 60,
+		d: 24 * 60 * 60,
+		y: 365 * 24 * 60 * 60
 	}
 
 };

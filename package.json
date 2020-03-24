@@ -43,7 +43,8 @@
 		"treeify": "^1.1.0",
 		"uuid": "^3.3.3",
 		"vm2": "^3.8.4",
-		"winston": "^3.2.1"
+		"winston": "^3.2.1",
+		"xmlbuilder2": "^1.7.0"
 	},
 	"devDependencies": {
 		"documentation-devseed-theme": "^0.1.7",

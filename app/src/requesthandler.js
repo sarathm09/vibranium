@@ -1,6 +1,7 @@
 const open = require('open');
 const uuid4 = require('uuid/v4');
 const { join } = require('path');
+const { env } = require('process');
 const readline = require('readline');
 const { hostname, homedir } = require('os');
 const { mkdirSync, writeFileSync, readFileSync, existsSync, createReadStream, createWriteStream } = require('fs');
@@ -19,7 +20,6 @@ const { vibPath, userConfig } = require('./constants');
  * @param {object} options Commander object containing user input
  */
 const handleRunCommand = async options => {
-	console.time();
 	const scenarioList = await compiler.search(options.collections, options.scenarios, options.apis);
 	const executionOptions = {
 		variables: options.variables,
@@ -27,14 +27,18 @@ const handleRunCommand = async options => {
 		color: options.color,
 		log: options.log,
 		cred: options.cred,
-		sync: options.sync
+		sync: options.sync,
+		report: options.report
 	};
 
 	// eslint-disable-next-line no-unused-vars
 	const result = await testexecutor.runTests(scenarioList, executionOptions);
 	//console.log(JSON.stringify(result, null, 4));
-	console.timeEnd();
-	
+
+	// handle mode_aether and --silent
+	if (options.silent) {
+		handleSilentResponse(result)
+	}
 };
 
 /**
@@ -95,7 +99,7 @@ const handleVibraniumSetup = async (options, workspacePath) => {
 
 	logger.info(`Please clone your repo in the directory: ${workspacePath}`);
 	await open(workspacePath);
-	
+
 };
 
 /**
@@ -140,7 +144,7 @@ const handleCreateCommand = options => {
 	}
 
 	createAndOpenScenario(options, scenarioFileName);
-	
+
 };
 
 /**
@@ -273,7 +277,39 @@ const handleDebugCommand = async options => {
 		}
 	}
 	rl.close()
-	
+
+}
+
+/**
+ * Print the response in a formatted structure without any loggers
+ * The output is a json, with response, status and meta fields
+ * 
+ * @param {array} result List of scenario results
+ */
+const handleSilentResponse = (result) => {
+	let resp = {
+		response: {},
+		status: {},
+		meta: {}
+	}
+
+	for (const scenario of result) {
+		for (const endpoint of scenario.endpoints) {
+			resp.response[endpoint.name] = !!endpoint._result && endpoint._result.length > 1 ?
+				endpoint._result.map(r => r.response) :
+				endpoint._result.map(r => r.response)[0]
+			resp.meta[endpoint.name] = {
+				timing: !!endpoint._result && endpoint._result.length > 1 ?
+					endpoint._result.map(r => r.timing) :
+					endpoint._result.map(r => r.timing)[0],
+				variables: endpoint.variables
+			}
+			resp.status[endpoint.name] = !!endpoint._result && endpoint._result.length > 1 ?
+				endpoint._result.map(r => r.status) :
+				endpoint._result.map(r => r.status)[0]
+		}
+	}
+	console.log(JSON.stringify(resp, null, 2))
 }
 
 

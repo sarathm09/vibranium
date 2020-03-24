@@ -1,8 +1,7 @@
 const { join } = require('path');
-const uuid4 = require('uuid/v4');
-const process = require('process');
 const RandExp = require('randexp');
 const { existsSync } = require('fs')
+const { exit, env } = require('process');
 const { LoremIpsum } = require('lorem-ipsum');
 const { mkdir, writeFile } = require('fs').promises
 const { green, yellow, yellowBright, red } = require('chalk')
@@ -487,8 +486,13 @@ const loadDependendentEndpoint = async (endpoint, dependency, endpointVariables)
 
 	searchResult = JSON.parse(JSON.stringify(searchResult))
 	if (!!dependency.repeat && dependency.repeat > 0) searchResult.scenario.endpoints[0].repeat = dependency.repeat
-	logger.info(`Executing dependency ${getFormattedEndpointName(dependency.collection, dependency.scenario, dependency.api)} ` +
+	
+	if (endpoint.name) {
+		logger.info(`Executing dependency ${getFormattedEndpointName(dependency.collection, dependency.scenario, dependency.api)} ` +
 		`for endpoint ${getFormattedEndpointName(endpoint.collection, endpoint.scenario, endpoint.name)}`)
+	} else {
+		logger.info(`Executing dependency ${getFormattedEndpointName(dependency.collection, dependency.scenario, dependency.api)} for globals`)
+	}
 
 	searchResult.scenario.endpoints[0].variables = { ...searchResult.scenario.endpoints[0].variables, ...dependencyVariables }
 	let response = await performScenarioExecutionSteps(searchResult.scenario, dependencyVariables, true, true)
@@ -790,7 +794,7 @@ const setSystemDetails = (systems, cred) => {
 			let sysInfo = userProvidedSystem.split('=');
 			if (sysInfo.length < 2 || !Object.keys(availableSystems).includes(sysInfo[1])) {
 				logger.error('Invalid user provided system');
-				process.exit(1);
+				exit(1);
 			}
 			availableSystems[sysInfo[0]] = availableSystems[sysInfo[1]];
 		}
@@ -820,7 +824,7 @@ const processUserVariables = variables => {
 			let varInfo = userProvidedVariable.split('=');
 			if (varInfo.length < 2) {
 				logger.error('Invalid user provided variables');
-				process.exit(1);
+				exit(1);
 			}
 			parsedVariables[varInfo[0]] = replacePlaceholderInString(varInfo[1])
 		}
@@ -870,15 +874,6 @@ const savePostExecutionData = async (jobId, scenarios) => {
 	await writeFile(join(latestDirPath, 'scenarios_result.json'), scenariosJson)
 }
 
-// TODO
-// TODO: log scenario timing
-// TODO: collect and print results 
-// if --report -> junit, html and console report
-// eslint-disable-next-line no-unused-vars
-const processScenarioResult = async result => {
-	return
-}
-
 
 /**
  * Trigger point for all scenario executions
@@ -887,7 +882,7 @@ const processScenarioResult = async result => {
  * @returns {boolean} Execution status
  */
 const runTests = async (scenarios, executionOptions) => {
-	const jobId = uuid4();
+	const jobId = Date.now().toString();
 	logHandler.logExecutionStart(logger, jobId, scenarios, utils.getParallelExecutorLimit());
 	savePreExecutionData(jobId, scenarios)
 	setSystemDetails(executionOptions.systems, executionOptions.cred);
@@ -909,7 +904,8 @@ const runTests = async (scenarios, executionOptions) => {
 	));
 
 	savePostExecutionData(jobId, scenarios)
-	await Promise.all(scenarioResults.map(result => processScenarioResult(jobId, result)))
+	await Promise.all(scenarioResults
+		.map(result => logHandler.processScenarioResult(jobId, result, executionOptions.report, vibPath.jobs)))
 	logHandler.logExecutionEnd(logger, jobId, scenarioResults);
 	return scenarioResults;
 };

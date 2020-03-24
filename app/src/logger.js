@@ -1,62 +1,103 @@
-const { join } = require('path');
-const { env } = require('process');
-const winston = require('winston');
-const { createLogger, format, transports } = winston;
+const { join } = require('path')
+const { env } = require('process')
+const { readdir, unlink, rmdir } = require('fs').promises
+const { createWriteStream } = require('fs')
 
 const logHandler = require('./loghandler');
-const { userConfig, vibPath } = require('./constants');
+const { userConfig, vibPath, colorCodeRegex,
+	logRotationConstants, logLevels } = require('./constants');
 
-const colorCodeRegex = /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g;
 
 const getDefaultLogLevel = () => {
 	let logLevel = 'info';
 	if (!!userConfig.logger && !!userConfig.logger.default_log_level) {
 		logLevel = userConfig.logger.default_log_level;
 	}
-	if (env.LOG_LEVEL) {
-		logLevel = env.LOG_LEVEL.toLocaleLowerCase();
+	if (!env.LOG_LEVEL) {
+		env.LOG_LEVEL = logLevel.toLowerCase()
 	}
-	return logLevel.toLocaleLowerCase();
+	return logLevel.toLocaleLowerCase()
 };
 
-const getCombinedLogFormat = moduleName => format.printf(
-	info => `[${info.level}] [${moduleName}] ${new Date().toLocaleString('en-IN')}: \
-			${info.message.replace(colorCodeRegex, '')}`
-);
 
-const getConsoleFormat = moduleName => format.printf(
-	info => `[${logHandler.prettyPrint('loglevel', info.level)}] [${moduleName}]: ${info.message}`
-);
+const rotateOldLogFiles = async () => {
+	let rotationMills = 10 * 24 * 60 * 60; // 10 days
+	const today = new Date()
+	const logFileTimeStamp = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() / 1000
+
+	if (!!userConfig.logger && !!userConfig.logger.max_log_history_to_keep) {
+		const rotationTime = userConfig.logger.max_log_history_to_keep;
+		for (const key in Object.keys(logRotationConstants)) {
+			if (rotationTime.includes(key) && !isNaN(rotationTime.replace(key, ''))) {
+				rotationMills = parseInt(rotationTime.replace(key, '')) * logRotationConstants[key]
+				break
+			}
+		}
+	}
+
+	let logFiles = await readdir(vibPath.logs)
+	const lastLogFileToKeep = logFileTimeStamp - rotationMills
+
+	for (const fileName of logFiles) {
+		const filePaths = fileName.split('_')
+		if (filePaths.length > 2 && filePaths[0] === 'log' &&
+			!isNaN(filePaths[1]) && parseInt(filePaths[1]) < lastLogFileToKeep) {
+			await unlink(join(vibPath.logs, fileName))
+		}
+	}
+	return
+}
+
+const rotateOldJobLogs = async () => {
+	try {
+		let jobFiles = await readdir(vibPath.jobs)
+		if (jobFiles.length > 10) {
+			let filesToDelete = jobFiles
+				.filter(f => !isNaN(f))
+				.sort()
+				.slice(0, jobFiles.length - 10)
+
+			await Promise.all(filesToDelete
+				.map(f => rmdir(join(vibPath.jobs, f), { recursive: true })))
+		}
+		return
+	} catch (error) {
+		console.log(error)
+		return
+	}
+}
+
+
+const logData = (moduleName, level, logStream) => async message => {
+	let consoleLevel = level, consoleModule = moduleName
+	if (![logLevels.error, logLevels.warn, logLevels.debug].includes(logLevels[env.LOG_LEVEL])) {
+		consoleLevel = level[0]
+		consoleModule = moduleName[0]
+	}
+	if (logLevels[env.LOG_LEVEL] >= logLevels[level] && !env.SILENT)
+		console.log(`[${logHandler.prettyPrint('loglevel', consoleLevel)}] [${consoleModule}]: ${message || ''}`)
+	logStream.write(`[${level}] [${moduleName}] ${Date.now()}: ${message ? message.replace(colorCodeRegex, '') : ''}\n`)
+}
+
 
 /**
  * Create the logger object to print logs.
- * Contains three transports: console, error file and a combined log file
  * @returns logger object
  */
-module.exports = (moduleName, level = getDefaultLogLevel(), silent = false) => {
-	const logger = createLogger({
-		level: level,
-		label: moduleName,
-		silent: silent,
-		transports: [
-			new transports.File({
-				filename: join(vibPath.logs, 'error.log'),
-				level: 'error',
-				format: format.errors({ stack: true }),
-				maxsize: 1000
-			}),
-			new transports.File({
-				filename: join(vibPath.logs, 'combined.log'),
-				maxsize: 1000,
-				format: getCombinedLogFormat(moduleName)
-			}),
-			new transports.Console({
-				format: getConsoleFormat(moduleName)
-			})
-		]
-	});
-
-	logger.on('data', () => !!env.LOG_LEVEL && logger.level !== env.LOG_LEVEL ? logger.level = env.LOG_LEVEL : null);
-
-	return logger;
-};
+module.exports = (moduleName) => {
+	getDefaultLogLevel()
+	rotateOldLogFiles()
+	rotateOldJobLogs()
+	const today = new Date()
+	const logFileTimeStamp = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() / 1000
+	const logFileName = join(vibPath.logs, `log_${logFileTimeStamp}_.log`)
+	const logStream = createWriteStream(logFileName)
+	
+	return {
+		log: logData(moduleName, 'log', logStream),
+		info: logData(moduleName, 'info', logStream),
+		warn: logData(moduleName, 'warn', logStream),
+		debug: logData(moduleName, 'debug', logStream),
+		error: logData(moduleName, 'error', logStream)
+	}
+}

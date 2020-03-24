@@ -1,7 +1,6 @@
 const open = require('open');
 const uuid4 = require('uuid/v4');
 const { join } = require('path');
-const { env } = require('process');
 const readline = require('readline');
 const { hostname, homedir } = require('os');
 const { mkdirSync, writeFileSync, readFileSync, existsSync, createReadStream, createWriteStream } = require('fs');

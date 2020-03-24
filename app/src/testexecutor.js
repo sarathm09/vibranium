@@ -1,7 +1,7 @@
 const { join } = require('path');
 const RandExp = require('randexp');
 const { existsSync } = require('fs')
-const { exit, env } = require('process');
+const { exit } = require('process');
 const { LoremIpsum } = require('lorem-ipsum');
 const { mkdir, writeFile } = require('fs').promises
 const { green, yellow, yellowBright, red } = require('chalk')

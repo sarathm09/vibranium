@@ -225,6 +225,7 @@ const processScenarioResult = async (jobId, result, report, jobsPath) => {
 		await (Promise.all(tasks))
 
 	} else if (!!report && report.split(',').includes('html')) {
+		// eslint-disable-next-line no-unused-vars
 		let junitReport = await generateJunitReportForScenario(result)
 
 		if (existsSync(join(jobsPath, 'latest', 'reports', 'html'))) {

@@ -68,7 +68,7 @@ const rotateOldJobLogs = async () => {
 }
 
 
-const logData = (moduleName, level, logStream) => async message => {
+const logData = (moduleName, level, logStream) => async (message, error) => {
 	let consoleLevel = level, consoleModule = moduleName
 	if (![logLevels.error, logLevels.warn, logLevels.debug].includes(logLevels[env.LOG_LEVEL])) {
 		consoleLevel = level[0]
@@ -77,6 +77,11 @@ const logData = (moduleName, level, logStream) => async message => {
 	if (logLevels[env.LOG_LEVEL] >= logLevels[level] && !env.SILENT)
 		console.log(`[${logHandler.prettyPrint('loglevel', consoleLevel)}] [${consoleModule}]: ${message || ''}`)
 	logStream.write(`[${level}] [${moduleName}] ${Date.now()}: ${message ? message.replace(colorCodeRegex, '') : ''}\n`)
+	if (error) {
+		if ([logLevels.error, logLevels.warn, logLevels.debug].includes(logLevels[env.LOG_LEVEL]))
+			console.log(`[${logHandler.prettyPrint('loglevel', consoleLevel)}] [${consoleModule}]: ${error.stack || 'no stack trace'} `)
+		logStream.write(error.stack ? error.stack : 'no_stack_trace')
+	}
 }
 
 
@@ -92,7 +97,7 @@ module.exports = (moduleName) => {
 	const logFileTimeStamp = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() / 1000
 	const logFileName = join(vibPath.logs, `log_${logFileTimeStamp}_.log`)
 	const logStream = createWriteStream(logFileName)
-	
+
 	return {
 		log: logData(moduleName, 'log', logStream),
 		info: logData(moduleName, 'info', logStream),

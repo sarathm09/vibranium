@@ -1,11 +1,13 @@
 var { isNode } = require('browser-or-node');
-const request = require('request');
-const axios = require('axios');
+const request = require('request')
+const { red } = require('chalk')
+const axios = require('axios')
 
 const constants = require('./constants');
 const logger = require('./logger')('service');
 
 var availableSystems = {};
+
 
 /**
  * Set the available systems
@@ -148,13 +150,14 @@ const getResponseWithRequest = (system, url, method, payload, auth, language = '
 
 
 const printErrorAndExit = error => {
-	if (error.code === 'ECONNREFUSED') {
-		logger.error('Error connecting to server. Check if ');
+	if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+		logger.error(red('Error connecting to server') + ', Check if ');
 		logger.error('\t1. You have a stable internet connection');
 		logger.error('\t2. You have maintained the system configuration correctly');
 		logger.error('\t3. The app is running in the server');
+		process.exit(1);
 	}
-	process.exit(1);
+	return true
 }
 
 
@@ -226,6 +229,7 @@ const callApi = (url, method, payload, systemName, language = 'en') => new Promi
 	}
 });
 
+
 /**
  * Fetch the jwt token for the system with the client credentials flow.
  *
@@ -235,7 +239,7 @@ const callApi = (url, method, payload, systemName, language = 'en') => new Promi
  * @param {string} clientSecret client secret for the client id
  * @returns Promise object with token and jwt timeout
  */
-const fetchJwtToken = async (url, clientId, clientSecret) => {
+const fetchJwtToken = (url, clientId, clientSecret) => new Promise((resolve, reject) => {
 	if (!url.includes('grant_type')) {
 		if (!url.includes('/oauth/token')) {
 			if (!url.endsWith('/')) url += '/';
@@ -244,23 +248,32 @@ const fetchJwtToken = async (url, clientId, clientSecret) => {
 		url += '?grant_type=client_credentials';
 	}
 
-	const jwtResponse = await axios({
+	let requestOptions = {
 		method: 'get',
-		url,
+		uri: url,
 		headers: {
 			Authorization: `Basic ${Buffer.from(clientId + ':' + clientSecret).toString('base64')}`
 		}
-	})
-	if (jwtResponse.status === 200) {
-		return {
-			jwt: jwtResponse.data.access_token,
-			scopes: jwtResponse.data.scope,
-			jwtTimeout: jwtResponse.data.expires_in // TODO
-		}
-	} else {
-		throw (`Could not fetch JWT token. Please check url: ${url}, clientId: ${clientId}, clientSecret: ${clientSecret}`)
 	}
-}
+
+	request(requestOptions, (error, response, body) => {
+		if (error) {
+			printErrorAndExit(error)
+			reject(error)
+		}
+
+		if (!!response && response.statusCode < 400) {
+			const resp = JSON.parse(body)
+			resolve({
+				jwt: resp.access_token,
+				scopes: resp.scope,
+				jwtTimeout: resp.expires_in
+			});
+		} else {
+			reject(error);
+		}
+	});
+});
 
 module.exports = {
 	callApi,

@@ -35,7 +35,7 @@ const loadPayloadFiles = async (endpoint, scenarioName) => {
 			endpointWithPayloadData.payloadKey = endpointWithPayloadData.payload
 			endpointWithPayloadData.payload = payloadJsonResponse.status ? payloadJsonResponse.data : {};
 		} catch (error) {
-			logger.error(`Error loading payload for ${scenarioName}.${endpoint.name} [${endpoint.payload}]: ${error}`)
+			logger.error(`Error loading payload for ${scenarioName}.${endpoint.name} [${endpoint.payload}]: ${error}`, error)
 		}
 		return endpointWithPayloadData;
 	} else {
@@ -215,7 +215,7 @@ const fetchDependentApis = (apis, api) => {
 const processScenarioFiles = async (scenarioFiles, apis, searchMode) => {
 	try {
 		let result = await Promise.all(scenarioFiles)
-		
+
 		if (!env.SILENT) {
 			result.filter(obj => !obj.status)
 				.map(obj => logger.warn(`${obj.message}`, { ignored: true }));
@@ -227,8 +227,8 @@ const processScenarioFiles = async (scenarioFiles, apis, searchMode) => {
 			.map(scenario => loadEndpoinsForScenario(scenario, apis, searchMode));
 
 		return Promise.all(scenariosToBeProcessed);
-	} catch (error) { 
-		logger.error(`Error processing scenario file with error: ${error}`)
+	} catch (error) {
+		logger.error(`Error processing scenario file with error: ${error}`, error)
 		return []
 	}
 }
@@ -247,7 +247,7 @@ const loadAllScenariosFromCache = async (collections, scenarios, apis) => {
 		.filter(scenario =>
 			utils.isAll(collections)
 				? true
-				: utils.splitAndTrimInput(collections).includes(utils.getCollectionNameForScenario(scenario.collection))
+				: utils.splitAndTrimInput(collections).includes(scenario.collection)
 		)
 		.filter(scenario =>
 			utils.isAll(scenarios)
@@ -255,7 +255,6 @@ const loadAllScenariosFromCache = async (collections, scenarios, apis) => {
 				: utils.splitAndTrimInput(scenarios).includes(scenario.name) ||
 				utils.splitAndTrimInput(scenarios).includes(utils.getScenarioFileNameFromPath(scenario.file))
 		);
-
 	return filteredScenarios
 		.map(scenario => {
 			let filteredApis = scenario.endpoints.filter(e => utils.splitAndTrimInput(apis).includes(e.name));

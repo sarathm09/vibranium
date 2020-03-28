@@ -169,15 +169,17 @@ const printApiExecutionEnd = async (logger, api) => {
  * @param {string} jobId job Id string
  * @param {object} result List of all scenario responses
  */
-const logExecutionEnd = (logger, jobId, result) => {
+const logExecutionEnd = (logger, jobId, result, totalEndpointsExecuted, totalEndpointsSuccessful) => {
+	const consoleColor = totalEndpointsExecuted === totalEndpointsSuccessful ? chalk.green : chalk.red
 	logger.info()
 	logger.info(`Execution summary for job #${jobId}`)
+	logger.info(`Successful API executions (incl. dependencies): ${consoleColor(totalEndpointsSuccessful + ' out of ' + totalEndpointsExecuted)}`)
 
 	let endpointResult = [], scenariosCount = result.length;
 
 	for (let i = 0; i < scenariosCount; i++) {
 		const scenario = result[i]
-		endpointResult = scenario.endpoints
+		endpointResult = [...scenario.endpoints
 			.filter(e => !e._status)
 			.map(e => {
 				return {
@@ -185,7 +187,7 @@ const logExecutionEnd = (logger, jobId, result) => {
 					name: e.name,
 					statusCode: e._result.statusCode
 				}
-			})
+			}), ...endpointResult]
 	}
 
 	if (endpointResult.length > 0) {

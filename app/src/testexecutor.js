@@ -888,7 +888,7 @@ const savePostExecutionData = async (jobId, scenarios) => {
 			totalEndpointsSuccessful,
 			jobId,
 			status: totalEndpointsExecuted === totalEndpointsSuccessful,
-			time: new Date(jobId).toLocaleString()
+			time: new Date(parseInt(jobId)).toLocaleString()
 		}
 	}, null, 1)
 

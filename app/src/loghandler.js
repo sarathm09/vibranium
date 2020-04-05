@@ -1,14 +1,16 @@
-const chalk = require('chalk');
+const chalk = require('chalk')
+const ms = require('pretty-ms')
 const { join } = require('path')
-const treeify = require('treeify');
+const treeify = require('treeify')
 const { env } = require('process')
-const { create } = require('xmlbuilder2');
+const { create } = require('xmlbuilder2')
 const { existsSync, mkdirSync } = require('fs')
-const { writeFile, rmdir } = require('fs').promises;
+const { writeFile, rmdir } = require('fs').promises
 
-const { executionStatus } = require('./constants');
-const utils = require('./utils');
+const { executionStatus } = require('./constants')
+const utils = require('./utils')
 
+const isMac = utils.isMac
 
 /**
  * Print the API tree in a formatted tree structure.
@@ -107,7 +109,7 @@ const logScenarioEnd = async (logger, scenario) => {
 	logger.info(
 		`${prettyPrint('scenario', scenario.name)} status: ${prettyPrint('status', scenario._result.status)} [${
 		scenario.endpoints.filter(e => !!e && e._status).length
-		}/${scenario.endpoints.length}] time: ${scenario._result.timing.delta / 1000} sec`
+		}/${scenario.endpoints.length}] time: ${ms(scenario._result.timing.delta)}`
 	);
 	return
 };
@@ -197,7 +199,7 @@ const logExecutionEnd = (logger, jobId, result, totalEndpointsExecuted, totalEnd
 			.map(e => `\t${e.scenario}.${chalk.redBright(e.name)}`)
 			.map(logger.error)
 	} else {
-		logger.info(prettyPrint('status', true))
+		logger.success(prettyPrint('status', true))
 	}
 }
 
@@ -262,7 +264,34 @@ const syntaxHighlight = json => {
 			return cls(match);
 		}
 	);
-};
+}
+
+const stylesForAPI = {
+	jobId: (text, color) => color ? chalk.greenBright(text) : text,
+	collection: (text, color) => color ? (isMac ? '📂 ' : ' ') + chalk.cyan(text) : text,
+	scenario: (text, color) => color ? (isMac ? '📄 ' : ' ') + chalk.cyanBright(text) : text,
+	api: (text, color) => color ? (isMac ? '🌐 ' : ' ') + chalk.greenBright(text) : text,
+	date: (text, color) => color ? `${chalk.grey(new Date().toLocaleTimeString('en'))}` : text
+}
+const logLevelStyles = {
+	info: (text, color) => color ? chalk.blueBright(text) : text,
+	i: (text, color) => color ? chalk.blueBright(text) : text,
+	debug: (text, color) => color ? chalk.yellow(text) : text,
+	d: (text, color) => color ? chalk.yellow(text) : text,
+	warn: (text, color) => color ? chalk.keyword('orange')(text) : text,
+	w: (text, color) => color ? chalk.keyword('orange')(text) : text,
+	error: (text, color) => color ? chalk.redBright(text) : text,
+	e: (text, color) => color ? chalk.redBright(text) : text,
+	success: (text, color) => color ? chalk.greenBright(text) : text,
+	s: (text, color) => color ? chalk.greenBright(text) : text,
+	log: (text, color) => color ? chalk.blue(text) : text,
+	l: (text, color) => color ? chalk.blue(text) : text,
+}
+const statusStyles = {
+	success: (text, color) => color ? (isMac ? '🟢 ' : '') + chalk.greenBright('SUCCESS') : text,
+	fail: (text, color) => color ? (isMac ? '🔴 ' : '') + chalk.redBright('FAIL') : text,
+	error: (text, color) => color ? (isMac ? '🟠 ' : '') + chalk.redBright('ERROR') : text
+}
 
 /**
  * Utility function to get a prettified string that contains colors and
@@ -275,24 +304,16 @@ const syntaxHighlight = json => {
  * @returns {string} Pretty printed text
  */
 const prettyPrint = (type, text = '', color = true) => {
-	const isMac = utils.isMac;
-	if (type == 'jobId') return color ? chalk.greenBright(text) : text;
-	if (type == 'collection') return color ? (isMac ? '📂 ' : ' ') + chalk.cyan(text) : text;
-	if (type == 'scenario') return color ? (isMac ? '📄 ' : ' ') + chalk.cyanBright(text) : text;
-	if (type == 'api') return color ? (isMac ? '🌐 ' : ' ') + chalk.greenBright(text) : text;
-	if (type == 'date') return color ? `${chalk.grey(new Date().toLocaleTimeString('en'))}` : text;
-	if (type == 'loglevel' && (text == 'info' || text == 'i')) return color ? chalk.blue(text) : text;
-	if (type == 'loglevel' && (text == 'debug' || text == 'd')) return color ? chalk.yellow(text) : text;
-	if (type == 'loglevel' && (text == 'warn' || text == 'w')) return color ? chalk.keyword('orange')(text) : text;
-	if (type == 'loglevel' && (text == 'error' || text == 'e')) return color ? chalk.redBright(text) : text;
-	if (type == 'loglevel' && (text == 'success' || text == 's')) return color ? chalk.greenBright(text) : text;
-	if (type == 'status' && (text == executionStatus.SUCESS || text === true))
-		return color ? (isMac ? '🟢 ' : '') + chalk.greenBright('SUCCESS') : text;
-	if (type == 'status' && (text == executionStatus.FAIL || text === false))
-		return color ? (isMac ? '🔴 ' : '') + chalk.redBright('FAIL') : text;
-	if (type == 'status' && text == executionStatus.ERROR)
-		return color ? (isMac ? '🟠 ' : '') + chalk.redBright('ERROR') : text;
-};
+	if (type === 'loglevel') return logLevelStyles[text](text, color)
+	if (type === 'status') return statusStyles[getStatusTextForSymbol(text)](text, color)
+	else return stylesForAPI[type](text, color)
+}
+
+const getStatusTextForSymbol = text => {
+	if (text == executionStatus.SUCESS || text === true) return 'success'
+	if (text == executionStatus.FAIL || text === false) return 'fail'
+	if (text == executionStatus.ERROR) return 'error'
+}
 
 
 const generateJunitReportForScenario = async (scenario) => {

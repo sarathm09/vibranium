@@ -38,6 +38,7 @@
 		"lorem-ipsum": "^2.0.3",
 		"nedb": "^1.8.0",
 		"open": "^7.0.0",
+		"pretty-ms": "^6.0.1",
 		"randexp": "^0.5.3",
 		"request": "^2.88.0",
 		"treeify": "^1.1.0",

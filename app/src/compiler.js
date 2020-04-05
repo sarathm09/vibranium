@@ -279,6 +279,7 @@ const loadAllScenariosFromSystem = async (collections, scenarios, apis) => {
 	const scenarioFiles = await readFilesInDirectory(startPath)
 
 	let filteredScenarios = scenarioFiles
+		.filter(scenarioFile => !scenarioFile.startsWith('.'))
 		.filter(scenarioFile =>
 			utils.isAll(collections)
 				? true
@@ -455,6 +456,7 @@ const filterScenariosMatchingScenarioKeys = (scenarios, keyFilter, keyValue = ''
 	let filteredScenarios = []
 	for (let scenario of scenarios) {
 		let parsedObject = findObjectFromKeyHierarchy(scenario, keyFilter.split('.'))
+
 		if (compareObjects(parsedObject, keyValue.split('\'').join(), comparator)) {
 			filteredScenarios.push(scenario)
 		}
@@ -476,6 +478,7 @@ const filterScenariosMatchingEndpointKeys = (scenarios, keyFilter, keyValue = ''
 		let filteredEndpoints = []
 		for (let endpoint of scenario.endpoints) {
 			let parsedObject = findObjectFromKeyHierarchy(endpoint, keyFilter.split('.'))
+			
 			if (compareObjects(parsedObject, keyValue.split('\'').join(), comparator)) {
 				filteredEndpoints.push(endpoint)
 			}

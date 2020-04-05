@@ -10,7 +10,7 @@ const utils = require('./utils');
 const compiler = require('./compiler');
 const logHandler = require('./loghandler');
 const logger = require('./logger')('runner');
-const { vibPath, executionStatus, scriptTypes, loremGeneratorConfig, userConfig } = require('./constants');
+const { vibPath, executionStatus, scriptTypes, loremGeneratorConfig, userConfig, dataSets } = require('./constants');
 const { callApi, setAvailableSystems } = require('./servicehandler');
 
 let ACTIVE_PARALLEL_EXECUTORS = 0, scenarioCache = {}, lorem = new LoremIpsum(loremGeneratorConfig);
@@ -220,8 +220,55 @@ const executePostGeneratorScripts = async (variables, scenario) => {
 		);
 	}
 	return variables;
-};
+}
 
+/**
+ * Replace Dataset texts in the variables
+ * 
+ * @param {string} value The string in which dataset is to be replaced
+ */
+const replaceDataSetPlaceHolders = value => {
+	if (value.includes('{dataset.')) {
+		for (const name of dataSets.names) {
+			if (value.includes('{dataset.' + name)) {
+				let length = dataSets.data[name].length
+				let index = Math.floor(Math.random() * Math.floor(length))
+
+				value = value.split(`{dataset.${name}}`)
+					.join(`${dataSets.data[name][index]}`)
+			}
+		}
+	}
+	return value
+}
+
+
+const replacePlaceholderWhenValueIsAnObject = (objectToParse, variableName, variableValue, isObjectToParseAJSON) => {
+	let stringMatch = objectToParse.match(new RegExp(`\\{${variableName}\\.[\\.a-zA-Z0-9]*\\}`, 'gm'))
+
+	if (stringMatch.length > 0) {
+		const jsonValue = JSON.parse(variableValue)
+		for (let match of stringMatch) {
+			match = match.split('{').join('').split('}').join('')
+			let parsedValue = parseResponseVariableFromPath(jsonValue, match)
+			objectToParse = objectToParse
+				.split(`{${match}}`)
+				.join(`${JSON.stringify(parsedValue)}`)
+		}
+	} else if (objectToParse === `{${variableName}}`) {
+		objectToParse = JSON.stringify(variableValue)
+	} else if (objectToParse.includes(`{${variableName}}`)) {
+		objectToParse = objectToParse
+			.split(`{${variableName}}`)
+			.join(`${JSON.stringify(variableValue)}`)
+	} else {
+		objectToParse = objectToParse
+			.split(`{${variableName}}`)
+			.join(JSON.stringify(variableValue));
+	}
+
+	return objectToParse
+}
 
 /**
  * Replace the available placeholders with the value of the corresponding variables
@@ -238,21 +285,20 @@ const replacePlaceholderInString = (objectToBeParsed, variables) => {
 
 		for (const variableName of Object.keys(variables)) {
 			if (typeof variables[variableName] === 'function') {
+				// variables that vibranium provides
 				stringToBeReplaced = stringToBeReplaced.split(`{${variableName}}`).join(variables[variableName]());
-			} else if (typeof variables[variableName] === 'object' && stringToBeReplaced === `{${variableName}}`) {
-				stringToBeReplaced = variables[variableName];
-			} else if (typeof variables[variableName] === 'object' && typeof objectToBeParsed === 'object') {
-				stringToBeReplaced = stringToBeReplaced
-					.split(`"{${variableName}}"`)
-					.join(JSON.stringify(variables[variableName]));
 			} else if (typeof variables[variableName] === 'object') {
+				// The variable value is an object
+				stringToBeReplaced = replacePlaceholderWhenValueIsAnObject(stringToBeReplaced, variableName,
+					variables[variableName], typeof objectToBeParsed === 'object')
+			} else if (stringToBeReplaced.includes(`{${variableName}}`)) {
 				stringToBeReplaced = stringToBeReplaced
 					.split(`{${variableName}}`)
-					.join(JSON.stringify(variables[variableName]));
-			} else if (stringToBeReplaced.includes(`{${variableName}}`)) {
-				stringToBeReplaced = stringToBeReplaced.split(`{${variableName}}`).join(variables[variableName]);
+					.join(variables[variableName]);
 			}
 		}
+
+		stringToBeReplaced = replaceDataSetPlaceHolders(stringToBeReplaced)
 
 		for (const loremMatches of stringToBeReplaced.matchAll('{(lorem_[0-9]+)}')) {
 			const loremVariable = loremMatches[1];
@@ -269,7 +315,56 @@ const replacePlaceholderInString = (objectToBeParsed, variables) => {
 		JSON.parse(stringToBeReplaced) :
 		stringToBeReplaced;
 };
+/**
+ * Replace the available placeholders with the value of the corresponding variables
+ *
+ * @param {any} objectToBeParsed A String/Object that contains placeholder variables that needs to be replaced
+ * @param {object} variables Available variables
+ *
+const replacePlaceholderInString = (objectToBeParsed, variables) => {
+	let stringToBeReplaced = objectToBeParsed;
+	if (typeof stringToBeReplaced === 'string' || typeof stringToBeReplaced === 'object') {
+		if (typeof objectToBeParsed === 'object') {
+			stringToBeReplaced = JSON.stringify(objectToBeParsed);
+		}
 
+		for (const variableName of Object.keys(variables)) {
+			if (typeof variables[variableName] === 'function') {
+				// variables that vibranium provides
+				stringToBeReplaced = stringToBeReplaced.split(`{${variableName}}`).join(variables[variableName]());
+			} else if (typeof variables[variableName] === 'object' && stringToBeReplaced === `{${variableName}}`) {
+				stringToBeReplaced = variables[variableName];
+			} else if (typeof variables[variableName] === 'object' && typeof objectToBeParsed === 'object') {
+				stringToBeReplaced = stringToBeReplaced
+					.split(`"{${variableName}}"`)
+					.join(JSON.stringify(variables[variableName]));
+			} else if (typeof variables[variableName] === 'object') {
+				stringToBeReplaced = stringToBeReplaced
+					.split(`{${variableName}}`)
+					.join(JSON.stringify(variables[variableName]));
+			} else if (stringToBeReplaced.includes(`{${variableName}}`)) {
+				stringToBeReplaced = stringToBeReplaced.split(`{${variableName}}`).join(variables[variableName]);
+			}
+		}
+
+		stringToBeReplaced = replaceDataSetPlaceHolders(stringToBeReplaced)
+
+		for (const loremMatches of stringToBeReplaced.matchAll('{(lorem_[0-9]+)}')) {
+			const loremVariable = loremMatches[1];
+			stringToBeReplaced = stringToBeReplaced
+				.split(`{${loremVariable}}`)
+				.join(loremGenerator(parseInt(loremVariable.split('_')[1])));
+		}
+		if (typeof objectToBeParsed === 'string' && objectToBeParsed !== '{}' && objectToBeParsed.length < 99) {
+			stringToBeReplaced = new RandExp(stringToBeReplaced).gen();
+		}
+	}
+
+	return typeof objectToBeParsed === 'object' ?
+		JSON.parse(stringToBeReplaced) :
+		stringToBeReplaced;
+};
+*/
 
 /**
  * Replace the placeholder variables in the api url and in the payload
@@ -372,6 +467,7 @@ const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
 	try {
 		if (path[0] === 'response') path.shift()
 		logger.debug(`Parsing ${yellow(path.join('.'))} from ${green(JSON.stringify(parsedResponse))}`)
+
 		const pathLength = path.length
 		for (let index = 0; index < pathLength; index++) {
 			let key = path[index] ? path[index].trim() : undefined
@@ -380,6 +476,13 @@ const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
 			if (['ANY', 'ANY_OBJECT', 'RANDOM', 'RANDOM_OBJECT'].includes(key.toLocaleUpperCase())) {
 				key = Math.floor(Math.random() * Math.floor(Object.values(parsedResponse).length))
 				parsedResponse = parsedResponse[Math.abs(parseInt(key))]
+			}
+
+			if (key.toUpperCase().startsWith('ANY_') && !isNaN(key.split('_')[1])) {
+				let numberOfItems = parseInt(key.split('_')[1])
+				if (numberOfItems > Object.values(parsedResponse).length) numberOfItems = Object.values(parsedResponse).length
+
+				parsedResponse = [...numberOfItems].map(key => parsedResponse[Math.abs(parseInt(key))])
 			}
 
 			if (key.toLocaleUpperCase() === 'ALL') {
@@ -928,6 +1031,10 @@ const updateScenarioResultsAndSaveReports = async (jobId, result, executionOptio
  * @returns {boolean} Execution status
  */
 const runTests = async (scenarios, executionOptions) => {
+	if (scenarios.length === 0) {
+		logger.error('No tests found')
+		process.exit(1)
+	}
 	const jobId = Date.now().toString();
 	logHandler.logExecutionStart(logger, jobId, scenarios, utils.getParallelExecutorLimit());
 	savePreExecutionData(jobId, scenarios)

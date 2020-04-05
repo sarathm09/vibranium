@@ -1,11 +1,15 @@
-const Ajv = require('ajv');
-const { join } = require('path');
-const { homedir } = require('os');
-const { env } = require('process');
-const { readFileSync } = require('fs');
+const Ajv = require('ajv')
+const { join } = require('path')
+const { homedir } = require('os')
+const { env } = require('process')
+const { readFileSync } = require('fs')
+const { readFile } = require('fs').promises
+
+
+let workspace = '', systemConfig = {}, userConfig = {}, testsDirectory = '';
 
 const validateConfigSchema = config => {
-	const ajv = new Ajv({allErrors: true})
+	const ajv = new Ajv({ allErrors: true })
 	ajv.addMetaSchema(JSON.parse(readFileSync(join(__dirname, '..', 'res', 'schemas', 'draft-06-schema.json'))))
 	let schema = JSON.parse(readFileSync(join(__dirname, '..', 'res', 'schemas', 'config_schema.json')))
 
@@ -16,8 +20,6 @@ const validateConfigSchema = config => {
 	}
 }
 
-
-let workspace = '', systemConfig = {}, userConfig = {}, testsDirectory = '';
 try {
 	systemConfig = JSON.parse(readFileSync(join(homedir(), '.vib', 'config.json'), 'utf-8'));
 	workspace = systemConfig.workspace;
@@ -32,6 +34,20 @@ try {
 		console.log('Error reading config file: ' + err)
 		process.exit(1)
 	}
+}
+
+const loadDataLists = async () => {
+	let data = await readFile(join(__dirname, '..', 'db', 'dataSets.json'))
+	let dataSets = JSON.parse(data)
+	module.exports.dataSets.names = ['names', ...Object.keys(dataSets)]
+	module.exports.dataSets.data = dataSets
+	module.exports.dataSets.data.names = [
+		...dataSets.harrypotter,
+		...dataSets.starWars,
+		...dataSets.pokemon,
+		...dataSets.got,
+		...dataSets.marvel
+	]
 }
 
 module.exports = {
@@ -72,10 +88,11 @@ module.exports = {
 		error: 0,
 		warn: 1,
 		log: 2,
-		info: 3,
-		debug: 4
+		success: 3,
+		info: 4,
+		debug: 5
 	},
-	
+
 
 	loremGeneratorConfig: {
 		sentencesPerParagraph: {
@@ -87,13 +104,16 @@ module.exports = {
 			min: 4
 		}
 	},
-	
+
 	colorCodeRegex: /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
 
 	logRotationConstants: {
 		h: 60 * 60,
 		d: 24 * 60 * 60,
 		y: 365 * 24 * 60 * 60
-	}
+	},
 
-};
+	dataSets: { names: [] },
+
+	loadDataLists
+}

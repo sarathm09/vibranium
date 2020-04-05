@@ -3,14 +3,16 @@ const uuid4 = require('uuid/v4');
 const { join } = require('path');
 const readline = require('readline');
 const { hostname, homedir } = require('os');
-const { mkdirSync, writeFileSync, readFileSync, existsSync, createReadStream, createWriteStream } = require('fs');
+const prettyMilliseconds = require('pretty-ms')
+const { mkdirSync, writeFileSync, readFileSync, existsSync,
+	createReadStream, createWriteStream } = require('fs');
 
 const utils = require('./utils');
 const compiler = require('./compiler');
 const testexecutor = require('./testexecutor');
 const logHandler = require('./loghandler');
 const logger = require('./logger')('cli');
-const { vibPath, userConfig } = require('./constants');
+const { vibPath, userConfig, loadDataLists } = require('./constants');
 
 
 /**
@@ -19,6 +21,7 @@ const { vibPath, userConfig } = require('./constants');
  * @param {object} options Commander object containing user input
  */
 const handleRunCommand = async options => {
+	loadDataLists()
 	const scenarioList = await compiler.search(options.collections, options.scenarios, options.apis);
 	const executionOptions = {
 		variables: options.variables,
@@ -47,7 +50,10 @@ const handleRunCommand = async options => {
  */
 const handleListCommand = async options => {
 	let startTime = Date.now()
-
+	if (!!options.format && !['tree', 'json', 'csv'].includes(options.format)) {
+		logger.warn('Invalid format specified. Using "tree" as default')
+		options.format = 'tree'
+	}
 	if (options.unfreeze || options.freeze) {
 		utils.unfreezeScenarios();
 	}
@@ -68,10 +74,9 @@ const handleListCommand = async options => {
 		utils.freezeScenarios(scenarios);
 	}
 
-
 	console.log(`\nLoaded ${new Set(scenarios.map(sc => sc.collection)).size} collection(s), ${scenarios.length} scenario(s) and ${scenarios.map(sc =>
-		sc.endpoints).reduce((a, c) => [...a, ...c], []).length} api(s) in ${Date.now() - startTime} ms`)
-};
+		sc.endpoints).reduce((a, c) => [...a, ...c], []).length} api(s) in ${prettyMilliseconds(Date.now() - startTime)}`)
+}
 
 /**
  * Setup vibranium in the given path.

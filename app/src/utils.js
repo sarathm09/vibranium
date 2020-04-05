@@ -87,6 +87,7 @@ module.exports.sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
  */
 module.exports.includesRegex = (arr, input) => arr.filter(_ => input.toLowerCase().match(_.toLowerCase())).length > 0;
 
+
 const parseJsonFile = async (fileToParse, fileData, payload) => {
 	let fileParseStatus = {};
 	try {
@@ -118,16 +119,16 @@ const parseJsonFile = async (fileToParse, fileData, payload) => {
  * @param {boolean} payload is the file a payload file or not. Used for file parsing
  */
 module.exports.readJsonFile = async (fileToParse, payload = false) => {
-	if (!fileToParse) return { status: false, message: 'The filename is not valid.' };
+	if (!fileToParse) return { status: false, message: 'The filename is not valid.' }
 
 	if (!!fileToParse && fileToParse.split('.').pop() != 'json')
 		return {
 			status: false,
 			message: `The file ${fileToParse} does not have the extension '.json'`
-		};
+		}
 	else {
-		let fileData = await readFile(fileToParse, 'utf8');
-		return parseJsonFile(fileToParse, fileData, payload);
+		let fileData = await readFile(fileToParse, 'utf8')
+		return parseJsonFile(fileToParse, fileData, payload)
 	}
 };
 

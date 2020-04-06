@@ -51,29 +51,42 @@ const loadPayloadFiles = async (endpoint, scenarioName) => {
  * @param {string} apis csv of apis to filter
  * @param {boolean} searchMode If search mode is true, the filter is based on regex and else it is based on full match
  */
-const loadEndpoinsForScenario = (scenario, apis, searchMode = false) => new Promise(resolve => {
+const loadEndpoinsForScenario = async (scenario, apis, searchMode = false) => {
 	if (scenario.endpoints) {
 		let payloadReaders = [];
 		if (searchMode) {
 			payloadReaders = scenario.endpoints
-				.filter(endpoint =>
-					utils.isAll(apis) ? true : utils.includesRegex(utils.splitAndTrimInput(apis), endpoint.name)
-				)
-				.map(endpoint => new Promise(resolve => resolve(loadPayloadFiles(endpoint, scenario.name))));
+				.filter(endpoint => utils.isAll(apis) ? true :
+					utils.includesRegex(utils.splitAndTrimInput(apis), endpoint.name))
+				.map(endpoint => loadPayloadFiles(endpoint, scenario.name));
 		} else {
 			payloadReaders = scenario.endpoints
 				.filter(endpoint => (utils.isAll(apis) ? true : utils.splitAndTrimInput(apis).includes(endpoint.name)))
-				.map(endpoint => new Promise(resolve => resolve(loadPayloadFiles(endpoint, scenario.name))));
+				.map(endpoint => loadPayloadFiles(endpoint, scenario.name));
 		}
 
-		Promise.all(payloadReaders).then(endpoints => {
-			scenario.endpoints = endpoints;
-			resolve(scenario);
-		});
+		let endpoints = await Promise.all(payloadReaders)
+		// eslint-disable-next-line require-atomic-updates
+		scenario.endpoints = endpoints;
+
+		//	updateEndpointsThatUseGlobalKeyword(endpoints)
+		return scenario
 	} else {
-		resolve(scenario);
+		return scenario
 	}
-})
+}
+
+
+// const updateEndpointsThatUseGlobalKeyword = endpoints => {
+// 	let endpointsWithGlobals = endpoints.filter(e => !!e.globals)
+// 	for (const endpoint of endpointsWithGlobals) {
+// 		for (const [key, value] of Object.entries(endpoint.globals)) {
+// 			let endpointsUsingThisGlobal = endpoints
+// 				.filter(e => e.variables && Object.values(e.variables).includes(key))
+
+// 		}
+// 	}
+// }
 
 
 /**
@@ -478,7 +491,7 @@ const filterScenariosMatchingEndpointKeys = (scenarios, keyFilter, keyValue = ''
 		let filteredEndpoints = []
 		for (let endpoint of scenario.endpoints) {
 			let parsedObject = findObjectFromKeyHierarchy(endpoint, keyFilter.split('.'))
-			
+
 			if (compareObjects(parsedObject, keyValue.split('\'').join(), comparator)) {
 				filteredEndpoints.push(endpoint)
 			}

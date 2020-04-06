@@ -35,12 +35,14 @@ const handleRunCommand = async options => {
 
 	// eslint-disable-next-line no-unused-vars
 	const result = await testexecutor.runTests(scenarioList, executionOptions);
-	//console.log(JSON.stringify(result, null, 4));
+	let status = result.map(scenario =>
+		scenario.endpoints.filter(e => !e._status)).length == 0
 
 	// handle mode_aether and --silent
 	if (options.silent) {
 		handleSilentResponse(result)
 	}
+	if (!status) process.exit(1)
 };
 
 /**
@@ -63,7 +65,7 @@ const handleListCommand = async options => {
 		scenarios = compiler.filterScenariosMatchingKeys(scenarios, options.keys)
 	}
 
-	let apiList = await compiler.convertScenarios(scenarios);
+	let apiList = await compiler.convertScenarios(scenarios)
 
 	if (options.format == 'tree' || options.format == 'csv') {
 		apiList = compiler.convertApiListToTreeStructure(apiList);

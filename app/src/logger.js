@@ -79,7 +79,7 @@ const logData = (moduleName, level, logStream) => async (message, error) => {
 	}
 	if (logLevels[env.LOG_LEVEL] >= logLevels[level] && !env.SILENT)
 		console.log(`[${logHandler.prettyPrint('loglevel', consoleLevel)}] [${consoleModule}]: ${message || ''}`)
-	logStream.write(`[${consoleLevel}] [${moduleName}] ${Date.now()}: ${message ? message.replace(colorCodeRegex, '') : ''}\n`)
+	logStream.write(`[${consoleLevel}] [${moduleName}] ${Date.now()}: ${message && typeof message === 'string' ? message.replace(colorCodeRegex, '') : ''}\n`)
 	if (error) {
 		if ([logLevels.error, logLevels.warn, logLevels.debug].includes(logLevels[env.LOG_LEVEL]))
 			console.log(`[${consoleLevel}] [${consoleModule}]: ${error.stack || 'no stack trace'} `)

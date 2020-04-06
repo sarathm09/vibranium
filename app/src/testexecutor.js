@@ -82,18 +82,23 @@ const logScenarioStart = async (scenario, jobId) => logHandler.logScenarioStart(
  * @param {object} globals Generate object in the scenario
  */
 const processGeneratorsAndGlobals = async (variables, globals, isDependency) => {
-	if (!!globals && typeof (globals) === 'object') {
-		for (let globalVar of Object.keys(globals)) {
-			if (typeof (globals[globalVar]) === 'object' && !isDependency) {
-				globals[globalVar].variable = globalVar
-				// TODO execute api
-				let dependencyExecutionResult = await loadDependendentEndpoint({}, globals[globalVar], { ...variables })
-				// eslint-disable-next-line require-atomic-updates
-				variables[globalVar] = dependencyExecutionResult[globalVar]
-			} else if (typeof (globals[globalVar]) === 'string') {
-				variables[globalVar] = replacePlaceholderInString(globals[globalVar], variables)
+	try {
+		if (!!globals && typeof (globals) === 'object') {
+			for (let globalVar of Object.keys(globals)) {
+				if (typeof (globals[globalVar]) === 'object' && !isDependency) {
+					globals[globalVar].variable = globalVar
+					// TODO execute api
+					let dependencyExecutionResult = await loadDependendentEndpoint({}, globals[globalVar], { ...variables })
+					// eslint-disable-next-line require-atomic-updates
+					variables[globalVar] = dependencyExecutionResult[globalVar]
+				} else if (typeof (globals[globalVar]) === 'string') {
+					variables[globalVar] = replacePlaceholderInString(globals[globalVar], variables)
+				}
 			}
 		}
+	} catch (error) {
+		logger.error('Could not execute globals and generators. Scenario will be skipped.')
+		throw (error)
 	}
 	return variables
 };
@@ -243,28 +248,60 @@ const replaceDataSetPlaceHolders = value => {
 }
 
 
+/**
+ * Replace the varibles that contain the dot notation
+ * for example 	`{variable.abc}`
+ * 
+ * @param {string} objectToParse The string from which varibles are to be replaced
+ * @param {array} stringMatch variables matching the dot notation
+ * @param {object} variableValue value for the variable
+ */
+const replacePlaceholderWithDotNotation = (objectToParse, stringMatch, variableValue) => {
+	for (let match of stringMatch) {
+		match = match.split('{').join('').split('}').join('')
+		let path = match.split('.')
+		path.shift()
+		let parsedValue = parseResponseVariableFromPath(variableValue, path.join('.'))
+		let isValueAnObject = typeof parsedValue === 'object'
+		if (objectToParse.includes(`"{${match}}"`)) {
+			objectToParse = objectToParse
+				.split(`"{${match}}"`)
+				.join(`${isValueAnObject ? JSON.stringify(parsedValue) : parsedValue}`)
+		} else if (objectToParse === `{${match}}`) {
+			objectToParse = isValueAnObject ? JSON.stringify(parsedValue) : parsedValue
+		} else {
+			objectToParse = objectToParse
+				.split(`{${match}}`)
+				.join(`${isValueAnObject ? JSON.stringify(parsedValue) : parsedValue}`)
+		}
+	}
+	return objectToParse
+}
+
+
+/**
+ * Replace the placeholders when the string from which they have to be replaced is a JSON
+ * 
+ * @param {string} objectToParse The string with the variables to be parsed and replaced
+ * @param {string} variableName variable to replace
+ * @param {any} variableValue replacement value
+ * @param {boolean} isObjectToParseAJSON typeof the object to be parsed 
+ */
 const replacePlaceholderWhenValueIsAnObject = (objectToParse, variableName, variableValue, isObjectToParseAJSON) => {
 	let stringMatch = objectToParse.match(new RegExp(`\\{${variableName}\\.[\\.a-zA-Z0-9]*\\}`, 'gm'))
 
-	if (stringMatch.length > 0) {
-		const jsonValue = JSON.parse(variableValue)
-		for (let match of stringMatch) {
-			match = match.split('{').join('').split('}').join('')
-			let parsedValue = parseResponseVariableFromPath(jsonValue, match)
-			objectToParse = objectToParse
-				.split(`{${match}}`)
-				.join(`${JSON.stringify(parsedValue)}`)
-		}
+	if (!!stringMatch && stringMatch.length > 0) {
+		objectToParse = replacePlaceholderWithDotNotation(objectToParse, stringMatch, variableValue)
 	} else if (objectToParse === `{${variableName}}`) {
 		objectToParse = JSON.stringify(variableValue)
+	} else if (objectToParse.includes(`"{${variableName}}"`)) {
+		objectToParse = objectToParse
+			.split(`"{${variableName}}"`)
+			.join(`${JSON.stringify(variableValue)}`)
 	} else if (objectToParse.includes(`{${variableName}}`)) {
 		objectToParse = objectToParse
 			.split(`{${variableName}}`)
 			.join(`${JSON.stringify(variableValue)}`)
-	} else {
-		objectToParse = objectToParse
-			.split(`{${variableName}}`)
-			.join(JSON.stringify(variableValue));
 	}
 
 	return objectToParse
@@ -277,9 +314,9 @@ const replacePlaceholderWhenValueIsAnObject = (objectToParse, variableName, vari
  * @param {object} variables Available variables
  */
 const replacePlaceholderInString = (objectToBeParsed, variables) => {
-	let stringToBeReplaced = objectToBeParsed;
+	let stringToBeReplaced = objectToBeParsed, isInputAnObject = typeof objectToBeParsed === 'object'
 	if (typeof stringToBeReplaced === 'string' || typeof stringToBeReplaced === 'object') {
-		if (typeof objectToBeParsed === 'object') {
+		if (isInputAnObject) {
 			stringToBeReplaced = JSON.stringify(objectToBeParsed);
 		}
 
@@ -290,7 +327,7 @@ const replacePlaceholderInString = (objectToBeParsed, variables) => {
 			} else if (typeof variables[variableName] === 'object') {
 				// The variable value is an object
 				stringToBeReplaced = replacePlaceholderWhenValueIsAnObject(stringToBeReplaced, variableName,
-					variables[variableName], typeof objectToBeParsed === 'object')
+					variables[variableName], isInputAnObject)
 			} else if (stringToBeReplaced.includes(`{${variableName}}`)) {
 				stringToBeReplaced = stringToBeReplaced
 					.split(`{${variableName}}`)
@@ -311,10 +348,11 @@ const replacePlaceholderInString = (objectToBeParsed, variables) => {
 		}
 	}
 
-	return typeof objectToBeParsed === 'object' ?
+	return isInputAnObject ?
 		JSON.parse(stringToBeReplaced) :
 		stringToBeReplaced;
 };
+
 /**
  * Replace the available placeholders with the value of the corresponding variables
  *
@@ -394,19 +432,19 @@ const replaceVariablesInApi = (api, variables) => {
  *
  * @param {array} scenarios List of all scenarios
  */
-const createScenarioCache = async scenarios => {
-	scenarios.forEach(scenario => {
-		if (!Object.keys(scenarioCache).includes(scenario.collection)) {
-			scenarioCache[scenario.collection] = {
-				[scenario.name]: scenario
+const createScenarioCache = async scenariosToAdd => {
+	scenariosToAdd.forEach(sc => {
+		if (!Object.keys(scenarioCache).includes(sc.collection)) {
+			scenarioCache[sc.collection] = {
+				[sc.name]: sc
 			};
 
-		} else if (scenarioCache[scenario.collection][scenario.name]) {
-			scenarioCache[scenario.collection][scenario.name].endpoints = [
-				...scenarioCache[scenario.collection][scenario.name].endpoints,
-				...scenario.endpoints
+		} else if (scenarioCache[sc.collection][sc.name]) {
+			scenarioCache[sc.collection][sc.name].endpoints = [
+				...scenarioCache[sc.collection][sc.name].endpoints,
+				...sc.endpoints
 			];
-		} else scenarioCache[scenario.collection][scenario.name] = scenario;
+		} else scenarioCache[sc.collection][sc.name] = sc;
 	});
 };
 
@@ -436,7 +474,7 @@ const searchForEndpointInCache = async (collection, scenario, api) => {
 	const searchResult = await compiler.compile(collection, scenario, api);
 
 	if (searchResult.length > 0) {
-		createScenarioCache(searchResult);
+		//createScenarioCache(searchResult);
 		searchResult[0].endpoints = [searchResult[0].endpoints.find(endpoint => endpoint.name === api)];
 		return {
 			scenario: searchResult[0],
@@ -457,7 +495,8 @@ const searchForEndpointInCache = async (collection, scenario, api) => {
  * @param {string} dependencyPath Path to the key in the response tha needs to be parsed and stored as a variable
  */
 const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
-	let parsedResponse = { ...endpointResult }
+	let parsedResponse = endpointResult;
+	
 	if (!dependencyPath || dependencyPath === '' || typeof (endpointResult) === 'string') {
 		return endpointResult
 	}
@@ -478,23 +517,26 @@ const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
 				parsedResponse = parsedResponse[Math.abs(parseInt(key))]
 			}
 
-			if (key.toUpperCase().startsWith('ANY_') && !isNaN(key.split('_')[1])) {
+			else if (key.toUpperCase().startsWith('ANY_') && !isNaN(key.split('_')[1])) {
 				let numberOfItems = parseInt(key.split('_')[1])
 				if (numberOfItems > Object.values(parsedResponse).length) numberOfItems = Object.values(parsedResponse).length
 
 				parsedResponse = [...numberOfItems].map(key => parsedResponse[Math.abs(parseInt(key))])
 			}
 
-			if (key.toLocaleUpperCase() === 'ALL') {
+			else if (key.toLocaleUpperCase() === 'ALL') {
 				++index
 				parsedResponse = Object.values(parsedResponse).map(r => r[path[index]])
 			}
 
-			if (!isNaN(key) && Math.abs(parseInt(key)) < Object.values(parsedResponse).length) {
-				parsedResponse = parsedResponse[Math.abs(parseInt(key))]
+			else if (!isNaN(key)) {
+				let responseLength = Object.values(parsedResponse).length
+				if (Math.abs(parseInt(key)) >= responseLength) key = responseLength - 1
+				else key = Math.abs(parseInt(key))
+				parsedResponse = parsedResponse[key]
 			}
 
-			if (Object.keys(parsedResponse).includes(key)) {
+			else if (Object.keys(parsedResponse).includes(key)) {
 				parsedResponse = parsedResponse[key]
 			}
 		}
@@ -588,7 +630,7 @@ const loadDependendentEndpoint = async (endpoint, dependency, endpointVariables)
 	let dependencyVariables = !!dependency.variables && typeof (dependency.variables) === 'object' ? { ...endpointVariables, ...dependency.variables } : endpointVariables
 
 	if (searchResult === undefined || !searchResult.scenario || !searchResult.api) {
-		throw ({ message: `Endpoint ${dependency.collection}.${dependency.scenario}.${dependency.api} not found` });
+		throw { message: `Endpoint ${dependency.collection}.${dependency.scenario}.${dependency.api} not found` };
 	}
 	searchResult = JSON.parse(JSON.stringify(searchResult))
 
@@ -621,7 +663,7 @@ const loadDependendentEndpoint = async (endpoint, dependency, endpointVariables)
 
 	if (scenarioResponse.endpoints.filter(endpoint => !endpoint._status).length > 0) {
 		logger.error(`Executing dependency ${getFormattedEndpointName(dependency.collection, dependency.scenario, dependency.api)} : ${red('FAIL')}`)
-		throw ({ message: `Endpoint ${dependency.collection}.${dependency.scenario}.${dependency.api} execution failed` });
+		throw { message: `Endpoint ${dependency.collection}.${dependency.scenario}.${dependency.api} execution failed` };
 	} else {
 		return processDependencyExecutionResult(scenarioResponse, endpoint, dependency, endpointVariables)
 	}
@@ -665,7 +707,6 @@ const getApiExecuterPromise = (scenarioVariables, endpoint, repeatIndex) => new 
 			})
 		});
 	}
-
 	dependencyResolver
 		.then(response => {
 			if (response) endPointVariables = { ...endPointVariables, ...response };
@@ -713,7 +754,6 @@ const processEndpoint = async (scenarioVariables, endpoint, scenarioName, collec
 		results = await Promise.all(endpointExecutors)
 
 	} else {
-
 		let endpointResolver = Promise.resolve();
 		[...(endpoint.repeat || 1)].forEach(i => {
 			endpointResolver = endpointResolver.then(result => {
@@ -725,7 +765,6 @@ const processEndpoint = async (scenarioVariables, endpoint, scenarioName, collec
 		const result = await endpointResolver;
 		results.push(result);
 	}
-
 	return resolveEndpointResponses(endpoint, results);
 }
 
@@ -738,31 +777,49 @@ const processEndpoint = async (scenarioVariables, endpoint, scenarioName, collec
  * @param {boolean} overrideIgnoreFlag Consider ignore flag in endpoint or not
  */
 const performScenarioExecutionSteps = async (scenario, variables, overrideIgnoreFlag = false, isDependency = false) => {
-	// Execute the pre scenario scripts
-	let preScriptVariables = await executePreScenarioScripts(variables, scenario);
-	// Process Generators and global variables
-	let globalVariables = await processGeneratorsAndGlobals(preScriptVariables, scenario.generate, isDependency);
-	// Execute the post generator scripts
-	let postScriptVariables = await executePostGeneratorScripts({ ...preScriptVariables, ...globalVariables }, scenario);
+	try {
+		// Execute the pre scenario scripts
+		let preScriptVariables = await executePreScenarioScripts(variables, scenario);
+		// Process Generators and global variables
+		let globalVariables = await processGeneratorsAndGlobals(preScriptVariables, scenario.generate, isDependency);
+		// Execute the post generator scripts
+		let postScriptVariables = await executePostGeneratorScripts({ ...preScriptVariables, ...globalVariables }, scenario);
 
-	// Combine the results
-	let scenarioVariables = {
-		...preScriptVariables,
-		...globalVariables,
-		...postScriptVariables
-	};
-	// Take the endpoints that have ignore flag as false and execute them
-	let endpointsToBeProcessed = overrideIgnoreFlag
-		? scenario.endpoints
-		: scenario.endpoints.filter(endpoint => !endpoint.ignore);
+		// Combine the results
+		let scenarioVariables = {
+			...preScriptVariables,
+			...globalVariables,
+			...postScriptVariables
+		};
+		// Take the endpoints that have ignore flag as false and execute them
+		let endpointsToBeProcessed = overrideIgnoreFlag
+			? scenario.endpoints
+			: scenario.endpoints.filter(endpoint => !endpoint.ignore);
 
-	await Promise.all(endpointsToBeProcessed
-		.map(endpoint => processEndpoint(scenarioVariables, endpoint, scenario.name, scenario.collection)));
+		await Promise.all(endpointsToBeProcessed
+			.map(endpoint => processEndpoint(scenarioVariables, endpoint, scenario.name, scenario.collection)));
 
-	return {
-		scenarioResponse: scenario,
-		scenarioVariables
-	};
+		return {
+			scenarioResponse: scenario,
+			scenarioVariables
+		};
+	} catch (error) {
+		return {
+			scenarioResponse: {
+				_result: {
+					endpoints: scenario.endpoints.map(e => {
+						e._result = {}
+						e._status = false
+						return e
+					})
+				},
+				_error: error,
+				_status: false,
+				...scenario
+			},
+			scenarioVariables: {}
+		}
+	}
 
 };
 
@@ -814,7 +871,8 @@ const processScenario = async (scenario, jobId, variables) => {
 	return {
 		...scenarioResult,
 		status: scenarioResult._result.status,
-		_status: scenarioResult._result.status === executionStatus.SUCESS
+		_status: scenarioResult._result.status === executionStatus.SUCESS,
+		_error: scenarioResponse._error
 	};
 };
 
@@ -1017,10 +1075,11 @@ const savePostExecutionData = async (jobId, scenarios) => {
  */
 const updateScenarioResultsAndSaveReports = async (jobId, result, executionOptions) => {
 	result._result = {
-		total: result.endpoints.length,
-		success: result.endpoints.filter(e => e._status).length
+		total: result.endpoints && result.endpoints.filter(e => !!e).length,
+		success: result.endpoints && result.endpoints.filter(e => e._status).length
 	}
-	result._status = result.endpoints.every(e => e._status)
+
+	result._status = result.endpoints && result.endpoints.every(e => e._status)
 	await logHandler.processScenarioResult(jobId, result, executionOptions.report, vibPath.jobs)
 }
 
@@ -1054,7 +1113,7 @@ const runTests = async (scenarios, executionOptions) => {
 	// Run the tests
 	const scenarioResults = await Promise.all(scenariosToExecute.map(scenario =>
 		processScenario(scenario, jobId, { ...globalVariables, ...userVariables })
-	));
+	))
 
 	savePostExecutionData(jobId, scenarios)
 	await Promise.all(scenarioResults

@@ -10,7 +10,6 @@ const { writeFile, rmdir } = require('fs').promises
 const { executionStatus } = require('./constants')
 const utils = require('./utils')
 
-const isMac = utils.isMac
 
 /**
  * Print the API tree in a formatted tree structure.
@@ -88,6 +87,7 @@ const printApiList = (logger, apis, format = 'tree', color = true) => new Promis
  * @param {object} scenarios List of scenarios to execute
  */
 const logExecutionStart = async (logger, jobId, scenarios, executorCount) => {
+	logger.info()
 	logger.info('Job Execution ID: ' + prettyPrint('jobId', jobId))
 	logger.info(`Starting execution at ${prettyPrint('date')} with ${chalk.blue(executorCount)} parallel thread(s), ${scenarios.length} scenario(s) and ${scenarios.map(sc => sc.endpoints.length).reduce((a, c) => a + c, 0)} API(s)`)
 	logger.info()
@@ -131,6 +131,10 @@ const printApiExecutionStart = async (logger, api, variables) => {
 };
 
 const printApiExecutionEnd = async (logger, api) => {
+	// eslint-disable-next-line no-unused-vars
+	let { response, contentType, status } = api._result
+	const isResponseJson = typeof (api._result.response) === 'object'
+
 	let details = {
 		'Name': prettyPrint('api', api.name),
 		'Collection': prettyPrint('collection', api.collection),
@@ -139,20 +143,22 @@ const printApiExecutionEnd = async (logger, api) => {
 		'Url': api.url,
 		'Payload': (!!api.payload && typeof (api.payload) === 'object') ? JSON.stringify(api.payload, null, 2) : '{}',
 		'Repeat Index': getAPIIndex(api),
-		'StatusCode': api._result.status,
+		'StatusCode': status,
 		'Status': prettyPrint('status', api._status),
-		'Response': (!!api._result.response && typeof (api._result.response) === 'object') ? JSON.stringify(api._result.response, null, 2) : '{}',
-		'Timing': api._result.timing ? Object.entries(api._result.timing).map(([key, value]) => chalk.yellowBright(key) + ': ' +
+		'Content-Type': contentType,
+		'Response': (!!response && isResponseJson) ? JSON.stringify(response, null, 2) : response,
+		'Timing (1)': api._result.timing ? Object.entries(api._result.timing).slice(0, 3).map(([key, value]) => chalk.yellowBright(key) + ': ' +
 			chalk.yellowBright(parseFloat(value).toFixed(2))).join(', ') : 'not available',
-		'_result': (!api._status && !!api._result && typeof (api._result) === 'object') ? JSON.stringify(api._result, null, 2) : '{}'
+		'Timing (2)': api._result.timing ? Object.entries(api._result.timing).slice(3, 6).map(([key, value]) => chalk.yellowBright(key) + ': ' +
+			chalk.yellowBright(parseFloat(value).toFixed(2))).join(', ') : 'not available'
 	}
 	logger.info()
 	for (let [key, value] of Object.entries(details)) {
-		if (['Payload', 'Response', '_result'].includes(key)) {
+		if (['Payload', 'Response'].includes(key)) {
 			if (!api._status || process.env.LOG_LEVEL === 'debug') {
-				let dataToBePrinted = key + utils.printSpaces(key) + ': ' + value.split('\n')
-					.map((line, i) => (i > 0 ? utils.printSpaces(key, 42) : '') + syntaxHighlight(line))
-					.join('\n')
+				let dataToBePrinted = `${key}${utils.printSpaces(key)}: ${value.split('\n')
+					.map((line, i) => (i > 0 ? utils.printSpaces(key, 33) : '') + syntaxHighlight(line, isResponseJson))
+					.join('\n')}`
 				api._status ? logger.debug(dataToBePrinted) : logger.error(dataToBePrinted);
 			}
 		} else {
@@ -186,8 +192,9 @@ const logExecutionEnd = (logger, jobId, result, totalEndpointsExecuted, totalEnd
 			.map(e => {
 				return {
 					scenario: scenario.name,
+					collection: scenario.collection,
 					name: e.name,
-					statusCode: e._result.statusCode
+					statusCode: e._result && e._result.statusCode
 				}
 			}), ...endpointResult]
 	}
@@ -198,8 +205,16 @@ const logExecutionEnd = (logger, jobId, result, totalEndpointsExecuted, totalEnd
 		endpointResult
 			.map(e => `\t${e.scenario}.${chalk.redBright(e.name)}`)
 			.map(logger.error)
+		logger.info()
+		logger.error('Rerun the failed tests with the following command: ')
+		let failedCollections = Array.from(new Set(endpointResult.map(e => e.collection))).join(','),
+			failedScenarios = Array.from(new Set(endpointResult.map(e => e.scenario))).join(','),
+			failedEndpoints = Array.from(new Set(endpointResult.map(e => e.name))).join(',')
+		console.error(chalk.keyword('orange')(`\n\tvc r -c ${failedCollections} -s ${failedScenarios} -a ${failedEndpoints}`))
+		logger.error()
+		logger.error('Status: ' + prettyPrint('status', false))
 	} else {
-		logger.success(prettyPrint('status', true))
+		logger.success('Status: ' + prettyPrint('status', true))
 	}
 }
 
@@ -242,11 +257,13 @@ const processScenarioResult = async (jobId, result, report, jobsPath) => {
 }
 
 
-const syntaxHighlight = json => {
+const syntaxHighlight = (json, isJson) => {
+	if (!isJson) return json
+
 	json = json
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;');
+		.split('&').join('&amp;')
+		.split('<').join('&lt;')
+		.split('>').join('&gt;');
 	return json.replace(
 		/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g, (match) => {
 			let cls = chalk.yellow;
@@ -268,9 +285,9 @@ const syntaxHighlight = json => {
 
 const stylesForAPI = {
 	jobId: (text, color) => color ? chalk.greenBright(text) : text,
-	collection: (text, color) => color ? (isMac ? '📂 ' : ' ') + chalk.cyan(text) : text,
-	scenario: (text, color) => color ? (isMac ? '📄 ' : ' ') + chalk.cyanBright(text) : text,
-	api: (text, color) => color ? (isMac ? '🌐 ' : ' ') + chalk.greenBright(text) : text,
+	collection: (text, color) => color ? (utils.isMac ? '📂 ' : '') + chalk.cyan(text) : text,
+	scenario: (text, color) => color ? (utils.isMac ? '📄 ' : '') + chalk.cyanBright(text) : text,
+	api: (text, color) => color ? (utils.isMac ? '🌐 ' : '') + chalk.greenBright(text) : text,
 	date: (text, color) => color ? `${chalk.grey(new Date().toLocaleTimeString('en'))}` : text
 }
 const logLevelStyles = {
@@ -288,9 +305,9 @@ const logLevelStyles = {
 	l: (text, color) => color ? chalk.blue(text) : text,
 }
 const statusStyles = {
-	success: (text, color) => color ? (isMac ? '🟢 ' : '') + chalk.greenBright('SUCCESS') : text,
-	fail: (text, color) => color ? (isMac ? '🔴 ' : '') + chalk.redBright('FAIL') : text,
-	error: (text, color) => color ? (isMac ? '🟠 ' : '') + chalk.redBright('ERROR') : text
+	success: (text, color) => color ? (utils.isMac ? '🟢 ' : '') + chalk.greenBright('SUCCESS') : text,
+	fail: (text, color) => color ? (utils.isMac ? '🔴 ' : '') + chalk.redBright('FAIL') : text,
+	error: (text, color) => color ? (utils.isMac ? '🟠 ' : '') + chalk.redBright('ERROR') : text
 }
 
 /**

@@ -237,10 +237,17 @@ const replaceDataSetPlaceHolders = value => {
 		for (const name of dataSets.names) {
 			if (value.includes('{dataset.' + name)) {
 				let length = dataSets.data[name].length
-				let index = Math.floor(Math.random() * Math.floor(length))
-
-				value = value.split(`{dataset.${name}}`)
-					.join(`${dataSets.data[name][index]}`)
+				let finalString = ''
+				let occurences = value.split(`{dataset.${name}}`)
+				let numOfOccurences = occurences.length
+				for (let occurenceIndex = 0; occurenceIndex < numOfOccurences - 1; occurenceIndex++) {
+					let index = Math.floor(Math.random() * Math.floor(length))
+					finalString += occurences[occurenceIndex] + dataSets.data[name][index]
+				}
+				finalString += occurences[numOfOccurences - 1]
+				value = finalString
+				// value = value.split(`{dataset.${name}}`)
+				// 	.join(`${dataSets.data[name][index]}`)
 			}
 		}
 	}
@@ -261,11 +268,12 @@ const replacePlaceholderWithDotNotation = (objectToParse, stringMatch, variableV
 		match = match.split('{').join('').split('}').join('')
 		let path = match.split('.')
 		path.shift()
+		console.log(path)
 		let parsedValue = parseResponseVariableFromPath(variableValue, path.join('.'))
 		let isValueAnObject = typeof parsedValue === 'object'
 		if (objectToParse.includes(`"{${match}}"`)) {
 			objectToParse = objectToParse
-				.split(`"{${match}}"`)
+				.split(isValueAnObject ? `"{${match}}"` : `{${match}}`)
 				.join(`${isValueAnObject ? JSON.stringify(parsedValue) : parsedValue}`)
 		} else if (objectToParse === `{${match}}`) {
 			objectToParse = isValueAnObject ? JSON.stringify(parsedValue) : parsedValue
@@ -288,7 +296,7 @@ const replacePlaceholderWithDotNotation = (objectToParse, stringMatch, variableV
  * @param {boolean} isObjectToParseAJSON typeof the object to be parsed 
  */
 const replacePlaceholderWhenValueIsAnObject = (objectToParse, variableName, variableValue) => {
-	let stringMatch = objectToParse.match(new RegExp(`\\{${variableName}\\.[\\.a-zA-Z0-9]*\\}`, 'gm'))
+	let stringMatch = objectToParse.match(new RegExp(`\\{${variableName}\\.[\\.a-zA-Z0-9_]*\\}`, 'gm'))
 
 	if (!!stringMatch && stringMatch.length > 0) {
 		objectToParse = replacePlaceholderWithDotNotation(objectToParse, stringMatch, variableValue)
@@ -496,7 +504,6 @@ const searchForEndpointInCache = async (collection, scenario, api) => {
  */
 const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
 	let parsedResponse = endpointResult;
-	
 	if (!dependencyPath || dependencyPath === '' || typeof (endpointResult) === 'string') {
 		return endpointResult
 	}
@@ -508,6 +515,7 @@ const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
 		logger.debug(`Parsing ${yellow(path.join('.'))} from ${green(JSON.stringify(parsedResponse))}`)
 
 		const pathLength = path.length
+
 		for (let index = 0; index < pathLength; index++) {
 			let key = path[index] ? path[index].trim() : undefined
 			if (!key || key === '') continue
@@ -516,12 +524,12 @@ const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
 				key = Math.floor(Math.random() * Math.floor(Object.values(parsedResponse).length))
 				parsedResponse = parsedResponse[Math.abs(parseInt(key))]
 			}
-
 			else if (key.toUpperCase().startsWith('ANY_') && !isNaN(key.split('_')[1])) {
 				let numberOfItems = parseInt(key.split('_')[1])
 				if (numberOfItems > Object.values(parsedResponse).length) numberOfItems = Object.values(parsedResponse).length
 
-				parsedResponse = [...numberOfItems].map(key => parsedResponse[Math.abs(parseInt(key))])
+				parsedResponse = utils.shuffleArray([...numberOfItems]
+					.map(key => parsedResponse[Math.abs(parseInt(key))]))
 			}
 
 			else if (key.toLocaleUpperCase() === 'ALL') {

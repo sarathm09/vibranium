@@ -231,7 +231,7 @@ const processScenarioFiles = async (scenarioFiles, apis, searchMode) => {
 
 		if (!env.SILENT) {
 			result.filter(obj => !obj.status)
-				.map(obj => logger.warn(`${obj.message}`, { ignored: true }));
+				.map(obj => logger.warn(`${obj.message}`));
 		}
 		let scenarios = result.filter(obj => obj.status).map(obj => obj.data);
 
@@ -298,7 +298,7 @@ const loadAllScenariosFromSystem = async (collections, scenarios, apis) => {
 				? true
 				: utils.splitAndTrimInput(collections).includes(utils.getCollectionNameForScenario(scenarioFile))
 		)
-		.map(file => new Promise(resolve => utils.readJsonFile(file).then(resolve)));
+		.map(file => utils.readJsonFile(file));
 
 	filteredScenarios = await processScenarioFiles(filteredScenarios, apis);
 	filteredScenarios = filteredScenarios.filter(scenarioFile =>

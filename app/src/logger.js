@@ -4,8 +4,8 @@ const { readdir, unlink, rmdir } = require('fs').promises
 const { createWriteStream } = require('fs')
 
 const logHandler = require('./loghandler');
-const { userConfig, vibPath, colorCodeRegex, logRotationConstants, 
-	logLevels} = require('./constants');
+const { userConfig, vibPath, colorCodeRegex, logRotationConstants,
+	logLevels } = require('./constants');
 
 const getDefaultLogLevel = () => {
 	let logLevel = 'info';
@@ -77,8 +77,9 @@ const logData = (moduleName, level, logStream) => async (message, error) => {
 		consoleLevel = level[0]
 		consoleModule = moduleName[0]
 	}
-	if (logLevels[env.LOG_LEVEL] >= logLevels[level] && !env.SILENT)
+	if (logLevels[env.LOG_LEVEL] >= logLevels[level] && !env.SILENT) {
 		console.log(`[${logHandler.prettyPrint('loglevel', consoleLevel)}] [${consoleModule}]: ${message || ''}`)
+	}
 	logStream.write(`[${consoleLevel}] [${moduleName}] ${Date.now()}: ${message && typeof message === 'string' ? message.replace(colorCodeRegex, '') : ''}\n`)
 	if (error) {
 		if ([logLevels.error, logLevels.warn, logLevels.debug].includes(logLevels[env.LOG_LEVEL]))

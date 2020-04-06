@@ -21,7 +21,7 @@ const { vibPath, userConfig, loadDataLists } = require('./constants');
  * @param {object} options Commander object containing user input
  */
 const handleRunCommand = async options => {
-	loadDataLists()
+	let loadDataSetTask = loadDataLists()
 	const scenarioList = await compiler.search(options.collections, options.scenarios, options.apis);
 	const executionOptions = {
 		variables: options.variables,
@@ -33,6 +33,7 @@ const handleRunCommand = async options => {
 		report: options.report
 	};
 
+	await loadDataSetTask
 	// eslint-disable-next-line no-unused-vars
 	const result = await testexecutor.runTests(scenarioList, executionOptions);
 	let status = result.map(scenario =>

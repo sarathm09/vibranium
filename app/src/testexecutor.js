@@ -287,7 +287,7 @@ const replacePlaceholderWithDotNotation = (objectToParse, stringMatch, variableV
  * @param {any} variableValue replacement value
  * @param {boolean} isObjectToParseAJSON typeof the object to be parsed 
  */
-const replacePlaceholderWhenValueIsAnObject = (objectToParse, variableName, variableValue, isObjectToParseAJSON) => {
+const replacePlaceholderWhenValueIsAnObject = (objectToParse, variableName, variableValue) => {
 	let stringMatch = objectToParse.match(new RegExp(`\\{${variableName}\\.[\\.a-zA-Z0-9]*\\}`, 'gm'))
 
 	if (!!stringMatch && stringMatch.length > 0) {
@@ -327,7 +327,7 @@ const replacePlaceholderInString = (objectToBeParsed, variables) => {
 			} else if (typeof variables[variableName] === 'object') {
 				// The variable value is an object
 				stringToBeReplaced = replacePlaceholderWhenValueIsAnObject(stringToBeReplaced, variableName,
-					variables[variableName], isInputAnObject)
+					variables[variableName])
 			} else if (stringToBeReplaced.includes(`{${variableName}}`)) {
 				stringToBeReplaced = stringToBeReplaced
 					.split(`{${variableName}}`)

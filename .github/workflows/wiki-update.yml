@@ -19,6 +19,6 @@ jobs:
       with:
         repository: https://github.com/sarathm09/vibranium.wiki
         branch: master
-        github_token: secrets.GITHUB_TOKEN
+        github_token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
         source_folder: docs
 

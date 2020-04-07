@@ -19,6 +19,7 @@ jobs:
       with:
         repository: sarathm09/vibranium.wiki
         branch: master
-        github_token: ${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}
+        github_pat: '${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}'
         source_folder: docs
+        target_folder: pages
 

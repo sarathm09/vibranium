@@ -1,0 +1,22 @@
+name: Update Wiki
+
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: publish-to-git
+      uses: seanmiddleditch/gha-publish-to-git@v1
+      with:
+        repository: https://github.com/sarathm09/vibranium.wiki.git
+        branch: master
+        github_token: secrets.GITHUB_TOKEN
+        source_folder: docs
+

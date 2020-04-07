@@ -268,8 +268,9 @@ const replacePlaceholderWithDotNotation = (objectToParse, stringMatch, variableV
 		match = match.split('{').join('').split('}').join('')
 		let path = match.split('.')
 		path.shift()
-		console.log(path)
+
 		let parsedValue = parseResponseVariableFromPath(variableValue, path.join('.'))
+
 		let isValueAnObject = typeof parsedValue === 'object'
 		if (objectToParse.includes(`"{${match}}"`)) {
 			objectToParse = objectToParse
@@ -810,7 +811,7 @@ const performScenarioExecutionSteps = async (scenario, variables, overrideIgnore
 		return {
 			scenarioResponse: scenario,
 			scenarioVariables
-		};
+		}
 	} catch (error) {
 		return {
 			scenarioResponse: {

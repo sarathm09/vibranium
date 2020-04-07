@@ -89,7 +89,7 @@ const printApiList = (logger, apis, format = 'tree', color = true) => new Promis
 const logExecutionStart = async (logger, jobId, scenarios, executorCount) => {
 	logger.info()
 	logger.info('Job Execution ID: ' + prettyPrint('jobId', jobId))
-	logger.info(`Starting execution at ${prettyPrint('date')} with ${chalk.blue(executorCount)} parallel thread(s), ${scenarios.length} scenario(s) and ${scenarios.map(sc => sc.endpoints.length).reduce((a, c) => a + c, 0)} API(s)`)
+	logger.info(`Starting execution at ${prettyPrint('date')} with ${chalk.blueBright(executorCount)} parallel thread(s), ${scenarios.length} scenario(s) and ${scenarios.map(sc => sc.endpoints.length).reduce((a, c) => a + c, 0)} API(s)`)
 	logger.info()
 }
 
@@ -309,6 +309,13 @@ const statusStyles = {
 	fail: (text, color) => color ? (utils.isMac ? '🔴 ' : '') + chalk.redBright('FAIL') : text,
 	error: (text, color) => color ? (utils.isMac ? '🟠 ' : '') + chalk.redBright('ERROR') : text
 }
+const statusForSymbol = {
+	[executionStatus.SUCESS]: 'success',
+	[true]: 'success',
+	[executionStatus.FAIL]: 'fail',
+	[false]: 'fail',
+	[executionStatus.ERROR]: 'error'
+}
 
 /**
  * Utility function to get a prettified string that contains colors and
@@ -322,14 +329,8 @@ const statusStyles = {
  */
 const prettyPrint = (type, text = '', color = true) => {
 	if (type === 'loglevel') return logLevelStyles[text](text, color)
-	if (type === 'status') return statusStyles[getStatusTextForSymbol(text)](text, color)
+	if (type === 'status') return statusStyles[statusForSymbol[text]](text, color)
 	else return stylesForAPI[type](text, color)
-}
-
-const getStatusTextForSymbol = text => {
-	if (text == executionStatus.SUCESS || text === true) return 'success'
-	if (text == executionStatus.FAIL || text === false) return 'fail'
-	if (text == executionStatus.ERROR) return 'error'
 }
 
 

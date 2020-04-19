@@ -147,10 +147,10 @@ const printApiExecutionEnd = async (logger, api) => {
 		'Status': prettyPrint('status', api._status),
 		'Content-Type': contentType,
 		'Response': (!!response && isResponseJson) ? JSON.stringify(response, null, 2) : response,
-		'Timing (1)': api._result.timing ? Object.entries(api._result.timing).slice(0, 3).map(([key, value]) => chalk.yellowBright(key) + ': ' +
-			chalk.yellowBright(parseFloat(value).toFixed(2))).join(', ') : 'not available',
-		'Timing (2)': api._result.timing ? Object.entries(api._result.timing).slice(3, 6).map(([key, value]) => chalk.yellowBright(key) + ': ' +
-			chalk.yellowBright(parseFloat(value).toFixed(2))).join(', ') : 'not available'
+		'Timing': api._result.timing ? Object.entries(api._result.timing).slice(0, 3).map(([key, value]) => chalk.yellowBright(key) + ': ' +
+			chalk.yellowBright(ms(value))).join(', ') : 'not available',
+		'      ': api._result.timing ? Object.entries(api._result.timing).slice(3, 6).map(([key, value]) => chalk.yellowBright(key) + ': ' +
+			chalk.yellowBright(ms(value))).join(', ') : 'not available'
 	}
 	logger.info()
 	for (let [key, value] of Object.entries(details)) {

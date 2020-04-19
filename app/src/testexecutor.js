@@ -10,7 +10,8 @@ const utils = require('./utils');
 const compiler = require('./compiler');
 const logHandler = require('./loghandler');
 const logger = require('./logger')('runner');
-const { initializeDatabase, updateApiCache, findApiDetailsFromCache, insertApiExecutionData, insertJobHistory } = require('./dbhandler')
+const { initializeDatabase, updateApiCache, findApiDetailsFromCache, insertApiExecutionData,
+	insertJobHistory, insertApiResponseCache, findApiResponseFromCache } = require('./dbhandler')
 const { vibPath, executionStatus, scriptTypes, loremGeneratorConfig, userConfig, dataSets } = require('./constants');
 const { callApi, setAvailableSystems } = require('./servicehandler');
 
@@ -44,32 +45,58 @@ const waitForExecutors = () => new Promise(resolve => {
  * { timing, response, status, contentType }
  */
 const executeAPI = async (endpoint, endpointVaribles) => {
-	let api = replaceVariablesInApi(endpoint, endpointVaribles);
 	let expectedStatus = 200;
+	if (!!endpoint.expect && !!endpoint.expect.status) expectedStatus = endpoint.expect.status;
 
-	if (!!api.expect && !!api.expect.status) expectedStatus = api.expect.status;
+	if (endpoint.cache) {
+		try {
+			logger.info(`Loading response of ${endpoint.collection}.${endpoint.scenario}.${endpoint.name} from cache`)
+			let { _result: cachedResponse } = await findApiResponseFromCache(db, endpoint.collection, endpoint.scenario, endpoint.name)
+			endpoint = {
+				...endpoint,
+				_result: cachedResponse,
+				_variables: endpointVaribles,
+				jobId: endpointVaribles.jobId,
+				_status: cachedResponse.status === expectedStatus,
+				_id: totalEndpointsExecuted * (10 ** 14) + +endpointVaribles.jobId
+			}
 
+			totalEndpointsExecuted += 1
+			totalEndpointsSuccessful += cachedResponse.status === expectedStatus ? 1 : 0
+			ACTIVE_PARALLEL_EXECUTORS -= 1;
+			logHandler.printApiExecutionEnd(logger, endpoint)
+			return endpoint;
+		} catch (error) {
+			logger.info(`Could not fetch ${endpoint.name} from cache: ${error ? error : 'not found'}`)
+		}
+	}
+	let api = replaceVariablesInApi(endpoint, endpointVaribles);
 	await waitForExecutors()
-	logHandler.printApiExecutionStart(logger, api, endpointVaribles)
 
+	logHandler.printApiExecutionStart(logger, api, endpointVaribles)
 	const endpointResponse = await callApi(api.url, api.method, api.payload, api.system, api.language)
 	// eslint-disable-next-line no-unused-vars
 	let { auth, ...apiDataToStore } = endpointResponse
 	api = {
 		...api,
-		jobId: endpointVaribles.jobId,
 		_result: apiDataToStore,
-		_status: endpointResponse.status === expectedStatus,
 		_variables: endpointVaribles,
-		_id: totalEndpointsExecuted * 10**9 + endpointVaribles.jobId
+		jobId: endpointVaribles.jobId,
+		_status: endpointResponse.status === expectedStatus,
+		_id: totalEndpointsExecuted * 10 ** 14 + +endpointVaribles.jobId
 	}
 
 	totalEndpointsExecuted += 1
 	totalEndpointsSuccessful += endpointResponse.status === expectedStatus ? 1 : 0
 	ACTIVE_PARALLEL_EXECUTORS -= 1;
+	if (endpoint.cache) {
+		logger.info(`Caching response of ${api.collection}.${api.scenario}.${api.name}`)
+		insertApiResponseCache(db, {...api, _result: endpointResponse})
+	}
 	logHandler.printApiExecutionEnd(logger, api)
 	insertApiExecutionData(db, api)
 	return api;
+
 }
 
 

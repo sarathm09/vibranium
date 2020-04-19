@@ -7,12 +7,16 @@ const logErrorInDatabaseIndexCreation = err => { if (err) console.log(err) }
 const initializeDatabase = async () => {
 	let db = {
 		apiCache: new Datastore({ inMemoryOnly: true, autoload: true }),
+		apiResponseCache: new Datastore({ inMemoryOnly: true, autoload: true }),
+
 		apis: new Datastore({ filename: join(__dirname, '..', 'db', 'apis.db'), autoload: true }),
 		jobs: new Datastore({ filename: join(__dirname, '..', 'db', 'jobs.db'), autoload: true })
 	};
 
-	['name', 'scenario', 'collection'].forEach(key =>
-		db.apiCache.ensureIndex({ fieldName: key }, logErrorInDatabaseIndexCreation));
+	['name', 'scenario', 'collection'].forEach(key => {
+		db.apiResponseCache.ensureIndex({ fieldName: key }, logErrorInDatabaseIndexCreation)
+		db.apiCache.ensureIndex({ fieldName: key }, logErrorInDatabaseIndexCreation)
+	});
 
 	['name', 'scenario', 'collection', 'jobId'].forEach(key =>
 		db.apis.ensureIndex({ fieldName: key }, logErrorInDatabaseIndexCreation));
@@ -53,12 +57,31 @@ const insertApiExecutionData = (db, details) => new Promise(resolve => {
 })
 
 
+const insertApiResponseCache = (db, details) => new Promise(resolve => {
+	db.apiResponseCache.insert(details, (err, docs) => {
+		if (err) console.log(err)
+		resolve(docs)
+	})
+})
+
+
+const findApiResponseFromCache = (db, collection, scenario, api) => new Promise((resolve, reject) => {
+	db.apiResponseCache.find({ name: api, collection: collection, scenario: scenario })
+		.exec(async (err, values) => {
+			if (err || values.length === 0) reject()
+			else resolve(values[0])
+		})
+})
+
+
 
 module.exports = {
 	initializeDatabase,
 	updateApiCache,
 	insertJobHistory,
 	insertApiExecutionData,
-	findApiDetailsFromCache
+	findApiDetailsFromCache,
+	insertApiResponseCache,
+	findApiResponseFromCache
 }
 

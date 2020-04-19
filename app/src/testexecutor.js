@@ -10,11 +10,13 @@ const utils = require('./utils');
 const compiler = require('./compiler');
 const logHandler = require('./loghandler');
 const logger = require('./logger')('runner');
+const { initializeDatabase, updateApiCache, findApiDetailsFromCache, insertApiExecutionData, insertJobHistory } = require('./dbhandler')
 const { vibPath, executionStatus, scriptTypes, loremGeneratorConfig, userConfig, dataSets } = require('./constants');
 const { callApi, setAvailableSystems } = require('./servicehandler');
 
-let ACTIVE_PARALLEL_EXECUTORS = 0, scenarioCache = {}, lorem = new LoremIpsum(loremGeneratorConfig);
-let totalEndpointsExecuted = 0, totalEndpointsSuccessful = 0;
+let ACTIVE_PARALLEL_EXECUTORS = 0, lorem = new LoremIpsum(loremGeneratorConfig);
+let totalEndpointsExecuted = 0, totalEndpointsSuccessful = 0, db
+
 
 /**
  * Utility method to wait for executors to handle requests.
@@ -51,17 +53,22 @@ const executeAPI = async (endpoint, endpointVaribles) => {
 	logHandler.printApiExecutionStart(logger, api, endpointVaribles)
 
 	const endpointResponse = await callApi(api.url, api.method, api.payload, api.system, api.language)
+	// eslint-disable-next-line no-unused-vars
+	let { auth, ...apiDataToStore } = endpointResponse
 	api = {
 		...api,
-		_result: endpointResponse,
+		jobId: endpointVaribles.jobId,
+		_result: apiDataToStore,
 		_status: endpointResponse.status === expectedStatus,
-		_variables: endpointVaribles
+		_variables: endpointVaribles,
+		_id: totalEndpointsExecuted * 10**9 + endpointVaribles.jobId
 	}
 
 	totalEndpointsExecuted += 1
 	totalEndpointsSuccessful += endpointResponse.status === expectedStatus ? 1 : 0
 	ACTIVE_PARALLEL_EXECUTORS -= 1;
-	logHandler.printApiExecutionEnd(logger, api);
+	logHandler.printApiExecutionEnd(logger, api)
+	insertApiExecutionData(db, api)
 	return api;
 }
 
@@ -360,58 +367,8 @@ const replacePlaceholderInString = (objectToBeParsed, variables) => {
 	return isInputAnObject ?
 		JSON.parse(stringToBeReplaced) :
 		stringToBeReplaced;
-};
+}
 
-/**
- * Replace the available placeholders with the value of the corresponding variables
- *
- * @param {any} objectToBeParsed A String/Object that contains placeholder variables that needs to be replaced
- * @param {object} variables Available variables
- *
-const replacePlaceholderInString = (objectToBeParsed, variables) => {
-	let stringToBeReplaced = objectToBeParsed;
-	if (typeof stringToBeReplaced === 'string' || typeof stringToBeReplaced === 'object') {
-		if (typeof objectToBeParsed === 'object') {
-			stringToBeReplaced = JSON.stringify(objectToBeParsed);
-		}
-
-		for (const variableName of Object.keys(variables)) {
-			if (typeof variables[variableName] === 'function') {
-				// variables that vibranium provides
-				stringToBeReplaced = stringToBeReplaced.split(`{${variableName}}`).join(variables[variableName]());
-			} else if (typeof variables[variableName] === 'object' && stringToBeReplaced === `{${variableName}}`) {
-				stringToBeReplaced = variables[variableName];
-			} else if (typeof variables[variableName] === 'object' && typeof objectToBeParsed === 'object') {
-				stringToBeReplaced = stringToBeReplaced
-					.split(`"{${variableName}}"`)
-					.join(JSON.stringify(variables[variableName]));
-			} else if (typeof variables[variableName] === 'object') {
-				stringToBeReplaced = stringToBeReplaced
-					.split(`{${variableName}}`)
-					.join(JSON.stringify(variables[variableName]));
-			} else if (stringToBeReplaced.includes(`{${variableName}}`)) {
-				stringToBeReplaced = stringToBeReplaced.split(`{${variableName}}`).join(variables[variableName]);
-			}
-		}
-
-		stringToBeReplaced = replaceDataSetPlaceHolders(stringToBeReplaced)
-
-		for (const loremMatches of stringToBeReplaced.matchAll('{(lorem_[0-9]+)}')) {
-			const loremVariable = loremMatches[1];
-			stringToBeReplaced = stringToBeReplaced
-				.split(`{${loremVariable}}`)
-				.join(loremGenerator(parseInt(loremVariable.split('_')[1])));
-		}
-		if (typeof objectToBeParsed === 'string' && objectToBeParsed !== '{}' && objectToBeParsed.length < 99) {
-			stringToBeReplaced = new RandExp(stringToBeReplaced).gen();
-		}
-	}
-
-	return typeof objectToBeParsed === 'object' ?
-		JSON.parse(stringToBeReplaced) :
-		stringToBeReplaced;
-};
-*/
 
 /**
  * Replace the placeholder variables in the api url and in the payload
@@ -441,21 +398,26 @@ const replaceVariablesInApi = (api, variables) => {
  *
  * @param {array} scenarios List of all scenarios
  */
-const createScenarioCache = async scenariosToAdd => {
-	scenariosToAdd.forEach(sc => {
-		if (!Object.keys(scenarioCache).includes(sc.collection)) {
-			scenarioCache[sc.collection] = {
-				[sc.name]: sc
-			};
-
-		} else if (scenarioCache[sc.collection][sc.name]) {
-			scenarioCache[sc.collection][sc.name].endpoints = [
-				...scenarioCache[sc.collection][sc.name].endpoints,
-				...sc.endpoints
-			];
-		} else scenarioCache[sc.collection][sc.name] = sc;
-	});
-};
+const createScenarioCache = async (db, scenariosToAdd) => {
+	if (!!scenariosToAdd && scenariosToAdd.length > 0) {
+		await Promise.all(scenariosToAdd.map(sc => {
+			let endpointsLength = sc.endpoints.length, endpoints = [];
+			for (let endpointIndex = 0; endpointIndex < endpointsLength; endpointIndex++) {
+				endpoints.push({
+					scenarioData: {
+						generate: sc.generate,
+						scripts: sc.scripts
+					},
+					scenario: sc.name,
+					collection: sc.collection,
+					fileName: sc.file,
+					...sc.endpoints[endpointIndex]
+				})
+			}
+			return updateApiCache(db, endpoints)
+		}))
+	}
+}
 
 
 /**
@@ -466,34 +428,32 @@ const createScenarioCache = async scenariosToAdd => {
  * @param {string} api Api name
  */
 const searchForEndpointInCache = async (collection, scenario, api) => {
-	if (scenarioCache[collection] && scenarioCache[collection][scenario]) {
-		for (const endpoint of scenarioCache[collection][scenario].endpoints) {
-			if (!!endpoint && endpoint.name === api) {
-				let searchResult = { ...scenarioCache[collection][scenario] };
-
-				searchResult.endpoints = [endpoint];
-				return {
-					scenario: searchResult,
-					api: endpoint
-				};
-			}
+	try {
+		let result = await findApiDetailsFromCache(db, collection, scenario, api)
+		return {
+			scenario: {
+				...result.scenarioData,
+				endpoints: [result]
+			},
+			api: result
 		}
 
-	}
-	const searchResult = await compiler.compile(collection, scenario, api);
+	} catch (error) {
+		const searchResult = await compiler.compile(collection, scenario, api);
 
-	if (searchResult.length > 0) {
-		//createScenarioCache(searchResult);
-		searchResult[0].endpoints = [searchResult[0].endpoints.find(endpoint => endpoint.name === api)];
-		return {
-			scenario: searchResult[0],
-			api: searchResult[0].endpoints.find(endpoint => endpoint.name === api)
-		};
+		if (searchResult.length > 0) {
+			createScenarioCache(searchResult);
+			searchResult[0].endpoints = [searchResult[0].endpoints.find(endpoint => endpoint.name === api)];
+			return {
+				scenario: searchResult[0],
+				api: searchResult[0].endpoints.find(endpoint => endpoint.name === api)
+			};
 
-	} else {
-		return undefined;
+		} else {
+			return undefined;
+		}
 	}
-};
+}
 
 
 /**
@@ -947,12 +907,10 @@ const loremGenerator = limit => {
 	if (limit < 10) generatedString = [...limit].join();
 	else {
 		while (limit > 0) {
-			let tempSentence = lorem.generateSentences(10)
-				.split('"').join('\'')
-				.split('{').join('\'')
-				.split('}').join('\'')
-				.split('[').join('\'')
-				.split(']').join('\'')
+			let tempSentence = lorem.generateSentences(10);
+
+			['"', '{', '}', '[', ']'].forEach(char =>
+				tempSentence = tempSentence.split(char).join('\''))
 
 			if (limit - tempSentence.length > 0) generatedString += tempSentence;
 			else generatedString += tempSentence.slice(0, limit - generatedString.length - 1);
@@ -1048,28 +1006,29 @@ const savePreExecutionData = async (jobId, scenarios) => {
  * @param {string} jobId Job Id
  * @param {object} scenarios list of all scenarios
  */
-const savePostExecutionData = async (jobId, scenarios) => {
+const savePostExecutionData = async (jobId, scenarios, executionOptions) => {
 	let jobDirPath = join(vibPath.jobs, jobId), latestDirPath = join(vibPath.jobs, 'latest')
-
-	let scenariosJson = JSON.stringify({
+	let scenarioExecutionData = {
 		scenarios,
 		meta: {
 			totalEndpointsExecuted,
 			totalEndpointsSuccessful,
 			jobId,
 			status: totalEndpointsExecuted === totalEndpointsSuccessful,
-			time: new Date(parseInt(jobId)).toLocaleString()
+			time: new Date(parseInt(jobId)).toLocaleString(),
+			executionOptions
 		}
-	}, null, 1)
+	}
+	let scenariosJson = JSON.stringify(scenarioExecutionData)
 
 	if (!existsSync(vibPath.jobs)) await mkdir(vibPath.jobs)
 	if (!existsSync(jobDirPath)) await mkdir(jobDirPath)
 	if (!existsSync(latestDirPath)) await mkdir(latestDirPath)
 
 	let tasks = [
+		insertJobHistory(db, scenarioExecutionData.meta),
 		writeFile(join(jobDirPath, 'scenarios_result_all.json'), scenariosJson),
 		writeFile(join(latestDirPath, 'scenarios_result_all.json'), scenariosJson),
-		...scenarios.map(sc => writeFile(join(latestDirPath, `scenarios_result_${sc.id}.json`), JSON.stringify(sc))),
 		...scenarios.map(sc => writeFile(join(jobDirPath, `scenarios_result_${sc.id}.json`), JSON.stringify(sc)))
 	]
 	return await Promise.all(tasks)
@@ -1104,12 +1063,13 @@ const runTests = async (scenarios, executionOptions) => {
 		process.exit(1)
 	}
 	const jobId = Date.now().toString();
+	db = await initializeDatabase()
 	logHandler.logExecutionStart(logger, jobId, scenarios, utils.getParallelExecutorLimit());
 	savePreExecutionData(jobId, scenarios)
 	setSystemDetails(executionOptions.systems, executionOptions.cred);
 	this.executionOptions = executionOptions;
 
-	this.scenarioCache = createScenarioCache(scenarios);
+	this.scenarioCache = createScenarioCache(db, scenarios);
 
 	let globalVariables = loadGlobalVariables(jobId);
 	let userVariables = processUserVariables(executionOptions.variables);
@@ -1124,11 +1084,14 @@ const runTests = async (scenarios, executionOptions) => {
 		processScenario(scenario, jobId, { ...globalVariables, ...userVariables })
 	))
 
-	savePostExecutionData(jobId, scenarios)
-	await Promise.all(scenarioResults
-		.map(result => updateScenarioResultsAndSaveReports(jobId, result, executionOptions)))
-
 	logHandler.logExecutionEnd(logger, jobId, scenarioResults, totalEndpointsExecuted, totalEndpointsSuccessful);
+
+	await Promise.allSettled([
+		savePostExecutionData(jobId, scenarioResults, executionOptions),
+		...scenarioResults.map(result =>
+			updateScenarioResultsAndSaveReports(jobId, result, executionOptions))
+	])
+
 
 	return scenarioResults;
 };

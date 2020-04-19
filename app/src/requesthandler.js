@@ -30,7 +30,10 @@ const handleRunCommand = async options => {
 		log: options.log,
 		cred: options.cred,
 		sync: options.sync,
-		report: options.report
+		report: options.report,
+		collections: options.collections, 
+		scenarios: options.scenarios, 
+		apis: options.apis
 	};
 
 	await loadDataSetTask

@@ -94,9 +94,11 @@ const parseJsonFile = async (fileToParse, fileData, payload) => {
 		let obj = JSON.parse(fileData);
 		// If the file is a scenario file, add filepath and scenario name to the json
 		if (!payload) {
+			let scenarioFileName = fileToParse.replace(vibPath.scenarios, '')
 			obj = {
 				...obj,
-				file: fileToParse.replace(vibPath.scenarios, ''),
+				file: scenarioFileName,
+				scenarioFile: scenarioFileName.split(sep).pop().split('.')[0],
 				collection: module.exports.getCollectionNameForScenario(fileToParse),
 				sid: `${fileToParse.replace(vibPath.scenarios, '').split(sep)[1]}_${obj.name}`
 			};

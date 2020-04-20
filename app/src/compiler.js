@@ -232,6 +232,10 @@ const processScenarioFiles = async (scenarioFiles, apis, searchMode) => {
 		if (!env.SILENT) {
 			result.filter(obj => !obj.status)
 				.map(obj => logger.warn(`${obj.message}`));
+			logger.info()
+			result.filter(obj => obj.status)
+				.filter(({ data }) => data.name !== data.scenarioFile)
+				.forEach(({ data }) => logger.warn(`It is recommended to have update either scenario name [${data.name}] or filename [${data.scenarioFile}] in file ${data.file} to be same for better performance`));
 		}
 		let scenarios = result.filter(obj => obj.status).map(obj => obj.data);
 

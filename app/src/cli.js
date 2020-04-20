@@ -21,8 +21,8 @@ const setEnvironmentVariables = options => {
 
 	for (let option of Object.keys(optionsAndVariablesMap)) {
 		if (options[option]) {
-			env[optionsAndVariablesMap[option]] = option !== 'log' ? 
-				options[option] : 
+			env[optionsAndVariablesMap[option]] = option !== 'log' ?
+				options[option] :
 				options[option].toLowerCase()
 		}
 	}
@@ -38,7 +38,7 @@ vibranium
 	.option('-s --scenarios [scenarios]', 'Scenarios to run, separated by comma(,)', 'all')
 	.option('-a --apis [apis]', 'API endpoints to run, separated by comma(,)', 'all')
 	.option('-l --log [loglevel]', 'Logging level [info, debug, error], default is info')
-	.option('-r --report [reportType]', 'Generate reports for the execution. Values can be any of junit, html and json', 'json')
+	.option('-r --report [reportType]', 'Generate reports for the execution. Values can be any of junit, csv and json', 'json')
 	.option('-p --parallel [number_of_parallel_tasks]', 'Number of parallel tasks. Default is 10')
 	.option('-v --variables [variables]', 'Variables to be used for executions. usage: var1=value1,var2=value2...')
 	.option('--cred [cred]', 'Credentials provided in base64 format')
@@ -110,11 +110,13 @@ vibranium
 	.description('Create a new scenario test file')
 	.action(options => requestHandler.handleCreateCommand(options));
 
-// TODO
-// vibranium.command('ui').action(options => {
-// 	setEnvironmentVariables(options)
-// 	console.log(options.opts());
-// });
+
+vibranium
+	.command('ui')
+	.action(options => {
+		setEnvironmentVariables(options)
+		require('./reportserver')()
+	});
 
 vibranium.version(`${version}`);
 vibranium.parse(process.argv);

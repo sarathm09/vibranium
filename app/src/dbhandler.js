@@ -2,7 +2,7 @@ const Datastore = require('nedb');
 const { join } = require('path')
 
 
-const logErrorInDatabaseIndexCreation = err => { if (err) console.log(err) }
+const logErrorInDatabaseIndexCreation = err => { if (err) console.error(err) }
 
 const initializeDatabase = async () => {
 	let db = {
@@ -25,46 +25,126 @@ const initializeDatabase = async () => {
 }
 
 
+/**
+ * API/SCENARIO caching
+ */
 
+/**
+ * Store scenario/api raw data in cache 
+ * 
+ * @param {Datastore} db The Nedb datastore object
+ * @param {object} scenarios Details to be stored in cache
+ */
 const updateApiCache = (db, scenarios) => new Promise((resolve) => {
 	db.apiCache.insert(scenarios, (err, docs) => {
-		if (err) console.log(err)
+		if (err) console.error(err)
 		resolve(docs)
 	})
 })
 
 
+/**
+ * Find the dependent api from cache
+ * 
+ * @param {Datastore} db Nedb datastore object
+ * @param {string} collection collection name
+ * @param {string} scenario Scenario name
+ * @param {string} api API name
+ */
 const findApiDetailsFromCache = (db, collection, scenario, api) => new Promise((resolve, reject) => {
-	db.apiCache.find({ name: api, collection: collection, scenario: scenario })
+	db.apiCache.find({ name: api, collection: collection, $or: [{ scenario: scenario }, { scenarioFile: scenario  }]})
 		.exec(async (err, values) => {
 			if (err || values.length === 0) reject()
 			else resolve(values[0])
 		})
 })
 
+
+/**
+ * JOB EXECUTION DATA
+ */
+
+/**
+ * Store job execution data in cache
+ * 
+ * @param {Datastore} db The Nedb datastore object
+ * @param {object} details Details to be stored in cache
+ */
 const insertJobHistory = (db, details) => new Promise(resolve => {
 	db.jobs.insert(details, (err, docs) => {
-		if (err) console.log(err)
+		if (err) console.error(err)
 		resolve(docs)
 	})
 })
 
+/**
+ * Get the list of jobs matching the query
+ * 
+ * @param {Datastore} db The Nedb datastore object
+ * @param {object} query The query object
+ */
+const getJobHistory = (db, query={}, top=20, skip=0) => new Promise(resolve => {
+	db.jobs.find(query).skip(skip).limit(top).sort({ jobId: -1 }).exec((err, docs) => {
+		if (err) console.error(err)
+		resolve(docs)
+	})
+})
+
+
+/**
+ * API EXECUTION DATA
+ */
+
+/**
+ * Store API execution data in db
+ * 
+ * @param {Datastore} db The Nedb datastore object
+ * @param {object} details Details to be stored in cache
+ */
 const insertApiExecutionData = (db, details) => new Promise(resolve => {
 	db.apis.insert(details, (err, docs) => {
-		if (err) console.log(err)
+		if (err) console.error(err)
 		resolve(docs)
 	})
 })
 
 
+/**
+ * Get the list of api history matching the query
+ * 
+ * @param {Datastore} db The Nedb datastore object
+ * @param {object} query The query object
+ */
+const getAPIExecutionHistory = (db, query={}, top=20, skip=0) => new Promise(resolve => {
+	db.apis.find(query).skip(skip).limit(top).sort({ jobId: -1 }).exec((err, docs) => {
+		if (err) console.error(err)
+		resolve(docs)
+	})
+})
+
+/**
+ * API RESPONSE CACHING
+ */
+
+/**
+ * Store API response data in cache
+ * 
+ * @param {Datastore} db The Nedb datastore object
+ * @param {object} details Details to be stored in cache
+ */
 const insertApiResponseCache = (db, details) => new Promise(resolve => {
 	db.apiResponseCache.insert(details, (err, docs) => {
-		if (err) console.log(err)
+		if (err) console.error(err)
 		resolve(docs)
 	})
 })
 
-
+/**
+ * Store API response data in cache
+ * 
+ * @param {Datastore} db The Nedb datastore object
+ * @param {object} details Details to be stored in cache
+ */
 const findApiResponseFromCache = (db, collection, scenario, api) => new Promise((resolve, reject) => {
 	db.apiResponseCache.find({ name: api, collection: collection, scenario: scenario })
 		.exec(async (err, values) => {
@@ -76,12 +156,14 @@ const findApiResponseFromCache = (db, collection, scenario, api) => new Promise(
 
 
 module.exports = {
-	initializeDatabase,
+	getJobHistory,
 	updateApiCache,
 	insertJobHistory,
+	initializeDatabase,
+	getAPIExecutionHistory,
+	insertApiResponseCache,
 	insertApiExecutionData,
 	findApiDetailsFromCache,
-	insertApiResponseCache,
 	findApiResponseFromCache
 }
 

@@ -437,7 +437,8 @@ const createScenarioCache = async (db, scenariosToAdd) => {
 					},
 					scenario: sc.name,
 					collection: sc.collection,
-					fileName: sc.file,
+					fileName: sc.file, // path name of scenario
+					scenarioFile: sc.scenarioFile, // scenario file name without path and extension
 					...sc.endpoints[endpointIndex]
 				})
 			}

@@ -83,8 +83,8 @@ const insertJobHistory = (db, details) => new Promise(resolve => {
  * @param {Datastore} db The Nedb datastore object
  * @param {object} query The query object
  */
-const getJobHistory = (db, query={}, top=20, skip=0) => new Promise(resolve => {
-	db.jobs.find(query).skip(skip).limit(top).sort({ jobId: -1 }).exec((err, docs) => {
+const getJobHistory = (db, query={}, keys, top=100, skip=0) => new Promise(resolve => {
+	db.jobs.find(query, keys).skip(skip).limit(top).sort({ jobId: -1 }).exec((err, docs) => {
 		if (err) console.error(err)
 		resolve(docs)
 	})
@@ -115,8 +115,8 @@ const insertApiExecutionData = (db, details) => new Promise(resolve => {
  * @param {Datastore} db The Nedb datastore object
  * @param {object} query The query object
  */
-const getAPIExecutionHistory = (db, query={}, top=20, skip=0) => new Promise(resolve => {
-	db.apis.find(query).skip(skip).limit(top).sort({ jobId: -1 }).exec((err, docs) => {
+const getAPIExecutionHistory = (db, query={}, keys, top=20, skip=0) => new Promise(resolve => {
+	db.apis.find(query, keys).skip(skip).limit(top).sort({ jobId: -1 }).exec((err, docs) => {
 		if (err) console.error(err)
 		resolve(docs)
 	})

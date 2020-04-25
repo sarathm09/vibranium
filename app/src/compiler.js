@@ -1,6 +1,7 @@
-const { join, sep } = require('path');
 const { env } = require('process')
+const { join, sep } = require('path');
 const { readdirSync } = require('fs')
+const { yellow, yellowBright } = require('chalk')
 
 const utils = require('./utils');
 const { vibPath } = require('./constants');
@@ -235,7 +236,7 @@ const processScenarioFiles = async (scenarioFiles, apis, searchMode) => {
 			logger.info()
 			result.filter(obj => obj.status)
 				.filter(({ data }) => data.name !== data.scenarioFile)
-				.forEach(({ data }) => logger.warn(`It is recommended to have update either scenario name [${data.name}] or filename [${data.scenarioFile}] in file ${data.file} to be same for better performance`));
+				.forEach(({ data }) => logger.warn(`It is recommended to have update either scenario name [${yellow(data.name)}] or filename [${yellow(data.scenarioFile)}] in file ${yellowBright(data.file)} to be same for better performance`));
 		}
 		let scenarios = result.filter(obj => obj.status).map(obj => obj.data);
 

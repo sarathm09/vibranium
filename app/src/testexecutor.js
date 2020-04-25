@@ -433,12 +433,12 @@ const createScenarioCache = async (db, scenariosToAdd) => {
 				endpoints.push({
 					scenarioData: {
 						generate: sc.generate,
-						scripts: sc.scripts
+						scripts: sc.scripts,
+						scenario: sc.name,
+						collection: sc.collection,
+						fileName: sc.file, // path name of scenario
+						scenarioFile: sc.scenarioFile, // scenario file name without path and extension
 					},
-					scenario: sc.name,
-					collection: sc.collection,
-					fileName: sc.file, // path name of scenario
-					scenarioFile: sc.scenarioFile, // scenario file name without path and extension
 					...sc.endpoints[endpointIndex]
 				})
 			}

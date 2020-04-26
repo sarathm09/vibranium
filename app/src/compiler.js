@@ -57,18 +57,20 @@ const loadEndpoinsForScenario = async (scenario, apis, searchMode = false) => {
 		let payloadReaders = [];
 		if (searchMode) {
 			payloadReaders = scenario.endpoints
+				.filter(endpoint => !!endpoint && !!endpoint.name)
 				.filter(endpoint => utils.isAll(apis) ? true :
 					utils.includesRegex(utils.splitAndTrimInput(apis), endpoint.name))
 				.map(endpoint => loadPayloadFiles(endpoint, scenario.name));
 		} else {
 			payloadReaders = scenario.endpoints
+				.filter(endpoint => !!endpoint && !!endpoint.name)
 				.filter(endpoint => (utils.isAll(apis) ? true : utils.splitAndTrimInput(apis).includes(endpoint.name)))
 				.map(endpoint => loadPayloadFiles(endpoint, scenario.name));
 		}
 
 		let endpoints = await Promise.all(payloadReaders)
 		// eslint-disable-next-line require-atomic-updates
-		scenario.endpoints = endpoints;
+		scenario.endpoints = endpoints.map(e => { e.dependencyLevel = 0; return e });
 
 		//	updateEndpointsThatUseGlobalKeyword(endpoints)
 		return scenario
@@ -236,7 +238,7 @@ const processScenarioFiles = async (scenarioFiles, apis, searchMode) => {
 			logger.info()
 			result.filter(obj => obj.status)
 				.filter(({ data }) => data.name !== data.scenarioFile)
-				.forEach(({ data }) => logger.warn(`It is recommended to have update either scenario name [${yellow(data.name)}] or filename [${yellow(data.scenarioFile)}] in file ${yellowBright(data.file)} to be same for better performance`));
+				.forEach(({ data }) => logger.warn(`Scenario name [${yellow(data.name)}] and filename [${yellow(data.scenarioFile)}] in file ${yellowBright(data.file)} are different`));
 		}
 		let scenarios = result.filter(obj => obj.status).map(obj => obj.data);
 

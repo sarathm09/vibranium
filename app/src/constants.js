@@ -5,12 +5,14 @@ const { env } = require('process')
 const { readFileSync } = require('fs')
 const { readFile } = require('fs').promises
 
+const SCHEMA_SPECIFICATION_V6_PATH = join(__dirname, '..', 'res', 'schemas', 'draft-06-schema.json'),
+	SCHEMA_SPECIFICATION_V6 = JSON.parse(readFileSync(SCHEMA_SPECIFICATION_V6_PATH))
 
 let workspace = '', systemConfig = {}, userConfig = {}, testsDirectory = '';
 
 const validateConfigSchema = config => {
 	const ajv = new Ajv({ allErrors: true })
-	ajv.addMetaSchema(JSON.parse(readFileSync(join(__dirname, '..', 'res', 'schemas', 'draft-06-schema.json'))))
+	ajv.addMetaSchema(SCHEMA_SPECIFICATION_V6)
 	let schema = JSON.parse(readFileSync(join(__dirname, '..', 'res', 'schemas', 'config_schema.json')))
 
 	if (!ajv.validate(schema, config)) {
@@ -19,6 +21,7 @@ const validateConfigSchema = config => {
 		process.exit(1)
 	}
 }
+
 
 try {
 	systemConfig = JSON.parse(readFileSync(join(homedir(), '.vib', 'config.json'), 'utf-8'));
@@ -35,6 +38,7 @@ try {
 		process.exit(1)
 	}
 }
+
 
 const loadDataLists = async () => {
 	let data = await readFile(join(__dirname, '..', 'db', 'dataSets.json'))
@@ -53,12 +57,15 @@ const loadDataLists = async () => {
 module.exports = {
 	userConfig,
 
+	SCHEMA_SPECIFICATION_V6,
+
 	vibPath: {
 		workspace,
 		scenarios: workspace ? join(workspace, testsDirectory, 'scenarios') : '',
 		jobs: workspace ? join(workspace, 'jobs') : '',
 		logs: workspace ? join(workspace, 'logs') : '',
 		payloads: workspace ? join(workspace, testsDirectory, 'payloads') : '',
+		schemas: workspace ? join(workspace, testsDirectory, 'schemas') : '',
 		cache: workspace ? join(workspace, '.cache') : '',
 		cachedScenarios: workspace ? join(workspace, '.cache', 'scenarios.json') : ''
 	},

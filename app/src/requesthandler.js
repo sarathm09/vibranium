@@ -4,6 +4,7 @@ const { join } = require('path');
 const readline = require('readline');
 const { hostname, homedir } = require('os');
 const prettyMilliseconds = require('pretty-ms')
+const { readFile, writeFile } = require('fs').promises
 const { mkdirSync, writeFileSync, readFileSync, existsSync,
 	createReadStream, createWriteStream } = require('fs');
 
@@ -31,8 +32,8 @@ const handleRunCommand = async options => {
 		cred: options.cred,
 		sync: options.sync,
 		report: options.report,
-		collections: options.collections, 
-		scenarios: options.scenarios, 
+		collections: options.collections,
+		scenarios: options.scenarios,
 		apis: options.apis
 	};
 
@@ -117,13 +118,12 @@ const handleVibraniumSetup = async (options, workspacePath) => {
  *
  * @param {object} options Commander object containing user input
  */
-const getScenarioFileForOptions = options => {
-	let fileName = 'basic_scenario.json';
-	if (options.complex) fileName = 'complex_scenario.json';
-	if (options.withDependency) fileName = 'scenario_dependency.json';
-	return JSON.parse(readFileSync(join(__dirname, '..', 'res', 'config', fileName)));
-};
+const getScenarioFileForOptions = async options => {
+	let fileName = join(__dirname, '..', 'res', 'config', `template_${options.template}.json`)
+	let templateJson = await readFile(fileName, 'utf-8')
 
+	return JSON.parse(templateJson)
+}
 /**
  * Create a new collection/scenario
  *
@@ -163,8 +163,8 @@ const handleCreateCommand = options => {
  * @param {object} options Commander options
  * @param {string} scenarioFileName Scenario file name
  */
-const createAndOpenScenario = (options, scenarioFileName) => {
-	let sampleScenario = getScenarioFileForOptions(options),
+const createAndOpenScenario = async (options, scenarioFileName) => {
+	let sampleScenario = await getScenarioFileForOptions(options),
 		dt = new Date();
 	let dateString = `${dt.getFullYear()}-${dt.getMonth() + 1}-${dt.getDate()} ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`;
 	let scenarioData = {
@@ -176,11 +176,14 @@ const createAndOpenScenario = (options, scenarioFileName) => {
 	};
 	sampleScenario = { ...sampleScenario, ...scenarioData };
 
-	writeFileSync(
-		scenarioFileName,
-		JSON.stringify(sampleScenario, null, 4).replace('{payloadNameToBeReplaced}', `!${options.scenario}/sample_payload`)
-	);
-	writeFileSync(join(vibPath.payloads, options.scenario, 'sample_payload.json'), JSON.stringify({}, null, 4));
+	let scenarioJson = JSON.stringify(sampleScenario, null, 4)
+		.replace('{payloadNameToBeReplaced}', `!${options.scenario}/sample_payload`)
+
+	let tasks = [
+		writeFile(scenarioFileName, scenarioJson),
+		writeFile(join(vibPath.payloads, options.scenario, 'sample_payload.json'), JSON.stringify({}, null, 4))
+	]
+	await Promise.all(tasks)
 
 	logger.info('Scenario created. File: ' + scenarioFileName);
 	open(scenarioFileName);

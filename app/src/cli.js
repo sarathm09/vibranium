@@ -6,6 +6,7 @@ const { readFileSync } = require('fs');
 const requestHandler = require('./requesthandler');
 
 const version = readFileSync(__dirname + '/../res/version.txt', 'utf8');
+const supportedTemplates = ['t1', 't2', 't3', 'e1_github']
 
 /**
  * Set the environment variables according to user input
@@ -16,9 +17,9 @@ const setEnvironmentVariables = options => {
 	const optionsAndVariablesMap = {
 		silent: 'SILENT',
 		log: 'LOG_LEVEL',
-		parallel: 'MAX_PARALLEL_EXECUTORS'
+		parallel: 'MAX_PARALLEL_EXECUTORS',
+		skipWarn: 'NO_WARNING_MESSAGES'
 	}
-
 	for (let option of Object.keys(optionsAndVariablesMap)) {
 		if (options[option]) {
 			env[optionsAndVariablesMap[option]] = option !== 'log' ?
@@ -48,11 +49,12 @@ vibranium
 		'The system on which the apis need to be executed. The sytem name should be defined in the config file'
 	)
 	.option('--no-color', 'Plain text output without colors')
+	.option('--skip-warn', 'Ignore all warning messages. Not recommended', false)
 	.option('--silent', 'Print only the endpoint result')
 	.action(options => {
 		setEnvironmentVariables(options)
 		requestHandler.handleRunCommand(options)
-	});
+	})
 
 vibranium
 	.command('list')
@@ -68,11 +70,12 @@ vibranium
 	)
 	.option('--unfreeze', 'Start scanning for all file changes')
 	.option('--no-color', 'Plain text output without colors')
+	.option('--skip-warn', 'Ignore all warning messages. Not recommended', false)
 	.option('--silent', 'Silent Mode')
 	.action(options => {
 		setEnvironmentVariables(options)
 		requestHandler.handleListCommand(options)
-	});
+	})
 
 vibranium
 	.command('debug')
@@ -86,7 +89,7 @@ vibranium
 	.action(options => {
 		setEnvironmentVariables(options)
 		requestHandler.handleDebugCommand(options)
-	});
+	})
 
 vibranium
 	.command('setup')
@@ -98,17 +101,22 @@ vibranium
 	.action(options => {
 		setEnvironmentVariables(options)
 		requestHandler.handleVibraniumSetup(options, process.cwd())
-	});
+	})
 
 vibranium
 	.command('create')
 	.alias('c')
 	.option('-c --collection <collection>', 'Collection Name')
 	.option('-s --scenario <scenario>', 'Scenario Name')
-	.option('--complex', 'Create scenario with a complex example')
-	.option('--with-dependency', 'Create scenario with example containing dependency')
+	.option('-t --template [template]', 'Create scenario with a template. [' + supportedTemplates.join('|') + ']', supportedTemplates[0])
 	.description('Create a new scenario test file')
-	.action(options => requestHandler.handleCreateCommand(options));
+	.action(options => {
+		if (!supportedTemplates.includes(options.template)) {
+			console.error('Invalid template name. Supported values are: ' + supportedTemplates.join(','))
+			process.exit(1)
+		}
+		requestHandler.handleCreateCommand(options)
+	})
 
 
 vibranium
@@ -116,9 +124,9 @@ vibranium
 	.action(options => {
 		setEnvironmentVariables(options)
 		require('./reportserver')()
-	});
+	})
 
-vibranium.version(`${version}`);
-vibranium.parse(process.argv);
+vibranium.version(`${version}`)
+vibranium.parse(process.argv)
 
-if (process.argv.length == 2) console.log(vibranium.help());
+if (process.argv.length == 2) console.log(vibranium.help())

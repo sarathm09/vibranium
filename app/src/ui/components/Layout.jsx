@@ -22,8 +22,14 @@ export default ({ children, collection, scenario, endpoint, apiId, jobId }) => {
 		<>
 			<AppBar>
 				<Toolbar>
-					<IconButton edge="start" className={classes.menuButton} color="inherit" aria-label="back" style={{ visibility: jobId ? 'visible' : 'hidden' }}>
-						<Link to={apiId ? `/ui/jobs/${jobId}` : '/ui'} >
+					<IconButton
+						edge="start"
+						className={classes.menuButton}
+						color="inherit"
+						aria-label="back"
+						style={{ visibility: jobId ? 'visible' : 'hidden' }}
+					>
+						<Link to={apiId ? `/ui/jobs/${jobId}` : '/ui'}>
 							<ArrowBackOutlinedIcon style={{ color: 'white' }} />
 						</Link>
 					</IconButton>

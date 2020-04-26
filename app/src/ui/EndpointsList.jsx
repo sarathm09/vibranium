@@ -1,6 +1,17 @@
 import React, { useEffect } from 'react'
-import { Typography, Table, TableCell, TableBody, TablePagination, TableSortLabel, 
-	Paper, TableHead, TableContainer, TableRow, Grid } from '@material-ui/core'
+import {
+	Typography,
+	Table,
+	TableCell,
+	TableBody,
+	TablePagination,
+	TableSortLabel,
+	Paper,
+	TableHead,
+	TableContainer,
+	TableRow,
+	Grid
+} from '@material-ui/core'
 import { makeStyles } from '@material-ui/core/styles'
 import { red, green, grey } from '@material-ui/core/colors'
 import { CheckCircleOutline, Cancel } from '@material-ui/icons'

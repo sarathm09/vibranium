@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Grid, Paper, Typography, Chip } from '@material-ui/core'
 import { makeStyles } from '@material-ui/core/styles'
 import { red, green, grey } from '@material-ui/core/colors'
-import { CheckCircleOutline, Cancel} from '@material-ui/icons'
+import { CheckCircleOutline, Cancel } from '@material-ui/icons'
 
 import Layout from './components/Layout'
 import { Link } from '@reach/router'

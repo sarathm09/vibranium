@@ -29,7 +29,7 @@ export default function CodeBlock({ code }) {
 		<Paper className={classes.formattedCode}>
 			<pre>
 				{!!code && typeof code === 'object' ? (
-					<code  dangerouslySetInnerHTML={{ __html: hljs.highlight('json', JSON.stringify(code, null, 1)).value }} />
+					<code dangerouslySetInnerHTML={{ __html: hljs.highlight('json', JSON.stringify(code, null, 1)).value }} />
 				) : (
 					<code dangerouslySetInnerHTML={{ __html: hljs.highlight('xml', code || '').value }} />
 				)}

@@ -1,6 +1,6 @@
 {
     "accounts": {
-        "demoSystem": {
+        "some_system_with_no_auth": {
             "url": "https://reqres.in/",
             "api_url": "https://reqres.in",
             "method": "none"
@@ -23,9 +23,18 @@
                 "clientid": "MY_SUPER_SECRET_CLIENT_ID",
                 "secret": "MY_SUPER_SECRET_CLIENT_SECRET"
             }
+        },
+        "github_api_v3_basic_auth": {
+            "url": "",
+            "api_url": "https://api.github.com/v3",
+            "method": "basic",
+            "credentials": {
+                "username": "MY_SUPER_SECRET_USERNAME",
+                "password": "MY_SUPER_SECRET_PASSWORD",
+            }
         }
     },
-    "default_account": "system_that_uses_no_auth",
+    "default_account": "github_api_v3_basic_auth",
     "tests_directory": "Vibranium-Tests",
     "env_vars": {
         "short_text": "[a-zA-Z 0-9]{5, 20}",

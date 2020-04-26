@@ -1,7 +1,7 @@
 import React from 'react'
-import { Grid, Paper, Table, TableRow, TableCell, TableBody, TableHead, Typography } from '@material-ui/core'
-import { CheckCircleOutline, Cancel } from '@material-ui/icons'
 import { green, red } from '@material-ui/core/colors'
+import { CheckCircleOutline, Cancel } from '@material-ui/icons'
+import { Grid, Paper, Table, TableRow, TableCell, TableBody, TableHead, Typography } from '@material-ui/core'
 
 const getValueAsString = value => {
 	if (value) {

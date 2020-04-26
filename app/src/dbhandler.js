@@ -116,6 +116,18 @@ const deleteJobHistory = (db, query = {}) => new Promise(resolve => {
  * @param {object} details Details to be stored in cache
  */
 const insertApiExecutionData = (db, details) => new Promise(resolve => {
+	let data = { ...details }
+	if (!!details._result && !!details._result.response && typeof details._result.response === 'object') {
+		if (Object.values(details._result.response) > 100) {
+			data._result.response = { truncatedData: data._result.response.slice(0, 100) }
+		}
+	} else {
+		let size = JSON.stringify(details._result.response).length;
+		if (size > 2000) {
+			data._result.response = { truncatedData: data._result.response.slice(0, 1000) }
+		}
+	}
+
 	db.apis.insert(details, (err, docs) => {
 		if (err) console.error(err)
 		resolve(docs)

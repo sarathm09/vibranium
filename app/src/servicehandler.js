@@ -126,7 +126,7 @@ const getResponseWithRequest = (system, url, method, payload, auth, language = '
 	if (!url.startsWith('/')) url = `/${url}`
 
 	let requestOptions = {
-		method: method.toUpperCase(),
+		method: method ? method.toUpperCase() : 'GET',
 		uri: system.api_url + url,
 		body: JSON.stringify(payload),
 		headers: {
@@ -145,7 +145,7 @@ const getResponseWithRequest = (system, url, method, payload, auth, language = '
 		if (!!response && !!response.statusCode) {
 			resolve(parseAndSendResponse(url, method, payload, auth, response, body))
 		} else {
-			reject(response);
+			reject({response, error});
 		}
 	});
 })

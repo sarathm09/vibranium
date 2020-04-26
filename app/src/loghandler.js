@@ -1,3 +1,4 @@
+const ora = require('ora')
 const chalk = require('chalk')
 const ms = require('pretty-ms')
 const { join } = require('path')
@@ -7,9 +8,11 @@ const { create } = require('xmlbuilder2')
 const { existsSync, mkdirSync } = require('fs')
 const { writeFile, rmdir } = require('fs').promises
 
+
 const { executionStatus } = require('./constants')
 const utils = require('./utils')
 
+let spinner = ''
 
 /**
  * Print the API tree in a formatted tree structure.
@@ -87,7 +90,10 @@ const printApiList = (logger, apis, format = 'tree', color = true) => new Promis
  * @param {object} scenarios List of scenarios to execute
  */
 const logExecutionStart = async (logger, jobId, scenarios, executorCount) => {
-	logger.info()
+	if (env.LOG_MINIMAL) {
+		spinner = ora('Starting Job #' + prettyPrint('jobId', jobId)).start()
+	}
+	logger.info('')
 	logger.info('Job Execution ID: ' + prettyPrint('jobId', jobId))
 	logger.info(`Starting execution at ${prettyPrint('date')} with ${chalk.blueBright(executorCount)} parallel thread(s), ${scenarios.length} scenario(s) and ${scenarios.map(sc => sc.endpoints.length).reduce((a, c) => a + c, 0)} API(s)`)
 	logger.info()
@@ -100,12 +106,18 @@ const logExecutionStart = async (logger, jobId, scenarios, executorCount) => {
  * @param {object} scenario Scenario details
  */
 const logScenarioStart = (logger, scenario) => {
+	if (env.LOG_MINIMAL) {
+		spinner.text = `Starting ${scenario.name}`
+	}
 	logger.info(`Scenario ${prettyPrint('scenario', scenario.name)} [${scenario.file}] started`);
 	logger.info()
 };
 
 
 const logScenarioEnd = async (logger, scenario) => {
+	if (env.LOG_MINIMAL) {
+		scenario._result.status === executionStatus.SUCESS ? spinner.succeed(scenario.name) : spinner.fail(scenario.name)
+	}
 	logger.info(
 		`${prettyPrint('scenario', scenario.name)} status: ${prettyPrint('status', scenario._result.status)} [${
 		scenario.endpoints.filter(e => !!e && e._status).length
@@ -123,6 +135,11 @@ const getAPIIndex = api => {
 }
 
 const printApiExecutionStart = async (logger, api, variables) => {
+	if (env.LOG_MINIMAL) {
+		spinner.prefixText = '  '
+		spinner.text = `${chalk.cyanBright(api.method ? api.method.toUpperCase() : 'GET')} ${api.scenario}.${api.name}`
+		spinner.prefixText = ''
+	}
 	logger.info(`${prettyPrint('scenario', api.scenario)}.${prettyPrint('api', api.name)} started`);
 	logger.debug('Variables' + utils.printSpaces('Variables') + ': ' + JSON.stringify(variables, null, 2)
 		.split('\n')
@@ -133,6 +150,18 @@ const printApiExecutionStart = async (logger, api, variables) => {
 const getAssertLogString = ({ result, test }) => utils.isMac ? result ? chalk.green('✔  ') + test : chalk.red('✖  ') + test : test
 
 const printApiExecutionEnd = async (logger, api) => {
+	if (env.LOG_MINIMAL) {
+		spinner.prefixText = '  '
+		let text = `${chalk.cyanBright(api.method ? api.method.toUpperCase() : 'GET')} ${api.scenario}.${api.name}`
+		api._status ? spinner.succeed(text) : spinner.fail(text)
+		if (api._expect) {
+			spinner.prefixText = '    '
+			api._expect.forEach(e => {
+				e.result ? spinner.succeed(e.test) : spinner.fail(e.test)
+			})
+			spinner.prefixText = ''
+		}
+	}
 	// eslint-disable-next-line no-unused-vars
 	let { response, contentType, status } = api._result
 	const isResponseJson = typeof (api._result.response) === 'object'
@@ -154,12 +183,13 @@ const printApiExecutionEnd = async (logger, api) => {
 		'Assertions': ''
 	}
 	logger.info()
+
 	for (let [key, value] of Object.entries(details)) {
 		if (['Payload', 'Response'].includes(key)) {
 			if (!api._status || process.env.LOG_LEVEL === 'debug') {
-				let dataToBePrinted = `${key}${utils.printSpaces(key)}: ${value.split('\n')
+				let dataToBePrinted = `${key}${utils.printSpaces(key)}: ${value ? value.split('\n')
 					.map((line, i) => (i > 0 ? utils.printSpaces(key, process.env.LOG_LEVEL === 'debug' ? 43 : 33) : '') + syntaxHighlight(line, isResponseJson))
-					.join('\n')}`
+					.join('\n') : ''}`
 				api._status ? logger.debug(dataToBePrinted) : logger.error(dataToBePrinted);
 			}
 		} else if (key === 'Assertions' && api._expect) {
@@ -219,11 +249,16 @@ const logExecutionEnd = (logger, jobId, result, totalEndpointsExecuted, totalEnd
 		let failedCollections = Array.from(new Set(endpointResult.map(e => e.collection))).join(','),
 			failedScenarios = Array.from(new Set(endpointResult.map(e => e.scenario))).join(','),
 			failedEndpoints = Array.from(new Set(endpointResult.map(e => e.name))).join(',')
-		console.error(chalk.keyword('orange')(`\n\tvc r -c ${failedCollections} -s ${failedScenarios} -a ${failedEndpoints}`))
+		logger.error(chalk.keyword('orange')(`\n\tvc r -c ${failedCollections} -s ${failedScenarios} -a ${failedEndpoints}`))
 		logger.error()
 		logger.error('Status: ' + prettyPrint('status', false))
 	} else {
 		logger.success('Status: ' + prettyPrint('status', true))
+	}
+
+	if (env.LOG_MINIMAL) {
+		let text = 'Result: '  + totalEndpointsSuccessful + ' / ' + totalEndpointsExecuted
+		endpointResult.length === 0 ? spinner.succeed(chalk.green(text)) : spinner.fail(chalk.red(text))
 	}
 }
 

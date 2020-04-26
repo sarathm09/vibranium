@@ -56,9 +56,16 @@ const executeAPI = async (endpoint, endpointVaribles) => {
 	}
 	let api = replaceVariablesInApi(endpoint, endpointVaribles);
 	await waitForExecutors()
-
 	logHandler.printApiExecutionStart(logger, api, endpointVaribles)
-	const endpointResponse = await callApi(api.url, api.method, api.payload, api.system, api.language, api.headers)
+	let endpointResponse = { ...endpoint }
+
+	try {
+		endpointResponse = await callApi(api.url, api.method, api.payload, api.system, api.language, api.headers)
+	} catch ({ response, error }) {
+		endpointResponse._result = { response: {}, status: response && response.statusCode, message: error }
+		endpointResponse._status = false
+		logger.error(`Executing api ${endpoint.name} failed: ${red(error)}`)
+	}
 
 	let assertionResults = []
 	if (endpoint.dependencyLevel === 0 && endpointResponse.status === expectedStatus) {
@@ -71,7 +78,7 @@ const executeAPI = async (endpoint, endpointVaribles) => {
 		...api,
 		_expect: assertionResults,
 		_result: responseDataWithoutAuth,
-		_variables: endpointVaribles,
+		_variables: { ...endpointVaribles },
 		jobId: endpointVaribles.jobId,
 		_status: endpointResponse.status === expectedStatus && assertionResults.every(expect => expect.result),
 		_id: totalEndpointsExecuted * 10 ** 14 + +endpointVaribles.jobId
@@ -401,7 +408,7 @@ const replacePlaceholderInString = (objectToBeParsed, variables, useRegex = true
 			} else if (typeof variables[variableName] === 'object') {
 				// The variable value is an object
 				stringToBeReplaced = replacePlaceholderWhenValueIsAnObject(stringToBeReplaced, variableName,
-					variables[variableName], useRegex)
+					variables[variableName], useRegex = false)
 			} else if (stringToBeReplaced.includes(`{${variableName}}`)) {
 				stringToBeReplaced = stringToBeReplaced
 					.split(`{${variableName}}`)
@@ -418,7 +425,7 @@ const replacePlaceholderInString = (objectToBeParsed, variables, useRegex = true
 				.join(loremGenerator(parseInt(loremVariable.split('_')[1])));
 		}
 
-		if (useRegex && !isInputAnObject && stringToBeReplaced !== '{}' && stringToBeReplaced.length < 30) {
+		if (useRegex && !isInputAnObject && stringToBeReplaced !== '{}' && stringToBeReplaced.length < 99) {
 			stringToBeReplaced = new RandExp(stringToBeReplaced).gen();
 		}
 	}
@@ -848,7 +855,7 @@ const performScenarioExecutionSteps = async (scenario, variables, overrideIgnore
 			: scenario.endpoints.filter(endpoint => !endpoint.ignore);
 
 		await Promise.all(endpointsToBeProcessed
-			.map(endpoint => processEndpoint(scenarioVariables, endpoint, scenario.name, scenario.collection)));
+			.map(endpoint => processEndpoint(scenarioVariables, endpoint, scenario.name, scenario.collection)))
 
 		return {
 			scenarioResponse: scenario,
@@ -1101,7 +1108,7 @@ const savePostExecutionData = async (jobId, scenarios, executionOptions) => {
 			executionOptions
 		}
 	}
-	let scenariosJson = JSON.stringify(scenarioExecutionData)
+	let scenariosJson = JSON.stringify(scenarioExecutionData, null, 2)
 
 	if (!existsSync(vibPath.jobs)) await mkdir(vibPath.jobs)
 	if (!existsSync(jobDirPath)) await mkdir(jobDirPath)
@@ -1168,7 +1175,7 @@ const runTests = async (scenarios, executionOptions) => {
 
 	logHandler.logExecutionEnd(logger, jobId, scenarioResults, totalEndpointsExecuted, totalEndpointsSuccessful);
 
-	await Promise.allSettled([
+	await Promise.all([
 		savePostExecutionData(jobId, scenarioResults, executionOptions),
 		...scenarioResults.map(result =>
 			updateScenarioResultsAndSaveReports(jobId, result, executionOptions))

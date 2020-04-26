@@ -70,7 +70,11 @@ const loadEndpoinsForScenario = async (scenario, apis, searchMode = false) => {
 
 		let endpoints = await Promise.all(payloadReaders)
 		// eslint-disable-next-line require-atomic-updates
-		scenario.endpoints = endpoints.map(e => { e.dependencyLevel = 0; return e });
+		scenario.endpoints = endpoints.map(e => {
+			e.dependencyLevel = 0;
+			e.method = e.method || 'GET';
+			return e
+		});
 
 		//	updateEndpointsThatUseGlobalKeyword(endpoints)
 		return scenario
@@ -106,7 +110,8 @@ const convertScenarioListToApiList = scenarios => {
 					...endpoint,
 					scenario: scenario.name,
 					scenarioFile: scenario.file,
-					collection: scenario.collection
+					collection: scenario.collection,
+					method: endpoint.method || 'GET'
 				};
 			});
 

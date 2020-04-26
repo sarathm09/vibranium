@@ -77,9 +77,9 @@ module.exports = {
 	},
 
 	executionStatus: {
-		SUCESS: Symbol('SUCCESS'),
-		FAIL: Symbol('FAIL'),
-		ERROR: Symbol('ERROR')
+		SUCESS: 'SUCCESS',
+		FAIL: 'FAIL',
+		ERROR: 'ERROR'
 	},
 
 	scriptTypes: {

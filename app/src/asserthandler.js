@@ -56,13 +56,19 @@ const responseBodyCheck = async (endpoint, response, replacePlaceholderInString,
         sandbox: {}
     });
     if (!!endpoint.expect && !!endpoint.expect.response) {
-        // eslint-disable-next-line no-unused-vars
-        let { schema, ...asserts } = endpoint.expect.response
-        for (let [testName, testString] of Object.entries(asserts)) {
-            testString = replacePlaceholderInString(testString, { ...variables, response: response.response }, false)
-            logger.info(`Running comparison ${cyan(testString)}`)
-            let scriptResponse = vm.run(testString)
-            assertResponse.push(getAssertResponse(testName, testString, scriptResponse, scriptResponse === true))
+        if (!Array.isArray(endpoint.expect.response)) {
+            // eslint-disable-next-line no-unused-vars
+            let { schema, ...asserts } = endpoint.expect.response
+            try {
+                for (let [testName, testString] of Object.entries(asserts)) {
+                    testString = replacePlaceholderInString(testString, { ...variables, response: response.response }, false)
+                    logger.info(`Running comparison ${cyan(testString)}`)
+                    let scriptResponse = vm.run(testString)
+                    assertResponse.push(getAssertResponse(testName, testString, scriptResponse, scriptResponse === true))
+                }
+            } catch (err) {
+                console.error(`Error comparing response: ${err}`)
+            }
         }
 
     }

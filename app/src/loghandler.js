@@ -130,6 +130,8 @@ const printApiExecutionStart = async (logger, api, variables) => {
 		.join('\n'));
 };
 
+const getAssertLogString = ({ result, test }) => utils.isMac ? result ? chalk.green('✔  ') + test : chalk.red('✖  ') + test : test
+
 const printApiExecutionEnd = async (logger, api) => {
 	// eslint-disable-next-line no-unused-vars
 	let { response, contentType, status } = api._result
@@ -147,20 +149,27 @@ const printApiExecutionEnd = async (logger, api) => {
 		'Status': prettyPrint('status', api._status),
 		'Content-Type': contentType,
 		'Response': (!!response && isResponseJson) ? JSON.stringify(response, null, 2) : response,
-		'Timing': api._result.timing ? Object.entries(api._result.timing).slice(0, 3).map(([key, value]) => chalk.yellowBright(key) + ': ' +
-			chalk.yellowBright(ms(value))).join(', ') : 'not available',
-		'      ': api._result.timing ? Object.entries(api._result.timing).slice(3, 6).map(([key, value]) => chalk.yellowBright(key) + ': ' +
-			chalk.yellowBright(ms(value))).join(', ') : 'not available'
+		'Timing': api._result.timing ? Object.entries(api._result.timing).map(([key, value]) => chalk.cyan(key) + ': ' +
+			chalk.cyanBright(ms(value))).join(', ') : 'not available',
+		'Assertions': ''
 	}
 	logger.info()
 	for (let [key, value] of Object.entries(details)) {
 		if (['Payload', 'Response'].includes(key)) {
 			if (!api._status || process.env.LOG_LEVEL === 'debug') {
 				let dataToBePrinted = `${key}${utils.printSpaces(key)}: ${value.split('\n')
-					.map((line, i) => (i > 0 ? utils.printSpaces(key, 33) : '') + syntaxHighlight(line, isResponseJson))
+					.map((line, i) => (i > 0 ? utils.printSpaces(key, process.env.LOG_LEVEL === 'debug' ? 43 : 33) : '') + syntaxHighlight(line, isResponseJson))
 					.join('\n')}`
 				api._status ? logger.debug(dataToBePrinted) : logger.error(dataToBePrinted);
 			}
+		} else if (key === 'Assertions' && api._expect) {
+			api._status ? logger.info(key + utils.printSpaces(key) + ' ') :
+				logger.error(key + utils.printSpaces(key) + ': ')
+
+			api._expect.forEach(expect => {
+				api._status ? logger.info(utils.printSpaces('          ') + ' ' + getAssertLogString(expect)) :
+					logger.error(utils.printSpaces('          ') + ' ' + getAssertLogString(expect))
+			})
 		} else {
 			api._status ? logger.info(key + utils.printSpaces(key) + ': ' + value) :
 				logger.error(key + utils.printSpaces(key) + ': ' + value)

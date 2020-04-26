@@ -52,7 +52,7 @@ const updateApiCache = (db, scenarios) => new Promise((resolve) => {
  * @param {string} api API name
  */
 const findApiDetailsFromCache = (db, collection, scenario, api) => new Promise((resolve, reject) => {
-	db.apiCache.find({ name: api, collection: collection, $or: [{ scenario: scenario }, { scenarioFile: scenario  }]})
+	db.apiCache.find({ name: api, collection: collection, $or: [{ scenario: scenario }, { scenarioFile: scenario }] })
 		.exec(async (err, values) => {
 			if (err || values.length === 0) reject()
 			else resolve(values[0])
@@ -83,13 +83,27 @@ const insertJobHistory = (db, details) => new Promise(resolve => {
  * @param {Datastore} db The Nedb datastore object
  * @param {object} query The query object
  */
-const getJobHistory = (db, query={}, keys, top=100, skip=0) => new Promise(resolve => {
+const getJobHistory = (db, query = {}, keys, top = 100, skip = 0) => new Promise(resolve => {
 	db.jobs.find(query, keys).skip(skip).limit(top).sort({ jobId: -1 }).exec((err, docs) => {
 		if (err) console.error(err)
 		resolve(docs)
 	})
 })
 
+
+/**
+ * Remove entries from job history table
+ * 
+ * @param {Datastore} db The Nedb datastore object
+ * @param {object} query The query object
+ */
+const deleteJobHistory = (db, query = {}) => new Promise(resolve => {
+	db.remove(query, {}, function (err, numRemoved) {
+		if (err) console.error(err)
+		deleteApiExecutionData(db, query)
+			.then(resolve(numRemoved))
+	})
+})
 
 /**
  * API EXECUTION DATA
@@ -108,6 +122,18 @@ const insertApiExecutionData = (db, details) => new Promise(resolve => {
 	})
 })
 
+/**
+ * Remove entries from api execution data table
+ * 
+ * @param {Datastore} db The Nedb datastore object
+ * @param {object} query The query object
+ */
+const deleteApiExecutionData = (db, query = {}) => new Promise(resolve => {
+	db.remove(query, {}, function (err, numRemoved) {
+		if (err) console.error(err)
+		resolve(numRemoved)
+	});
+})
 
 /**
  * Get the list of api history matching the query
@@ -115,7 +141,7 @@ const insertApiExecutionData = (db, details) => new Promise(resolve => {
  * @param {Datastore} db The Nedb datastore object
  * @param {object} query The query object
  */
-const getAPIExecutionHistory = (db, query={}, keys, top=20, skip=0) => new Promise(resolve => {
+const getAPIExecutionHistory = (db, query = {}, keys, top = 20, skip = 0) => new Promise(resolve => {
 	db.apis.find(query, keys).skip(skip).limit(top).sort({ jobId: -1 }).exec((err, docs) => {
 		if (err) console.error(err)
 		resolve(docs)
@@ -158,8 +184,10 @@ const findApiResponseFromCache = (db, collection, scenario, api) => new Promise(
 module.exports = {
 	getJobHistory,
 	updateApiCache,
+	deleteJobHistory,
 	insertJobHistory,
 	initializeDatabase,
+	deleteApiExecutionData,
 	getAPIExecutionHistory,
 	insertApiResponseCache,
 	insertApiExecutionData,

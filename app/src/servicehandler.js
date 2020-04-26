@@ -41,7 +41,8 @@ const parseAndSendResponse = (url, method, payload, auth, response, body) => {
 		timing: response.timingPhases,
 		response: apiResponse,
 		status: response.statusCode,
-		contentType: response.headers['content-type']
+		contentType: response.headers['content-type'],
+		headers: response.headers
 	}
 }
 
@@ -55,10 +56,10 @@ const parseAndSendResponse = (url, method, payload, auth, response, body) => {
  * @param {object} payload The payload for the api call
  * @param {string} auth Authentication header data
  */
-const getResponse = (system, url, method, payload, auth, language = 'en') =>
+const getResponse = (system, url, method, payload, auth, language = 'en', headers) =>
 	isNode
-		? getResponseWithRequest(system, url, method, payload, auth, language)
-		: getResponseWithAxios(system, url, method, payload, auth, language);
+		? getResponseWithRequest(system, url, method, payload, auth, language, headers)
+		: getResponseWithAxios(system, url, method, payload, auth, language, headers);
 
 
 /**
@@ -120,7 +121,7 @@ const getResponseWithAxios = async (system, url, method, payload, auth, language
  * download: Duration of HTTP download (timings.end - timings.response)
  * total: Duration entire HTTP round-trip (timings.end)
  */
-const getResponseWithRequest = (system, url, method, payload, auth, language = 'en') => new Promise((resolve, reject) => {
+const getResponseWithRequest = (system, url, method, payload, auth, language = 'en', headers = {}) => new Promise((resolve, reject) => {
 	if (system.api_url.endsWith('/')) system.api_url = system.api_url.slice(0, -1);
 	if (!url.startsWith('/')) url = `/${url}`
 
@@ -131,7 +132,8 @@ const getResponseWithRequest = (system, url, method, payload, auth, language = '
 		headers: {
 			'Authorization': auth,
 			'Accept-Language': language,
-			'Content-Type': 'application/json'
+			'Content-Type': 'application/json',
+			...headers
 		},
 		time: true,
 		rejectUnauthorized: false
@@ -207,19 +209,19 @@ const processBasicAuthBasedSystemCredentials = async system => {
  * @param {object} payload The payload for the api call
  * @param {string} systemName The system on which the api needs to be executed
  */
-const callApi = (url, method, payload, systemName, language = 'en') => new Promise((resolve, reject) => {
+const callApi = (url, method, payload, systemName, language = 'en', headers) => new Promise((resolve, reject) => {
 	let system = availableSystems.default;
 	if (!!systemName && !!availableSystems[systemName]) system = availableSystems[systemName];
 	if (!system.method) system.method = constants.authTypes.oauth2[0];
 
 	if (constants.authTypes.oauth2.includes(system.method)) {
 		processOauth2BasedSystemCredentials(systemName, system)
-			.then(systemWithAuth => getResponse(system, url, method, payload, `Bearer ${systemWithAuth.jwt}`, language))
+			.then(systemWithAuth => getResponse(system, url, method, payload, `Bearer ${systemWithAuth.jwt}`, language, headers))
 			.then(resolve)
 			.catch(reject);
 	} else if (constants.authTypes.basic.includes(system.method)) {
 		processBasicAuthBasedSystemCredentials(system)
-			.then(systemWithAuth => getResponse(system, url, method, payload, `Basic ${systemWithAuth.auth}`, language))
+			.then(systemWithAuth => getResponse(system, url, method, payload, `Basic ${systemWithAuth.auth}`, language, headers))
 			.then(resolve)
 			.catch(reject);
 	} else if (constants.authTypes.none.includes(system.method)) {

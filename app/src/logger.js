@@ -77,7 +77,7 @@ const logData = (moduleName, level, logStream) => async (message, error) => {
 		consoleLevel = level[0]
 		consoleModule = moduleName[0]
 	}
-	if (logLevels[env.LOG_LEVEL] >= logLevels[level] && !env.SILENT) {
+	if (logLevels[env.LOG_LEVEL] >= logLevels[level] && !env.SILENT && !(level === 'warn' && env.NO_WARNING_MESSAGES)) {
 		console.log(`[${logHandler.prettyPrint('loglevel', consoleLevel)}] [${consoleModule}]: ${message || ''}`)
 	}
 	logStream.write(`[${consoleLevel}] [${moduleName}] ${Date.now()}: ${message && typeof message === 'string' ? message.replace(colorCodeRegex, '') : ''}\n`)

@@ -10,10 +10,12 @@ const utils = require('./utils');
 const compiler = require('./compiler');
 const logHandler = require('./loghandler');
 const logger = require('./logger')('runner');
+const { processAssertionsInResponse } = require('./asserthandler')
 const { initializeDatabase, updateApiCache, findApiDetailsFromCache, insertApiExecutionData,
 	insertJobHistory, insertApiResponseCache, findApiResponseFromCache } = require('./dbhandler')
 const { vibPath, executionStatus, scriptTypes, loremGeneratorConfig, userConfig, dataSets } = require('./constants');
 const { callApi, setAvailableSystems } = require('./servicehandler');
+
 
 let ACTIVE_PARALLEL_EXECUTORS = 0, lorem = new LoremIpsum(loremGeneratorConfig);
 let totalEndpointsExecuted = 0, totalEndpointsSuccessful = 0, db
@@ -49,56 +51,76 @@ const executeAPI = async (endpoint, endpointVaribles) => {
 	if (!!endpoint.expect && !!endpoint.expect.status) expectedStatus = endpoint.expect.status;
 
 	if (endpoint.cache) {
-		try {
-			logger.info(`Loading response of ${endpoint.collection}.${endpoint.scenario}.${endpoint.name} from cache`)
-			let { _result: cachedResponse } = await findApiResponseFromCache(db, endpoint.collection, endpoint.scenario, endpoint.name)
-			endpoint = {
-				...endpoint,
-				_result: cachedResponse,
-				_variables: endpointVaribles,
-				jobId: endpointVaribles.jobId,
-				_status: cachedResponse.status === expectedStatus,
-				_id: totalEndpointsExecuted * (10 ** 14) + +endpointVaribles.jobId
-			}
-
-			totalEndpointsExecuted += 1
-			totalEndpointsSuccessful += cachedResponse.status === expectedStatus ? 1 : 0
-			ACTIVE_PARALLEL_EXECUTORS -= 1;
-			logHandler.printApiExecutionEnd(logger, endpoint)
-			return endpoint;
-		} catch (error) {
-			logger.info(`Could not fetch ${endpoint.name} from cache: ${error ? error : 'not found'}`)
-		}
+		let cachedResponse = await loadEndpointFromCache(endpoint, endpointVaribles, expectedStatus)
+		if (cachedResponse) return cachedResponse
 	}
 	let api = replaceVariablesInApi(endpoint, endpointVaribles);
 	await waitForExecutors()
 
 	logHandler.printApiExecutionStart(logger, api, endpointVaribles)
-	const endpointResponse = await callApi(api.url, api.method, api.payload, api.system, api.language)
+	const endpointResponse = await callApi(api.url, api.method, api.payload, api.system, api.language, api.headers)
+
+	let assertionResults = []
+	if (endpoint.dependencyLevel === 0 && endpointResponse.status === expectedStatus) {
+		assertionResults = await processAssertionsInResponse(endpoint, endpointResponse, replacePlaceholderInString, endpointVaribles)
+	}
+
 	// eslint-disable-next-line no-unused-vars
-	let { auth, ...apiDataToStore } = endpointResponse
+	let { auth, ...responseDataWithoutAuth } = endpointResponse
 	api = {
 		...api,
-		_result: apiDataToStore,
+		_expect: assertionResults,
+		_result: responseDataWithoutAuth,
 		_variables: endpointVaribles,
 		jobId: endpointVaribles.jobId,
-		_status: endpointResponse.status === expectedStatus,
+		_status: endpointResponse.status === expectedStatus && assertionResults.every(expect => expect.result),
 		_id: totalEndpointsExecuted * 10 ** 14 + +endpointVaribles.jobId
 	}
 
 	totalEndpointsExecuted += 1
-	totalEndpointsSuccessful += endpointResponse.status === expectedStatus ? 1 : 0
+	totalEndpointsSuccessful += endpointResponse.status === expectedStatus && assertionResults.every(expect => expect.result) ? 1 : 0
 	ACTIVE_PARALLEL_EXECUTORS -= 1;
 	if (endpoint.cache) {
 		logger.info(`Caching response of ${api.collection}.${api.scenario}.${api.name}`)
-		insertApiResponseCache(db, {...api, _result: endpointResponse})
+		insertApiResponseCache(db, { ...api, _expect: assertionResults, _result: endpointResponse })
 	}
 	logHandler.printApiExecutionEnd(logger, api)
 	insertApiExecutionData(db, api)
 	return api;
-
 }
 
+
+/**
+ * Load the endpoint result from cache
+ * 
+ * @param {object} endpoint The Endpoint object
+ * @param {object} endpointVaribles Variables for executing the api
+ * @param {integer} expectedStatus Expected status of the endpoint
+ */
+const loadEndpointFromCache = async (endpoint, endpointVaribles, expectedStatus) => {
+	try {
+		logger.info(`Loading response of ${endpoint.collection}.${endpoint.scenario}.${endpoint.name} from cache`)
+		let { _result: cachedResponse, _expect } = await findApiResponseFromCache(db, endpoint.collection, endpoint.scenario, endpoint.name)
+		endpoint = {
+			...endpoint,
+			_expect,
+			_result: cachedResponse,
+			_variables: endpointVaribles,
+			jobId: endpointVaribles.jobId,
+			_status: cachedResponse.status === expectedStatus,
+			_id: totalEndpointsExecuted * (10 ** 14) + +endpointVaribles.jobId
+		}
+
+		totalEndpointsExecuted += 1
+		totalEndpointsSuccessful += cachedResponse.status === expectedStatus ? 1 : 0
+		ACTIVE_PARALLEL_EXECUTORS -= 1;
+		logHandler.printApiExecutionEnd(logger, endpoint)
+		return endpoint;
+	} catch (error) {
+		logger.info(`Could not fetch ${endpoint.name} from cache: ${error ? error : 'not found'}`)
+		return
+	}
+}
 
 /**
  * Log the start of execution for the scenario in the given job id
@@ -121,7 +143,7 @@ const processGeneratorsAndGlobals = async (variables, globals, isDependency) => 
 			for (let globalVar of Object.keys(globals)) {
 				if (typeof (globals[globalVar]) === 'object' && !isDependency) {
 					globals[globalVar].variable = globalVar
-					// TODO execute api
+
 					let dependencyExecutionResult = await loadDependendentEndpoint({}, globals[globalVar], { ...variables })
 					// eslint-disable-next-line require-atomic-updates
 					variables[globalVar] = dependencyExecutionResult[globalVar]
@@ -136,6 +158,7 @@ const processGeneratorsAndGlobals = async (variables, globals, isDependency) => 
 	}
 	return variables
 };
+
 
 /**
  * Execute an api from a script
@@ -288,6 +311,14 @@ const replaceDataSetPlaceHolders = value => {
 	return value
 }
 
+const escapeRegexCharsInReplacedVariable = (useRegex, value) => {
+	return useRegex ? value.split('[').join('\\[')
+		.split(']').join('\\]')
+		.split('{').join('\\{')
+		.split('(').join('\\(')
+		.split(')').join('\\)')
+		.split('.').join('\\.') : value
+}
 
 /**
  * Replace the varibles that contain the dot notation
@@ -297,7 +328,7 @@ const replaceDataSetPlaceHolders = value => {
  * @param {array} stringMatch variables matching the dot notation
  * @param {object} variableValue value for the variable
  */
-const replacePlaceholderWithDotNotation = (objectToParse, stringMatch, variableValue) => {
+const replacePlaceholderWithDotNotation = (objectToParse, stringMatch, variableValue, useRegex) => {
 	for (let match of stringMatch) {
 		match = match.split('{').join('').split('}').join('')
 		let path = match.split('.')
@@ -309,13 +340,13 @@ const replacePlaceholderWithDotNotation = (objectToParse, stringMatch, variableV
 		if (objectToParse.includes(`"{${match}}"`)) {
 			objectToParse = objectToParse
 				.split(isValueAnObject ? `"{${match}}"` : `{${match}}`)
-				.join(`${isValueAnObject ? JSON.stringify(parsedValue) : parsedValue}`)
+				.join(`${isValueAnObject ? escapeRegexCharsInReplacedVariable(useRegex, JSON.stringify(parsedValue)) : parsedValue}`)
 		} else if (objectToParse === `{${match}}`) {
-			objectToParse = isValueAnObject ? JSON.stringify(parsedValue) : parsedValue
+			objectToParse = isValueAnObject ? escapeRegexCharsInReplacedVariable(useRegex, JSON.stringify(parsedValue)) : parsedValue
 		} else {
 			objectToParse = objectToParse
 				.split(`{${match}}`)
-				.join(`${isValueAnObject ? JSON.stringify(parsedValue) : parsedValue}`)
+				.join(`${isValueAnObject ? escapeRegexCharsInReplacedVariable(useRegex, JSON.stringify(parsedValue)) : parsedValue}`)
 		}
 	}
 	return objectToParse
@@ -330,11 +361,11 @@ const replacePlaceholderWithDotNotation = (objectToParse, stringMatch, variableV
  * @param {any} variableValue replacement value
  * @param {boolean} isObjectToParseAJSON typeof the object to be parsed 
  */
-const replacePlaceholderWhenValueIsAnObject = (objectToParse, variableName, variableValue) => {
+const replacePlaceholderWhenValueIsAnObject = (objectToParse, variableName, variableValue, useRegex) => {
 	let stringMatch = objectToParse.match(new RegExp(`\\{${variableName}\\.[\\.a-zA-Z0-9_]*\\}`, 'gm'))
 
 	if (!!stringMatch && stringMatch.length > 0) {
-		objectToParse = replacePlaceholderWithDotNotation(objectToParse, stringMatch, variableValue)
+		objectToParse = replacePlaceholderWithDotNotation(objectToParse, stringMatch, variableValue, useRegex)
 	} else if (objectToParse === `{${variableName}}`) {
 		objectToParse = JSON.stringify(variableValue)
 	} else if (objectToParse.includes(`"{${variableName}}"`)) {
@@ -356,7 +387,7 @@ const replacePlaceholderWhenValueIsAnObject = (objectToParse, variableName, vari
  * @param {any} objectToBeParsed A String/Object that contains placeholder variables that needs to be replaced
  * @param {object} variables Available variables
  */
-const replacePlaceholderInString = (objectToBeParsed, variables) => {
+const replacePlaceholderInString = (objectToBeParsed, variables, useRegex = true) => {
 	let stringToBeReplaced = objectToBeParsed, isInputAnObject = typeof objectToBeParsed === 'object'
 	if (typeof stringToBeReplaced === 'string' || typeof stringToBeReplaced === 'object') {
 		if (isInputAnObject) {
@@ -370,7 +401,7 @@ const replacePlaceholderInString = (objectToBeParsed, variables) => {
 			} else if (typeof variables[variableName] === 'object') {
 				// The variable value is an object
 				stringToBeReplaced = replacePlaceholderWhenValueIsAnObject(stringToBeReplaced, variableName,
-					variables[variableName])
+					variables[variableName], useRegex)
 			} else if (stringToBeReplaced.includes(`{${variableName}}`)) {
 				stringToBeReplaced = stringToBeReplaced
 					.split(`{${variableName}}`)
@@ -386,7 +417,8 @@ const replacePlaceholderInString = (objectToBeParsed, variables) => {
 				.split(`{${loremVariable}}`)
 				.join(loremGenerator(parseInt(loremVariable.split('_')[1])));
 		}
-		if (typeof objectToBeParsed === 'string' && objectToBeParsed !== '{}' && objectToBeParsed.length < 99) {
+
+		if (useRegex && !isInputAnObject && stringToBeReplaced !== '{}' && stringToBeReplaced.length < 30) {
 			stringToBeReplaced = new RandExp(stringToBeReplaced).gen();
 		}
 	}
@@ -526,6 +558,18 @@ const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
 				parsedResponse = Object.values(parsedResponse).map(r => r[path[index]])
 			}
 
+			else if (key.toLowerCase() === 'length' && !Object.keys(parsedResponse).includes(key)) {
+				parsedResponse = Object.values(parsedResponse).length
+			}
+
+			else if (key.toLowerCase() === 'keys' && !Object.keys(parsedResponse).includes(key)) {
+				parsedResponse = Object.keys(parsedResponse)
+			}
+
+			else if (key.toLowerCase() === 'values' && !Object.keys(parsedResponse).includes(key)) {
+				parsedResponse = Object.values(parsedResponse)
+			}
+
 			else if (!isNaN(key)) {
 				let responseLength = Object.values(parsedResponse).length
 				if (Math.abs(parseInt(key)) >= responseLength) key = responseLength - 1
@@ -536,11 +580,17 @@ const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
 			else if (Object.keys(parsedResponse).includes(key)) {
 				parsedResponse = parsedResponse[key]
 			}
+
+			else {
+				logger.error(`Could not find key ${yellow(key)} in ${yellow(typeof (parsedResponse) === 'object' ? JSON.stringify(parsedResponse) : parsedResponse)}. Setting value to ${red('undefined')}`)
+				return undefined
+			}
 		}
 		logger.debug(`Parsed ${yellow(path.join('.'))} as ${green(typeof (parsedResponse) === 'object' ? JSON.stringify(parsedResponse) : parsedResponse)}`)
 	} catch (error) {
 		logger.error(`Could not parse ${yellow(path.join('.'))} from ${green(typeof (parsedResponse) === 'object' ? JSON.stringify(parsedResponse) : parsedResponse)}`, error)
 	}
+
 
 	return parsedResponse;
 }
@@ -623,13 +673,14 @@ const processDependencyExecutionResult = (scenarioResponse, endpoint, dependency
  * @param {object} endpointVariables List of endpoint variables
  */
 const loadDependendentEndpoint = async (endpoint, dependency, endpointVariables) => {
-	let searchResult = await searchForEndpointInCache(dependency.collection, dependency.scenario, dependency.api);
+	let searchResult = await searchForEndpointInCache(dependency.collection || endpoint.collection, dependency.scenario || endpoint.scenario, dependency.api);
 	let dependencyVariables = !!dependency.variables && typeof (dependency.variables) === 'object' ? { ...endpointVariables, ...dependency.variables } : endpointVariables
 
 	if (searchResult === undefined || !searchResult.scenario || !searchResult.api) {
 		throw { message: `Endpoint ${dependency.collection}.${dependency.scenario}.${dependency.api} not found` };
 	}
 	searchResult = JSON.parse(JSON.stringify(searchResult))
+	searchResult.scenario.endpoints[0].dependencyLevel = endpoint.dependencyLevel + 1
 
 	if (endpoint.name) {
 		logger.info(`Executing dependency ${getFormattedEndpointName(dependency.collection, dependency.scenario, dependency.api)} ` +
@@ -652,6 +703,7 @@ const loadDependendentEndpoint = async (endpoint, dependency, endpointVariables)
 	}
 	if (!!dependency.repeat && dependency.repeat > 0) searchResult.scenario.endpoints[0].repeat = dependency.repeat
 	searchResult.scenario.endpoints[0].variables = { ...searchResult.scenario.endpoints[0].variables, ...dependencyVariables }
+	if (dependency.cache !== undefined && typeof dependency.cache === 'boolean') searchResult.scenario.endpoints[0].cache = dependency.cache
 
 	let response = await performScenarioExecutionSteps(searchResult.scenario, dependencyVariables, true, true)
 	const scenarioResponse = response.scenarioResponse;
@@ -732,8 +784,10 @@ const getApiExecuterPromise = (scenarioVariables, endpoint, repeatIndex) => new 
  * @param {function} resolve Promise resolve function
  */
 const resolveEndpointResponses = (endpoint, results) => {
-	endpoint._result = results.map(endpoint => endpoint._result);
-	endpoint._status = results.every(endpoint => !!endpoint._status);
+	endpoint._result = results.map(endpoint => endpoint._result)
+	endpoint._status = results.every(endpoint => !!endpoint._status)
+	endpoint._variables = results.map(endpoint => endpoint._variables)
+	endpoint._expect = results.length === 1 ? results[0]._expect : results.map(endpoint => endpoint._expect)
 	return endpoint;
 };
 
@@ -762,7 +816,7 @@ const processEndpoint = async (scenarioVariables, endpoint, scenarioName, collec
 		const result = await endpointResolver;
 		results.push(result);
 	}
-	return resolveEndpointResponses(endpoint, results);
+	return resolveEndpointResponses(endpoint, results)
 }
 
 

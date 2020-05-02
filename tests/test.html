@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vibranium</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.1/css/bulma.min.css"> -->
+</head>
+<body>
+
+    <div class="header">
+        <h1>Vibranium</h1>
+        <h6>Built by t90</h6>
+    </div>
+    
+    <div class="container is-fluid">
+
+<h1 id="installation-and-setup">Installation and Setup</h1>
+<p>Installing Vibranium is as easy as installing any npm module. All you need is <a href="https://nodejs.org/en/">Node.JS</a> installed in your system.</p>
+<h2 id="steps">Steps</h2>
+<ul>
+<li><h3 id="install-nodejs">Install <a href="https://nodejs.org/en/">Node.JS</a></h3>
+<p>Head over to <a href="https://nodejs.org/en/">Node.JS</a> homepage and download the latest (Preferably LTS) installer file and install it in your system. To make sure it is installed properly, try running <code>node --version</code> and <code>npm --version</code> in command line/terminal to see if they are working.</p></li>
+<li><h3 id="install-vibranium">Install Vibranium</h3>
+<p>Open Command Line/Terminal in your system and run the following command</p>
+<pre class="shell"><code>npm install -g vibranium
+</code></pre>
+<p>To see if the installation is successful, try running <code>vib-cli --version</code></p>
+<p>Once you run install Vibranium, you'll have a CLI command (<code>vib-cli</code> alias <code>vc</code> ) that you can use to execute vibranium tasks. You can use either <code>vib-cli</code> or <code>vc</code>, both give refer to the same command.</p></li>
+<li><h3 id="setup-vibranium">Setup Vibranium</h3>
+<p>This step initialises VIbranium configurations. Open Command Line/ Terminal and change the directory to the directory that you with to make as your workspace and run the following command and enter the answers to the questions that follow</p>
+<pre class="shell"><code>vc setup
+</code></pre>
+<p>Example:</p>
+<pre class="shell"><code>cd C:\\Users\sarathm09\     
+mkdir vibraniumWorkspace &amp;&amp; cd vibraniumWorkspace
+
+vc setup                                                
+Please enter your user id: sarathm09
+Please enter your email id: some.email@domain.com
+Please enter your name: VibraniumTester
+</code></pre></li>
+<li><h3 id="clone-test-cases">Clone test cases</h3>
+<p>If you have test cases already available, you'll have to clone the test cases into the workspace</p>
+<pre class="shell"><code>cd C:\\Users\sarathm09\vibraniumWorkspace
+git clone https://github.com/someUser/Vibranium-Tests.git
+</code></pre></li>
+</ul>
+<h3 id="verify-the-installation">Verify the Installation</h3>
+<p>There are a few important points that we can use to verify if the installation is successful.</p>
+<ol>
+<li>Make sure Node JS and npn are installed globally</li>
+<li>Make sure you are able to run the command <code>vc</code> from any directory</li>
+<li>Make sure that you run the <code>vs setup</code>command only after you change the directory to the directory you choose as your workspace</li>
+<li>Make sure that the test cases are clonned inside the workspace and the tests directory name is updated in the config.json file in the workspace.</li>
+</ol>
+
+</div>
+
+
+
+
+</body>
+</html>

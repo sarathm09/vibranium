@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="{{ site.lang | default: "en-US" }}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+    {% seo %} 
+    <link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
+    <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+    <script src="{{ '/assets/js/respond.js' | relative_url }}"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <!--[if lt IE 8]>
+    <link rel="stylesheet" href="{{ '/assets/css/ie.css' | relative_url }}">
+    <![endif]-->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+
+  </head>
+  <body>
+    <div class="navbar">
+      <div class="dropdown">
+        <button class="dropbtn">
+          <a href="#">Documentation</a>
+          <i class="fa fa-caret-down"></i>
+        </button>
+        <div class="dropdown-content">
+          <a href="/vibranium/pages/docs/3.1.scenario_file.html">Scenario File</a>
+          <a href="/vibranium/pages/docs/3.2.simple_scenario.html">Simple Scenario</a>
+          <a href="/vibranium/pages/docs/3.3.variables.html">Variables</a>
+          <a href="/vibranium/pages/docs/3.4.dependencies.html">Dependencies</a>
+          <a href="/vibranium/pages/docs/3.5.scripts.html">Scripts</a>
+          <a href="/vibranium/pages/docs/3.6.generators.html">Generators</a>
+          <a href="/vibranium/pages/docs/3.7.reports.html">Reports</a>
+          <a href="/vibranium/pages/docs/3.8.systems.html">Systems</a>
+          <a href="/vibranium/pages/docs/3.9.parallel.html">Parallel execution</a>
+          <a href="/vibranium/pages/docs/3.10.repeat.html">Repeat</a>
+          <a href="/vibranium/pages/docs/3.11.examples.html">Examples</a>
+        </div>
+      </div> 
+      <div class="dropdown">
+        <button class="dropbtn">
+          <a href="#">CLI</a>
+          <i class="fa fa-caret-down"></i>
+        </button>
+        <div class="dropdown-content">
+          <a href="/vibranium/pages/cli/2.1.vc.html">Vibranium CLI</a>
+          <a href="/vibranium/pages/cli/2.2.vc_l.html">Listing Tests</a>
+          <a href="/vibranium/pages/cli/2.3.vc_c.html">Creating Scenarios</a>
+          <a href="/vibranium/pages/cli/2.4.vc_r.html">Running Tests</a>
+          <a href="/vibranium/pages/cli/2.5.vc_others.html">Other commands</a>
+        </div>
+      </div> 
+      <div class="dropdown">
+        <button class="dropbtn">
+          <a href="#">Basics</a>
+          <i class="fa fa-caret-down"></i>
+        </button>
+        <div class="dropdown-content">
+          <a href="/vibranium/pages/setup/1.1.workspace.html">Workspace</a>
+          <a href="/vibranium/pages/setup/1.2.collections_scenarios_endpoints.html">Collections, Scenarios and Endpoints</a>
+          <a href="/vibranium/pages/setup/1.3.installation.html">Installation</a>
+          <a href="/vibranium/pages/setup/1.4.configuration.html">Configuration</a>
+          <a href="/vibranium/pages/setup/1.5.config_json.html">Config file</a>
+        </div>
+      </div> 
+      <a href="/vibranium/pages/0.1.intro.html">Introduction</a>
+      <a href="/vibranium/pages/index.html">Home</a>
+    </div>
+
+    <div class="wrapper">
+
+      <section>
+        <div id="title">
+          <h1>{{ site.title | default: site.github.repository_name }}</h1>
+          <p>{{ site.description | default: site.github.project_tagline }}</p>
+          <hr>
+          <span class="credits left">Project maintained by <a href="{{ site.github.owner_url }}">{{ site.github.owner_name }}</a></span>
+          <span class="credits right">Hosted on GitHub Pages</span>
+        </div>
+        
+
+        {{ content }}
+
+      </section>
+
+    </div>
+
+    {% if site.google_analytics %}
+      <script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+        (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+        m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+        ga('create', '{{ site.google_analytics }}', 'auto');
+        ga('send', 'pageview');
+      </script>
+    {% endif %}
+  </body>
+</html>

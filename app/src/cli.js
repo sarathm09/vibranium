@@ -6,10 +6,8 @@ const vibranium = require('commander')
 const { readFileSync } = require('fs')
 const requestHandler = require('./requesthandler')
 
-const version = JSON.parse(readFileSync(__dirname + '/../../package.json', 'utf8')).version
+const version = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf8')).version
 const supportedTemplates = ['t1', 't2', 't3', 'e1_github']
-
-
 
 
 /**
@@ -36,6 +34,7 @@ const setEnvironmentVariables = options => {
 	if (options.log === 'minimal')
 		env.LOG_MINIMAL = true
 }
+
 
 vibranium
 	.command('run')

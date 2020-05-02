@@ -464,6 +464,8 @@ const compareObjects = (o1, o2, comparator) => {
 		return o1.includes(o2)
 	} else if (comparator === '!=') {
 		return o1 != o2
+	} else if (comparator === '!==') {
+		return o1 != o2
 	} else {
 		return !!o1
 	}
@@ -559,7 +561,7 @@ const filterScenariosMatchingKeys = (scenarios, keys) => {
 		scenario: filterScenariosMatchingScenarioKeys,
 		endpoint: filterScenariosMatchingEndpointKeys,
 		dependency: filterScenariosMatchingDependencyKeys
-	}, comparators = ['<', '>', '˜', '!=', '=']
+	}, comparators = ['<', '>', '˜', '!=','!==', '=']
 
 	let comparator = comparators.filter(c => keys.includes(c))
 	if (comparator.length >= 1) {

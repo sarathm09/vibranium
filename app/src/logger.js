@@ -54,11 +54,11 @@ const rotateOldLogFiles = async () => {
 const rotateOldJobLogs = async () => {
 	try {
 		let jobFiles = await readdir(vibPath.jobs)
-		if (jobFiles.length > 10) {
+		if (jobFiles.length > 30) {
 			let filesToDelete = jobFiles
 				.filter(f => !isNaN(f))
 				.sort()
-				.slice(0, jobFiles.length - 10)
+				.slice(0, jobFiles.length - 30)
 
 			await Promise.all(filesToDelete
 				.map(f => rmdir(join(vibPath.jobs, f), { recursive: true })))

@@ -76,9 +76,11 @@ const executeAPI = async (endpoint, endpointVaribles) => {
 	let { auth, ...responseDataWithoutAuth } = endpointResponse
 	api = {
 		...api,
+		fullUrl: endpointResponse.fullUrl,
 		_expect: assertionResults,
 		_result: responseDataWithoutAuth,
-		_variables: { ...endpointVaribles },
+		// eslint-disable-next-line no-unused-vars
+		_variables: { ...Object.fromEntries(Object.entries(endpointVaribles).filter(([key, value]) => typeof value !== 'function')) },
 		jobId: endpointVaribles.jobId,
 		_status: endpointResponse.status === expectedStatus && assertionResults.every(expect => expect.result),
 		_id: totalEndpointsExecuted * 10 ** 14 + +endpointVaribles.jobId
@@ -89,10 +91,13 @@ const executeAPI = async (endpoint, endpointVaribles) => {
 	ACTIVE_PARALLEL_EXECUTORS -= 1;
 	if (endpoint.cache) {
 		logger.info(`Caching response of ${api.collection}.${api.scenario}.${api.name}`)
-		insertApiResponseCache(db, { ...api, _expect: assertionResults, _result: endpointResponse })
+		await insertApiResponseCache(db, { ...api, _expect: assertionResults, _result: endpointResponse })
 	}
-	logHandler.printApiExecutionEnd(logger, api)
-	insertApiExecutionData(db, api)
+
+	await Promise.all([
+		logHandler.printApiExecutionEnd(logger, api),
+		insertApiExecutionData(db, api)
+	])
 	return api;
 }
 
@@ -1173,9 +1178,8 @@ const runTests = async (scenarios, executionOptions) => {
 		processScenario(scenario, jobId, { ...globalVariables, ...userVariables })
 	))
 
-	logHandler.logExecutionEnd(logger, jobId, scenarioResults, totalEndpointsExecuted, totalEndpointsSuccessful);
-
 	await Promise.all([
+		logHandler.logExecutionEnd(logger, jobId, scenarioResults, totalEndpointsExecuted, totalEndpointsSuccessful),
 		savePostExecutionData(jobId, scenarioResults, executionOptions),
 		...scenarioResults.map(result =>
 			updateScenarioResultsAndSaveReports(jobId, result, executionOptions))

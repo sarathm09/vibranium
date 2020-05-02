@@ -33,7 +33,7 @@ Vibranium is a Node JS based app, available in npm. To install Vibranium, all yo
 
 ## Documentation
 
-The documentaion for Vibranium hosted in Giithub Pages and is [available here](https://sarathm09.github.io/vibranium/).
+The documentaion for Vibranium hosted in Github Pages and is [available here](https://sarathm09.github.io/vibranium/).
 
 
 ## Sample Tests

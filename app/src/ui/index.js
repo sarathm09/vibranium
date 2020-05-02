@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 import { Router } from '@reach/router'
 
+import './index.css'
 import JobsList from './JobsList'
 import Endpoint from './Endpoint'
 import EndpointsList from './EndpointsList'

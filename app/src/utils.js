@@ -20,10 +20,12 @@ Number.prototype[Symbol.iterator] = function* () {
 	}
 }
 
+
 /**
  * Check if the system is a Mac or not
  */
 module.exports.isMac = platform === 'darwin';
+
 
 /**
  * Get the loglevel object from the string
@@ -37,12 +39,14 @@ module.exports.getLogLevel = level =>
 				? logLevels.warn
 				: logLevels.info;
 
+
 /**
  * Get the collection name from the absolute file path
  * @param {string} fileToParse
  * @returns {string}
  */
 module.exports.getCollectionNameForScenario = fileToParse => fileToParse.replace(vibPath.scenarios, '').split(sep)[1];
+
 
 /**
  * Get the scenario name from the absolute file path
@@ -56,12 +60,14 @@ module.exports.getScenarioFileNameFromPath = fileToParse =>
 		.pop()
 		.split('.')[0];
 
+
 /**
  * Split and trim user input string
  * @param {string} input
  * @returns {array}
  */
 module.exports.splitAndTrimInput = input => (input ? input.split(',').map(_ => _.trim()) : []);
+
 
 /**
  * Check if the user has passed 'all' as the input.
@@ -71,12 +77,14 @@ module.exports.splitAndTrimInput = input => (input ? input.split(',').map(_ => _
  */
 module.exports.isAll = input => (input ? input.toLowerCase() === 'all' : true);
 
+
 /**
  * Asynchronous sleep function.
  * Used for limiting the number of parallel executions
  * @param {integer} ms milliseconds to sleep
  */
 module.exports.sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 
 /**
  * Split the given and input and see if any of the elements specified in the array match
@@ -88,6 +96,13 @@ module.exports.sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 module.exports.includesRegex = (arr, input) => arr.filter(_ => input.toLowerCase().match(_.toLowerCase())).length > 0;
 
 
+/**
+ * Convert the file data to string and then parse the repsonse.
+ * 
+ * @param {string} fileToParse the path to the file to be parsed
+ * @param {string} fileData File data string
+ * @param {boolean} payload Is the file a payload file or not
+ */
 const parseJsonFile = async (fileToParse, fileData, payload) => {
 	let fileParseStatus = {};
 	try {
@@ -111,7 +126,8 @@ const parseJsonFile = async (fileToParse, fileData, payload) => {
 		};
 	}
 	return fileParseStatus;
-};
+}
+
 
 /**
  * Read the json file (scenario/payload) from the filesystem, parse it as json
@@ -132,7 +148,8 @@ module.exports.readJsonFile = async (fileToParse, payload = false) => {
 		let fileData = await readFile(fileToParse, 'utf8')
 		return parseJsonFile(fileToParse, fileData, payload)
 	}
-};
+}
+
 
 /**
  * Save the scenarios into cache.
@@ -145,19 +162,22 @@ module.exports.freezeScenarios = scenarios => {
 		mkdirSync(vibPath.cache);
 	}
 	writeFileSync(vibPath.cachedScenarios, JSON.stringify(scenarios));
-};
+}
+
 
 /**
  * Remove all cache. Triggered by the --unfreeze option
  */
 module.exports.unfreezeScenarios = async () => {
 	if (existsSync(vibPath.cachedScenarios)) await unlink(vibPath.cachedScenarios);
-};
+}
+
 
 /**
  * Check if cache exists. Cache is created by running --freeze option
  */
 module.exports.cacheExists = () => existsSync(vibPath.cachedScenarios);
+
 
 /**
  * Load the cached scenarios
@@ -165,7 +185,8 @@ module.exports.cacheExists = () => existsSync(vibPath.cachedScenarios);
 module.exports.loadCachedScenarios = async () => {
 	let cachedScenarios = await readFile(vibPath.cachedScenarios, 'utf8');
 	return JSON.parse(cachedScenarios);
-};
+}
+
 
 /**
  * Get available systems defined in the config
@@ -175,7 +196,8 @@ module.exports.getAvailableSystemsFromConfig = () => {
 		systems: userConfig.accounts,
 		default: userConfig.default_account
 	};
-};
+}
+
 
 /**
  * Check if the config is set and Vibranium is cloned
@@ -211,7 +233,8 @@ module.exports.isVibraniumInitialized = () => {
 		logger.error('For more info, please run ' + green('vc setup --help'))
 		process.exit(1);
 	}
-};
+}
+
 
 /**
  * Execute a given script and return the variables
@@ -241,8 +264,12 @@ module.exports.executeScript = (script, getApiResponse, variables, parent, scrip
         ${scriptName}()
     `);
 	return variables;
-};
+}
 
+
+/**
+ * Check for valid name. Used in scenario name validation
+ */
 module.exports.isValidName = inputText => {
 	if (inputText == undefined || inputText == null || inputText == '') return false;
 
@@ -253,6 +280,10 @@ module.exports.isValidName = inputText => {
 	return true;
 };
 
+
+/**
+ * Get the max number of parallel executors
+ */
 module.exports.getParallelExecutorLimit = () => {
 	if (env.MAX_PARALLEL_EXECUTORS && !isNaN(env.MAX_PARALLEL_EXECUTORS))
 		return parseInt(env.MAX_PARALLEL_EXECUTORS)
@@ -261,9 +292,12 @@ module.exports.getParallelExecutorLimit = () => {
 		: 10;
 }
 
-
+/**
+ * Right padding generator
+ */
 // eslint-disable-next-line no-unused-vars
 module.exports.printSpaces = (text, max = 15) => [...(max - text.length)].map(_ => ' ').join('');
+
 
 /**
  * Promisify readline to read user inputs
@@ -276,6 +310,7 @@ module.exports.readlinePromise = readlineObject => question => new Promise(resol
 		resolve(inputText)
 	})
 })
+
 
 /**
  * Shuffles array in place.

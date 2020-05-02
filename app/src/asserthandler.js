@@ -49,6 +49,14 @@ const getSchemaFileFromPath = async pathVariable => {
     }
 }
 
+/**
+ * Validate all assertions in the response body
+ * 
+ * @param {object} endpoint The endpoint object
+ * @param {object} response The response object
+ * @param {function} replacePlaceholderInString THe utility function to replace variables in the assertion statements
+ * @param {object} variables Endpoint Variables
+ */
 const responseBodyCheck = async (endpoint, response, replacePlaceholderInString, variables) => {
     let assertResponse = []
     const vm = new VM({
@@ -76,7 +84,12 @@ const responseBodyCheck = async (endpoint, response, replacePlaceholderInString,
 }
 
 
-const ajvResponseParser = (schema, errors) => {
+/**
+ * Parse AJV validation object to get response errors
+ * 
+ * @param {array} errors AJV validation errors
+ */
+const ajvResponseParser = (errors) => {
     return errors.map(err => {
         if (err.keyword === 'additionalProperties') {
             return getAssertResponse(`Response schema [${err.message} '${err.params.additionalProperty}']`, `${err.message} '${err.params.additionalProperty}'`, '', false)
@@ -135,7 +148,7 @@ const responseSchemaCheck = async (endpoint, response) => {
         let schema = await getSchemaFileFromPath(endpoint.expect.response.schema)
         if (schema && schema.status) {
             if (!ajv.validate(schema.data, response.response)) {
-                assertResponse.push(...ajvResponseParser(endpoint.expect.response.schema, ajv.errors))
+                assertResponse.push(...ajvResponseParser(ajv.errors))
             } else {
                 assertResponse.push(getAssertResponse('Response schema', endpoint.expect.response.schema, [], true))
             }

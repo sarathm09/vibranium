@@ -23,6 +23,7 @@ const { vibPath, userConfig, loadDataLists } = require('./constants');
  */
 const handleRunCommand = async options => {
 	let loadDataSetTask = loadDataLists()
+
 	const scenarioList = await compiler.search(options.collections, options.scenarios, options.apis);
 	const executionOptions = {
 		variables: options.variables,
@@ -48,7 +49,8 @@ const handleRunCommand = async options => {
 		handleSilentResponse(result)
 	}
 	if (!status) process.exit(1)
-};
+}
+
 
 /**
  * List the scenarios matching the parameters that user specified
@@ -85,6 +87,7 @@ const handleListCommand = async options => {
 		sc.endpoints).reduce((a, c) => [...a, ...c], []).length} api(s) in ${prettyMilliseconds(Date.now() - startTime)}`)
 }
 
+
 /**
  * Setup vibranium in the given path.
  *
@@ -111,7 +114,8 @@ const handleVibraniumSetup = async (options, workspacePath) => {
 	logger.info(`Please clone your repo in the directory: ${workspacePath}`);
 	await open(workspacePath);
 
-};
+}
+
 
 /**
  * Get the sample scenario file corresponding to the user input
@@ -132,6 +136,8 @@ const getScenarioFileForOptions = async options => {
 	}
 	throw new Error('Template not found')
 }
+
+
 /**
  * Create a new collection/scenario
  *
@@ -147,23 +153,23 @@ const handleCreateCommand = options => {
 		process.exit(1);
 	}
 
-	utils.isVibraniumInitialized();
-	if (!existsSync(vibPath.scenarios)) mkdirSync(vibPath.scenarios);
-	if (!existsSync(join(vibPath.scenarios, options.collection))) mkdirSync(join(vibPath.scenarios, options.collection));
+	utils.isVibraniumInitialized()
+	if (!existsSync(vibPath.scenarios)) mkdirSync(vibPath.scenarios)
+	if (!existsSync(join(vibPath.scenarios, options.collection))) mkdirSync(join(vibPath.scenarios, options.collection))
 
 	if (!existsSync(vibPath.payloads)) mkdirSync(vibPath.payloads);
-	if (!existsSync(join(vibPath.payloads, options.scenario))) mkdirSync(join(vibPath.payloads, options.scenario));
+	if (!existsSync(join(vibPath.payloads, options.scenario))) mkdirSync(join(vibPath.payloads, options.scenario))
 
-	const scenarioFileName = join(vibPath.scenarios, options.collection, `${options.scenario}.json`);
+	const scenarioFileName = join(vibPath.scenarios, options.collection, `${options.scenario}.json`)
 
 	if (existsSync(scenarioFileName)) {
-		logger.error('Scenario already exists. File: ' + scenarioFileName);
-		process.exit(1);
+		logger.error('Scenario already exists. File: ' + scenarioFileName)
+		process.exit(1)
 	}
 
-	createAndOpenScenario(options, scenarioFileName);
+	createAndOpenScenario(options, scenarioFileName)
+}
 
-};
 
 /**
  * Creates and opens the scenario in the default editor
@@ -193,9 +199,10 @@ const createAndOpenScenario = async (options, scenarioFileName) => {
 	]
 	await Promise.all(tasks)
 
-	logger.info('Scenario created. File: ' + scenarioFileName);
-	open(scenarioFileName);
-};
+	logger.info('Scenario created. File: ' + scenarioFileName)
+	open(scenarioFileName)
+}
+
 
 /**
  * Create the directories that vibranium uses for execution
@@ -206,7 +213,8 @@ const createVibraniumDirectories = workspace => {
 	if (!existsSync(workspace)) mkdirSync(workspace);
 	if (!existsSync(join(workspace, 'jobs'))) mkdirSync(join(workspace, 'jobs'));
 	if (!existsSync(join(workspace, 'logs'))) mkdirSync(join(workspace, 'logs'));
-};
+}
+
 
 /**
  * Create the vibranium workspace and setup user configuration json file
@@ -228,7 +236,8 @@ const createWorkspaceAndUserConfig = (userDetails, workspace) => {
 		workspace
 	};
 	writeFileSync(join(systemConfigDirectory, 'config.json'), JSON.stringify(sysConfig, null, 4));
-};
+}
+
 
 /**
  * Get the user details, for setting up vibranium for the first time.
@@ -248,6 +257,7 @@ const getUserDetailsFromConsole = async () => {
 	rl.close()
 	return ({ userid, email, name })
 }
+
 
 /**
  * Handle the debug command to print paths and open the corresponding directories
@@ -300,6 +310,7 @@ const handleDebugCommand = async options => {
 	rl.close()
 
 }
+
 
 /**
  * Print the response in a formatted structure without any loggers

@@ -2,8 +2,17 @@ const Datastore = require('nedb');
 const { join } = require('path')
 
 
+/**
+ * Log if there are any error on database index creation
+ * @param {Error} err error to be logged
+ */
 const logErrorInDatabaseIndexCreation = err => { if (err) console.error(err) }
 
+
+/**
+ * Initialize the database objects.
+ * TODO: Add support for mongo if found in env vars
+ */
 const initializeDatabase = async () => {
 	let db = {
 		apiCache: new Datastore({ inMemoryOnly: true, autoload: true }),

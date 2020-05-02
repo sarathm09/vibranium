@@ -65,8 +65,10 @@ const getResponse = (system, url, method, payload, auth, language = 'en', header
 
 /**
  * Execute the API endpoint and return a promise with the response. (Uses Axios)
- *
+ * TODO: USE another library that supports timing
+ * 
  * @private
+ * @deprecated
  * @param {string} url The url to be called
  * @param {string} method REST method
  * @param {object} payload The payload for the api call
@@ -146,12 +148,17 @@ const getResponseWithRequest = (system, url, method, payload, auth, language = '
 		if (!!response && !!response.statusCode) {
 			resolve(parseAndSendResponse(system.api_url + url, url, method, payload, auth, response, body))
 		} else {
-			reject({response, error});
+			reject({ response, error });
 		}
 	});
 })
 
 
+/**
+ * Some error occured while connecting to server, so print error and exit
+ * 
+ * @param {Error} error The error object
+ */
 const printErrorAndExit = error => {
 	if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
 		logger.error(red('Error connecting to server') + ', Check if ');
@@ -187,6 +194,7 @@ const processOauth2BasedSystemCredentials = async (systemName, system) => {
 	}
 }
 
+
 /**
  * Get the basic auth credentials and fetch the token
  *
@@ -202,6 +210,7 @@ const processBasicAuthBasedSystemCredentials = async system => {
 	}
 }
 
+
 /**
  * fetch the system/auth details and call the api endpoint
  *
@@ -212,25 +221,24 @@ const processBasicAuthBasedSystemCredentials = async system => {
  */
 const callApi = (url, method, payload, systemName, language = 'en', headers) => new Promise((resolve, reject) => {
 	let system = availableSystems.default;
-	if (!!systemName && !!availableSystems[systemName]) system = availableSystems[systemName];
-	if (!system.method) system.method = constants.authTypes.oauth2[0];
+	if (!!systemName && !!availableSystems[systemName]) system = availableSystems[systemName]
+	if (!system.method) system.method = constants.authTypes.oauth2[0]
 
 	if (constants.authTypes.oauth2.includes(system.method)) {
 		processOauth2BasedSystemCredentials(systemName, system)
 			.then(systemWithAuth => getResponse(system, url, method, payload, `Bearer ${systemWithAuth.jwt}`, language, headers))
-			.then(resolve)
-			.catch(reject);
+			.then(resolve).catch(reject)
+
 	} else if (constants.authTypes.basic.includes(system.method)) {
 		processBasicAuthBasedSystemCredentials(system)
 			.then(systemWithAuth => getResponse(system, url, method, payload, `Basic ${systemWithAuth.auth}`, language, headers))
-			.then(resolve)
-			.catch(reject);
+			.then(resolve).catch(reject)
+
 	} else if (constants.authTypes.none.includes(system.method)) {
 		getResponse(system, url, method, payload, '', language)
-			.then(resolve)
-			.catch(reject);
+			.then(resolve).catch(reject)
 	}
-});
+})
 
 
 /**
@@ -273,10 +281,11 @@ const fetchJwtToken = (url, clientId, clientSecret) => new Promise((resolve, rej
 				jwtTimeout: resp.expires_in
 			});
 		} else {
-			reject(error);
+			reject(error)
 		}
-	});
-});
+	})
+})
+
 
 module.exports = {
 	callApi,

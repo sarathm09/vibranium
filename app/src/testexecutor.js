@@ -323,6 +323,14 @@ const replaceDataSetPlaceHolders = value => {
 	return value
 }
 
+
+/**
+ * Escape regex chars in string before sending it to generate new string
+ * If the string is actually and object, then useRegex will be false as it should not be used to replace the characters
+ * 
+ * @param {boolean} useRegex Use regex generator ?
+ * @param {string} value String to be replaced
+ */
 const escapeRegexCharsInReplacedVariable = (useRegex, value) => {
 	return useRegex ? value.split('[').join('\\[')
 		.split(']').join('\\]')
@@ -331,6 +339,7 @@ const escapeRegexCharsInReplacedVariable = (useRegex, value) => {
 		.split(')').join('\\)')
 		.split('.').join('\\.') : value
 }
+
 
 /**
  * Replace the varibles that contain the dot notation
@@ -392,6 +401,7 @@ const replacePlaceholderWhenValueIsAnObject = (objectToParse, variableName, vari
 
 	return objectToParse
 }
+
 
 /**
  * Replace the available placeholders with the value of the corresponding variables
@@ -463,6 +473,7 @@ const replaceVariablesInApi = (api, variables) => {
 
 	return api;
 };
+
 
 /**
  * Convert list of scenarios to cache
@@ -607,10 +618,19 @@ const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
 	return parsedResponse;
 }
 
+
+/**
+ * Get the endpoint name as collectionName.scenarioName.endpointName
+ * 
+ * @param {string} collection Collection name
+ * @param {string } scenario Scenario Name
+ * @param {string} endpoint Endpoint name
+ */
 const getFormattedEndpointName = (collection, scenario, endpoint) =>
 	logHandler.prettyPrint('collection', collection) + '.' +
 	logHandler.prettyPrint('scenario', scenario) + '.' +
 	logHandler.prettyPrint('api', endpoint)
+
 
 /**
  * Load the variable data from the dependency's variables
@@ -786,7 +806,8 @@ const getApiExecuterPromise = (scenarioVariables, endpoint, repeatIndex) => new 
 			endpoint._status = false;
 			resolveEndpoint(endpoint);
 		});
-});
+})
+
 
 /**
  * Resolve with the results set in the endpoint
@@ -804,7 +825,14 @@ const resolveEndpointResponses = (endpoint, results) => {
 };
 
 
-// TODO: collect and print results
+/**
+ * execute the endpoint lifecycle
+ * 
+ * @param {object} scenarioVariables Scenario level variables
+ * @param {object} endpoint The Endpoint object
+ * @param {string} scenarioName scenario name
+ * @param {string} collection collection name
+ */
 const processEndpoint = async (scenarioVariables, endpoint, scenarioName, collection) => {
 	let results = []
 
@@ -1094,6 +1122,7 @@ const savePreExecutionData = async (jobId, scenarios) => {
 	await writeFile(join(latestDirPath, 'scenarios.json'), scenariosJson)
 }
 
+
 /**
  * Save the scenario results to a file
  * 
@@ -1128,6 +1157,7 @@ const savePostExecutionData = async (jobId, scenarios, executionOptions) => {
 	return await Promise.all(tasks)
 }
 
+
 /**
  * Update the scenario results, log them and then generate reports
  * 
@@ -1144,6 +1174,7 @@ const updateScenarioResultsAndSaveReports = async (jobId, result, executionOptio
 	result._status = result.endpoints && result.endpoints.every(e => e._status)
 	await logHandler.processScenarioResult(jobId, result, executionOptions.report, vibPath.jobs)
 }
+
 
 /**
  * Trigger point for all scenario executions

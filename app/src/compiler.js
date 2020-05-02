@@ -84,18 +84,6 @@ const loadEndpoinsForScenario = async (scenario, apis, searchMode = false) => {
 }
 
 
-// const updateEndpointsThatUseGlobalKeyword = endpoints => {
-// 	let endpointsWithGlobals = endpoints.filter(e => !!e.globals)
-// 	for (const endpoint of endpointsWithGlobals) {
-// 		for (const [key, value] of Object.entries(endpoint.globals)) {
-// 			let endpointsUsingThisGlobal = endpoints
-// 				.filter(e => e.variables && Object.values(e.variables).includes(key))
-
-// 		}
-// 	}
-// }
-
-
 /**
  * Transform the scenario list to an API list
  * 
@@ -192,7 +180,8 @@ const convertApiListToTreeStructure = apis => {
 const findApiDetails = (apis, collection, scenario, api) => {
 	let dependentApi = apis.find(_ => _.name === api && _.scenario === scenario && _.collection === collection);
 	return dependentApi ? dependentApi : {};
-};
+}
+
 
 /**
  * Fetch the dependent apis from the list of already loaded apis
@@ -223,7 +212,7 @@ const fetchDependentApis = (apis, api) => {
 			resolve({});
 		}
 	});
-};
+}
 
 
 /**
@@ -353,7 +342,8 @@ const searchForApiFromCache = async (collections, scenarios, apis) => {
 			return scenario;
 		})
 		.filter(scenario => scenario.endpoints.length > 0);
-};
+}
+
 
 /**
  * Search for scenario files and their details from disk
@@ -383,7 +373,8 @@ const searchForApiFromSystem = async (collections, scenarios, apis) => {
 	);
 
 	return filteredScenarios.filter(scenario => scenario.endpoints.length > 0);
-};
+}
+
 
 /**
  * Load all the scenario files and their details.
@@ -401,7 +392,8 @@ const loadAllScenarios = async (collections, scenarios, apis) => {
 		await loadAllScenariosFromSystem(collections, scenarios, apis)
 
 	return details;
-};
+}
+
 
 /**
  * Search for an api
@@ -419,7 +411,7 @@ const searchForApi = async (collections, scenarios, apis) => {
 		await searchForApiFromSystem(collections, scenarios, apis);
 
 	return details;
-};
+}
 
 
 /**
@@ -443,6 +435,22 @@ const findObjectFromKeyHierarchy = (hierarchy, path) => {
 
 
 /**
+ * Comparion operators supported for list command
+ * 
+ * @param {Object} o1 LHS
+ * @param {Object} o2 RHS
+ */
+const comparisonOperators = (o1, o2) => ({
+	'=': () => o1 == o2,
+	'<': () => o1 < o2,
+	'>': () => o1 > o2,
+	'˜': () => o1.includes(o2),
+	'!==': () => o1 !== o2,
+	'!=': () => o1 != o2,
+})
+
+
+/**
  * Compare two objects
  * 
  * @param {object} o1 Object 1
@@ -454,22 +462,16 @@ const compareObjects = (o1, o2, comparator) => {
 		return false
 	} else if (comparator === '=' && !o2) {
 		return !!o1
-	} else if (comparator === '=') {
-		return o1 == o2
-	} else if (comparator === '<') {
-		return o1 < o2
-	} else if (comparator === '>') {
-		return o1 > o2
-	} else if (comparator === '˜') {
-		return o1.includes(o2)
-	} else if (comparator === '!=') {
-		return o1 != o2
-	} else if (comparator === '!==') {
-		return o1 != o2
-	} else {
-		return !!o1
 	}
+
+	let operators = comparisonOperators(o1, o2)
+	if (Object.keys(operators).includes(comparator)) {
+		return operators[comparator]()
+	}
+
+	return !!o1
 }
+
 
 /**
  * Filter the scenarios based on the given path.
@@ -490,6 +492,7 @@ const filterScenariosMatchingScenarioKeys = (scenarios, keyFilter, keyValue = ''
 	}
 	return filteredScenarios
 }
+
 
 /**
  * Filter the scenarios based on the given path to the endpoint object.
@@ -517,6 +520,7 @@ const filterScenariosMatchingEndpointKeys = (scenarios, keyFilter, keyValue = ''
 	}
 	return filteredScenarios
 }
+
 
 /**
  * Filter the scenarios based on the given path to the dependency object.
@@ -561,7 +565,7 @@ const filterScenariosMatchingKeys = (scenarios, keys) => {
 		scenario: filterScenariosMatchingScenarioKeys,
 		endpoint: filterScenariosMatchingEndpointKeys,
 		dependency: filterScenariosMatchingDependencyKeys
-	}, comparators = ['<', '>', '˜', '!=','!==', '=']
+	}, comparators = ['<', '>', '˜', '!=', '!==', '=']
 
 	let comparator = comparators.filter(c => keys.includes(c))
 	if (comparator.length >= 1) {

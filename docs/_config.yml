@@ -1,1 +1,6 @@
 theme: jekyll-theme-midnight
+
+title: Vibranium
+description: API testing and data generation made easy
+
+show_downloads: false

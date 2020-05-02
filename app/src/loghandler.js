@@ -107,7 +107,7 @@ const logExecutionStart = async (logger, jobId, scenarios, executorCount) => {
  */
 const logScenarioStart = (logger, scenario) => {
 	if (env.LOG_MINIMAL) {
-		spinner.text = `Starting ${scenario.name}`
+		spinner.text = `Running ${prettyPrint('scenario', scenario.name)}`
 	}
 	logger.info(`Scenario ${prettyPrint('scenario', scenario.name)} [${scenario.file}] started`);
 	logger.info()
@@ -116,7 +116,9 @@ const logScenarioStart = (logger, scenario) => {
 
 const logScenarioEnd = async (logger, scenario) => {
 	if (env.LOG_MINIMAL) {
-		scenario._result.status === executionStatus.SUCESS ? spinner.succeed(scenario.name) : spinner.fail(scenario.name)
+		let tempText = spinner.text
+		scenario._result.status === executionStatus.SUCESS ? spinner.succeed(prettyPrint('scenario', scenario.name)) : spinner.fail(scenario.name)
+		spinner.text = tempText
 	}
 	logger.info(
 		`${prettyPrint('scenario', scenario.name)} status: ${prettyPrint('status', scenario._result.status)} [${
@@ -137,7 +139,7 @@ const getAPIIndex = api => {
 const printApiExecutionStart = async (logger, api, variables) => {
 	if (env.LOG_MINIMAL) {
 		spinner.prefixText = '  '
-		spinner.text = `${chalk.cyanBright(api.method ? api.method.toUpperCase() : 'GET')} ${api.scenario}.${api.name}`
+		spinner.text = `${chalk.blueBright(api.method ? api.method.toUpperCase() : 'GET')} ${prettyPrint('scenario', api.scenario)}.${prettyPrint('api', api.name)}`
 		spinner.prefixText = ''
 	}
 	logger.info(`${prettyPrint('scenario', api.scenario)}.${prettyPrint('api', api.name)} started`);
@@ -151,8 +153,9 @@ const getAssertLogString = ({ result, test }) => utils.isMac ? result ? chalk.gr
 
 const printApiExecutionEnd = async (logger, api) => {
 	if (env.LOG_MINIMAL) {
+		let tempText = spinner.text
 		spinner.prefixText = '  '
-		let text = `${chalk.cyanBright(api.method ? api.method.toUpperCase() : 'GET')} ${api.scenario}.${api.name}`
+		let text = `${chalk.blueBright(api.method ? api.method.toUpperCase() : 'GET')} ${prettyPrint('scenario', api.scenario)}.${prettyPrint('api', api.name)}`
 		api._status ? spinner.succeed(text) : spinner.fail(text)
 		if (api._expect) {
 			spinner.prefixText = '    '
@@ -161,6 +164,7 @@ const printApiExecutionEnd = async (logger, api) => {
 			})
 			spinner.prefixText = ''
 		}
+		spinner.text = tempText
 	}
 	// eslint-disable-next-line no-unused-vars
 	let { response, contentType, status } = api._result
@@ -172,6 +176,7 @@ const printApiExecutionEnd = async (logger, api) => {
 		'Scenario': prettyPrint('scenario', api.scenario),
 		'Method': api.method ? api.method.toUpperCase() : 'GET',
 		'Url': api.url,
+		'Complete Url': api.fullUrl,
 		'Payload': (!!api.payload && typeof (api.payload) === 'object') ? JSON.stringify(api.payload, null, 2) : '{}',
 		'Repeat Index': getAPIIndex(api),
 		'StatusCode': status,
@@ -257,7 +262,7 @@ const logExecutionEnd = (logger, jobId, result, totalEndpointsExecuted, totalEnd
 	}
 
 	if (env.LOG_MINIMAL) {
-		let text = 'Result: '  + totalEndpointsSuccessful + ' / ' + totalEndpointsExecuted
+		let text = 'Result: ' + totalEndpointsSuccessful + ' / ' + totalEndpointsExecuted
 		endpointResult.length === 0 ? spinner.succeed(chalk.green(text)) : spinner.fail(chalk.red(text))
 	}
 }

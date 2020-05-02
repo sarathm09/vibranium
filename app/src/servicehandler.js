@@ -27,13 +27,14 @@ const setAvailableSystems = systems => (availableSystems = systems);
  * @param {obejct} response Response object
  * @param {string} body Response data
  */
-const parseAndSendResponse = (url, method, payload, auth, response, body) => {
+const parseAndSendResponse = (fullUrl, url, method, payload, auth, response, body) => {
 	let apiResponse = body;
 	if (response.statusCode != 204 && !!response.headers['content-type'] &&
 		response.headers['content-type'].toLowerCase().includes('json')) {
 		apiResponse = JSON.parse(body);
 	}
 	return {
+		fullUrl,
 		url,
 		method,
 		payload,
@@ -143,7 +144,7 @@ const getResponseWithRequest = (system, url, method, payload, auth, language = '
 		if (error) printErrorAndExit(error)
 
 		if (!!response && !!response.statusCode) {
-			resolve(parseAndSendResponse(url, method, payload, auth, response, body))
+			resolve(parseAndSendResponse(system.api_url + url, url, method, payload, auth, response, body))
 		} else {
 			reject({response, error});
 		}

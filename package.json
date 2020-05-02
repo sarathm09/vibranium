@@ -1,11 +1,11 @@
 {
-	"name": "vibranium",
-	"version": "0.0.1",
+	"name": "vibranium-cli",
+	"version": "0.0.1-0",
 	"description": "API testing tool",
 	"author": "Sarath S Menon",
 	"main": "app/index.js",
 	"licence": "GNU General Public License (GPL)",
-	"homepage": "https://github.com/sarathm09/vibranium#readme",
+	"homepage": "https://sarathm09.github.io/vibranium/",
 	"keywords": [
 		"api-automation",
 		"api-testing",
@@ -21,7 +21,8 @@
 		"format": "prettier \"app/**/*.{js,html,jsx}\" --write",
 		"lint": "eslint app",
 		"build": "parcel build app/src/ui/index.html --no-source-maps --public-url /res/ -d app/res/ui/",
-		"dev": "parcel app/src/ui/index.html --public-url /res/ -d app/res/ui/"
+		"dev": "parcel app/src/ui/index.html --public-url /res/ -d app/res/ui/",
+		"test": "echo \"No tests specified\""
 	},
 	"repository": {
 		"type": "git",

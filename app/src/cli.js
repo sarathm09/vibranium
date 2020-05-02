@@ -1,12 +1,16 @@
 #!/usr/bin/env node
 
+const { join } = require('path')
 const { env } = require('process')
-const vibranium = require('commander');
-const { readFileSync } = require('fs');
-const requestHandler = require('./requesthandler');
+const vibranium = require('commander')
+const { readFileSync } = require('fs')
+const requestHandler = require('./requesthandler')
 
-const version = readFileSync(__dirname + '/../res/version.txt', 'utf8');
+const version = JSON.parse(readFileSync(__dirname + '/../../package.json', 'utf8')).version
 const supportedTemplates = ['t1', 't2', 't3', 'e1_github']
+
+
+
 
 /**
  * Set the environment variables according to user input

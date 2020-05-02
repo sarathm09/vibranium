@@ -93,6 +93,6 @@ typings/
 .vscode
 
 tryout.js
-.idea/
-*.0x/
-*.db
+.idea/*
+*.0x/*
+app/db/*.db

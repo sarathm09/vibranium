@@ -61,9 +61,10 @@ module.exports = {
 
 	vibPath: {
 		workspace,
-		scenarios: workspace ? join(workspace, testsDirectory, 'scenarios') : '',
 		jobs: workspace ? join(workspace, 'jobs') : '',
 		logs: workspace ? join(workspace, 'logs') : '',
+		scenarios: workspace ? join(workspace, testsDirectory, 'scenarios') : '',
+		templates: workspace ? join(workspace, testsDirectory, 'templates') : '',
 		payloads: workspace ? join(workspace, testsDirectory, 'payloads') : '',
 		schemas: workspace ? join(workspace, testsDirectory, 'schemas') : '',
 		cache: workspace ? join(workspace, '.cache') : '',

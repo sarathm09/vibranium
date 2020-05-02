@@ -120,9 +120,17 @@ const handleVibraniumSetup = async (options, workspacePath) => {
  */
 const getScenarioFileForOptions = async options => {
 	let fileName = join(__dirname, '..', 'res', 'config', `template_${options.template}.json`)
-	let templateJson = await readFile(fileName, 'utf-8')
-
-	return JSON.parse(templateJson)
+	if (existsSync(fileName)) {
+		let templateJson = await readFile(fileName, 'utf-8')
+		return JSON.parse(templateJson)
+	} else {
+		let userTemplateFileName = join(vibPath.templates, `template_${options.template}.json`)
+		if (existsSync(userTemplateFileName)) {
+			let templateJson = await readFile(fileName, 'utf-8')
+			return JSON.parse(templateJson)
+		}
+	}
+	throw new Error('Template not found')
 }
 /**
  * Create a new collection/scenario

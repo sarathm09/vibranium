@@ -1,0 +1,81 @@
+{
+  "id": "{scenarioId}",
+  "app": "{appName}",
+  "author": "{authorName}",
+  "name": "MyApp",
+  "tags": "imaginary,demo,teams",
+  "generate": {
+    "name": "{dataset.names}"
+  },
+  "scripts": {
+    "pre_scenario": "logger.info('Let's test an imaginary teams api that gets details, creates and assignes users to teams')",
+    "post_scenario": "logger.info('Scenario execution completed')"
+  },
+  "endpoints": [
+    {
+      "name": "01.get_all_teams",
+      "description": "Get all the teams from the system",
+      "url": "/api/v1/teams"
+    },
+    {
+      "name": "02.get_all_teams_types",
+      "description": "Get all the teams from the system",
+      "url": "/api/v1/teams/types",
+      "cache": true,
+      "system": "adminSystem2",
+      "language": "en",
+      "headers": {
+        "Accept": "application/json"
+      }
+    },
+    {
+      "name": "03.create_an_team",
+      "description": "Create a new team of a random type",
+      "url": "/api/v1/teams",
+      "method": "POST",
+      "variables": {
+        "visibility": "[PRIVATE|PUBLIC]"
+      },
+      "payload": {
+        "type": "{typeCode}",
+        "visibility": "{visibility}",
+        "admins": "{userIds}",
+        "description": {
+          "short": "[a-z ]{10, 255}",
+          "long": "{lorem_500}"
+        }
+      },
+      "dependencies": [
+        {
+          "api": "02.get_all_teams_types",
+          "variable": {
+            "typeCode": "response.any.code"
+          }
+        },
+        {
+          "collection": "collection_for_user_apis",
+          "scenario": "users_crud",
+          "api": "05.create_new_user",
+          "repeat": 5,
+          "cache": false,
+          "variable": {
+            "userIds": "all.id",
+            "userNames": "all.name"
+          }
+        }
+      ],
+      "expect": {
+        "status": 201,
+        "response": {
+          "id should be 32 characters": "{response.id.length} === 32",
+          "team type is correct": "'{response.type.code}' === '{typeCode}'",
+          "there are 5 admins": "{response.admins.length} === 5",
+          "admin names are correct": "{response.admins.all.id}.every(id => {userIds}.includes(id))"
+        },
+        "timing": {
+          "total": "<1000"
+        }
+      }
+    }
+  ]
+}

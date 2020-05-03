@@ -1,0 +1,49 @@
+{
+    "id": "{scenario_id}",
+    "app": "APP_NAME",
+    "author": "your I number",
+    "name": "test_collection_name",
+    "ignore": false,
+    "scripts": {
+      "pre_scenario": "let users = getApiResponse('this', 'this', 'get_some_user_names'); variables.userEmails = users.data.map(user => user.email);",
+      "post_globals": "logger.info('Globals are set'); logger.info(JSON.stringify(variables, null, 4))",
+      "post_scenario": "logger.info('Scenario execution completed')"
+    },
+    "endpoints": [
+      {
+        "ignore": true,
+        "name": "get_some_user_names",
+        "description": "Public API to get some User emails. Ignore is set to true to prevent execution when scenario runs. But the pre scenario script will be able to execute it.",
+        "url": "/api/users?page={someRandomPage}",
+        "system": "demoSystem",
+        "method": "GET",
+        "variables": {
+          "someRandomPage": "[0-9]{1,2}"
+        }
+      },
+      {
+        "name": "api_name_should_be_unique",
+        "description": "Description for the API",
+        "url": "/some/api/url/with/a/{variableName}",
+        "method": "POST",
+        "payload": "!payloadJsonName",
+        "dependencies": [
+          {
+            "variable": "variable_name_in_payload_or_url",
+            "collection": "collection_name",
+            "scenario": "scenario_name",
+            "api": "api_name",
+            "path": "/path/to/key/in/response",
+            "type": "array/string",
+            "repeat": 10,
+            "variables": {
+              "varInDependentService": "[a-zA-Z0-9]{5,10}"
+            }
+          }
+        ],
+        "variables": {
+          "varName": "randomInt"
+        }
+      }
+    ]
+  }

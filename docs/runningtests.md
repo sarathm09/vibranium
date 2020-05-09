@@ -1,6 +1,0 @@
-* `-c` : run a set of collections only
-* `-s` : run a set of scenarios only
-* `-a` : run a set of endpoints only
-* `-l` : log level. can be changed by either setting `-l` or by setting the environment variable `LOG_LEVEL`
-* `-r`: generate test execution reports
-* `-p` : number of parallel threads

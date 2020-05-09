@@ -53,7 +53,7 @@
       </div> 
       <div class="dropdown">
         <button class="dropbtn">
-          <a href="#">Basics</a>
+          <a href="#">Getting Started</a>
           <i class="fa fa-caret-down"></i>
         </button>
         <div class="dropdown-content">
@@ -64,8 +64,8 @@
           <a href="/vibranium/pages/setup/1.5.config_json.html">Config file</a>
         </div>
       </div> 
-      <a href="/vibranium/pages/0.1.intro.html">Introduction</a>
-      <a href="/vibranium/pages/index.html">Home</a>
+      <a href="/vibranium/0.1.intro.html">Introduction</a>
+      <a href="/vibranium/index.html">Home</a>
     </div>
 
     <div class="wrapper">
@@ -85,6 +85,18 @@
       </section>
 
     </div>
+    <script>
+      let aNext = [...document.querySelectorAll('section a')].filter(a => a.text === 'Next');
+      if (aNext.length > 0){
+        aNext[0].classList.add('next-page-link')
+        aNext[0].innerHTML = "Next &raquo;"
+      }
+      let aPrev = [...document.querySelectorAll('section a')].filter(a => a.text === 'Previous');
+      if (aPrev.length > 0){
+        aPrev[0].classList.add('prev-page-link')
+        aPrev[0].innerHTML = "&laquo; Previous"
+      }
+    </script>
 
     {% if site.google_analytics %}
       <script>

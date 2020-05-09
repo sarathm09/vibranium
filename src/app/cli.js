@@ -7,7 +7,7 @@ const { readFileSync } = require('fs')
 const requestHandler = require('./requesthandler')
 
 const version = JSON.parse(readFileSync(join(__dirname, '..', '..', 'package.json'), 'utf8')).version
-const supportedTemplates = ['t1', 't2', 't3', 'e1_github']
+const supportedTemplates = ['t1', 't2', 't3', 't4', 'e1_github']
 
 
 /**
@@ -52,7 +52,7 @@ vibranium
 	.option('--system [systems]',
 		'The system on which the apis need to be executed. The sytem name should be defined in the config file')
 	.option('--no-color', 'Plain text output without colors')
-	.option('--skip-warn', 'Ignore all warning messages. Not recommended', false)
+	.option('--skip-warn', 'Ignore all warning messages. Not recommended', true)
 	.option('--silent', 'Print only the endpoint result')
 	.action(options => {
 		setEnvironmentVariables(options)

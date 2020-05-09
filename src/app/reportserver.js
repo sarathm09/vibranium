@@ -78,7 +78,8 @@ const responseHandler = (db, req, res, handler) => {
  * 
  */
 module.exports = async () => {
-    const db = await initializeDatabase()
+    let db = await initializeDatabase()
+
     const uiPage = join(__dirname, '..', 'res', 'ui', 'index.html')
     app.use(express.json())
     app.use('/res', express.static(join(__dirname, '..', 'res', 'ui')))

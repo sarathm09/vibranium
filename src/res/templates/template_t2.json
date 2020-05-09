@@ -7,10 +7,6 @@
   "generate": {
     "name": "{dataset.names}"
   },
-  "scripts": {
-    "pre_scenario": "logger.info('Let's test an imaginary teams api that gets details, creates and assignes users to teams')",
-    "post_scenario": "logger.info('Scenario execution completed')"
-  },
   "endpoints": [
     {
       "name": "01.get_all_teams",

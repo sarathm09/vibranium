@@ -84,12 +84,20 @@ module.exports = {
 	},
 
 	scriptTypes: {
-		preScenario: Symbol('preScenario'),
-		postScenario: Symbol('postScenario'),
-		postGlobal: Symbol('postGlobal'),
-		preApi: Symbol('preApi'),
-		postApi: Symbol('postApi'),
-		postDependency: Symbol('postDependency')
+		// Scenario level scripts
+		beforeScenario: 'before-scenario',
+		afterScenario: 'after-scenario',
+
+		beforeEach: 'before-each',
+		afterEach: 'after-each',
+
+		afterGlobals: 'after-globals',
+
+		// Endpoint level scripts
+		beforeEndpoint: 'before-endpoint',
+		afterEndpoint: 'after-endpoint',
+
+		afterDependencies: 'after-dependencies'
 	},
 
 	logLevels: {
@@ -111,6 +119,23 @@ module.exports = {
 			max: 16,
 			min: 4
 		}
+	},
+
+	timeVariables: {
+		timestamp_n: () => new Date().getTime(),
+		timestamp: () => new Date().toISOString(),
+		time: () => new Date().toLocaleTimeString(),
+		time_ms: () => new Date().getMilliseconds(),
+		time_sec: () => new Date().getSeconds(),
+		time_min: () => new Date().getMinutes(),
+		time_hours: () => new Date().getHours(),
+
+		date: () => new Date().toLocaleDateString(),
+		date_date: () => new Date().getDate(),
+		date_month: () => new Date().getMonth(),
+		date_month_name_long: () => new Date().toLocaleString('default', { month: 'long' }),
+		date_month_name: () => new Date().toLocaleString('default', { month: 'short' }),
+		date_year: () => new Date().getFullYear(),
 	},
 
 	colorCodeRegex: /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,

@@ -13,7 +13,8 @@ const logger = require('./logger')('runner');
 const { processAssertionsInResponse } = require('./asserthandler')
 const { initializeDatabase, updateApiCache, findApiDetailsFromCache, insertApiExecutionData,
 	insertJobHistory, insertApiResponseCache, findApiResponseFromCache } = require('./dbhandler')
-const { vibPath, executionStatus, scriptTypes, loremGeneratorConfig, userConfig, dataSets } = require('./constants');
+const { vibPath, executionStatus, scriptTypes, loremGeneratorConfig,
+	userConfig, dataSets, timeVariables } = require('./constants');
 const { callApi, setAvailableSystems } = require('./servicehandler');
 
 
@@ -49,7 +50,6 @@ const waitForExecutors = () => new Promise(resolve => {
 const executeAPI = async (endpoint, endpointVaribles) => {
 	let expectedStatus = 200;
 	if (!!endpoint.expect && !!endpoint.expect.status) expectedStatus = endpoint.expect.status;
-
 	if (endpoint.cache) {
 		let cachedResponse = await loadEndpointFromCache(endpoint, endpointVaribles, expectedStatus)
 		if (cachedResponse) return cachedResponse
@@ -61,6 +61,7 @@ const executeAPI = async (endpoint, endpointVaribles) => {
 
 	try {
 		endpointResponse = await callApi(api.url, api.method, api.payload, api.system, api.language, api.headers)
+
 	} catch ({ response, error }) {
 		endpointResponse._result = { response: {}, status: response && response.statusCode, message: error }
 		endpointResponse._status = false
@@ -178,7 +179,7 @@ const processGeneratorsAndGlobals = async (variables, globals, isDependency) => 
  * @param {object} variables Variables to be used for executing
  * @param {string} parentScenario Scenario from whcich the script is executed
  */
-const customApiExecutor = (variables, parentScenario) => {
+const customApiExecutor = (variables, parent) => {
 	return async (collection, scenario, api) => {
 		try {
 			const scenarioList = await compiler.search(collection, scenario, api);
@@ -191,7 +192,7 @@ const customApiExecutor = (variables, parentScenario) => {
 			const results = response[0].endpoints[0]._result.map(res => res.response);
 			return results.length == 1 ? results[0] : results;
 		} catch (error) {
-			logger.error(`Error executing api [${collection}, ${scenario}, ${api}] from ${parentScenario}: ${error}`, error);
+			logger.error(`Error executing api [${collection}, ${scenario}, ${api}] from ${parent.name}: ${error}`, error);
 			return {};
 		}
 	};
@@ -200,101 +201,51 @@ const customApiExecutor = (variables, parentScenario) => {
 
 
 /**
- * Execute the custom js script before scenario execution starts
+ * Execute the custom js scripts for scenario
  *
  * @param {object} variables Variables to be used for executing the script
  * @param {object} scenario scenaio from which the api is executed.
  */
-const executePreScenarioScripts = async (variables, scenario) => {
-	if (!!scenario.scripts && !!scenario.scripts.pre_scenario) {
-		utils.executeScript(
-			scenario.scripts.pre_scenario,
+const executeScenarioScripts = async (variables, scenario, type) => {
+	if (!!scenario && !!scenario.scripts && !!scenario.scripts[type]) {
+		variables = await utils.executeScenarioScript(
+			scenario.scripts[type],
 			customApiExecutor(variables, scenario),
 			variables,
 			scenario.name,
-			scriptTypes.preScenario
-		);
+			type
+		)
 	}
-	return (variables);
-};
-
-/**
- * Execute the custom js script after all dependent endpoints are executed
- *
- * @param {object} endPointVariables Variables at the endpoint level
- * @param {object} endpoint endpoint details
- */
-const executeEndpointPostDependencyScripts = (endPointVariables, endpoint) => {
-	if (!!endpoint.scripts && !!endpoint.scripts.post_dependency) {
-		utils.executeScript(
-			endpoint.scripts.post_dependency,
-			customApiExecutor(endPointVariables, endpoint.name),
-			endPointVariables,
-			endpoint.name,
-			scriptTypes.postDependency
-		);
-	}
-	return endPointVariables;
-};
-
-
-/**
- * Execute the custom js script before the endpoint execution starts
- *
- * @param {object} endPointVariables Variables at the endpoint level
- * @param {object} endpoint endpoint details
- */
-const executeEndpointPreScripts = (scenarioVariables, endpoint) => {
-	if (!!endpoint.scripts && !!endpoint.scripts.pre_endpoint) {
-		utils.executeScript(
-			endpoint.scripts.pre_endpoint,
-			customApiExecutor(scenarioVariables, endpoint.name),
-			scenarioVariables,
-			endpoint.name,
-			scriptTypes.preApi
-		);
-	}
-	return scenarioVariables;
-};
-
-
-/**
- * Execute the custom js script after scenario execution ends
- *
- * @param {object} variables Variables to be used for executing the script
- * @param {object} scenario scenaio from which the api is executed.
- */
-const executePostScenarioScripts = async (variables, scenario) => {
-	if (!!scenario.scripts && !!scenario.scripts.post_scenario) {
-		utils.executeScript(
-			scenario.scripts.post_scenario,
-			customApiExecutor(variables, scenario),
-			variables,
-			scenario.name,
-			scriptTypes.postScenario
-		);
-	}
-	return variables;
-};
-
-/**
- * Execute the custom js script after scenario globals and generator execution ends
- *
- * @param {object} variables Variables to be used for executing the script
- * @param {object} scenario scenaio from which the api is executed.
- */
-const executePostGeneratorScripts = async (variables, scenario) => {
-	if (!!scenario.scripts && !!scenario.scripts.post_globals) {
-		utils.executeScript(
-			scenario.scripts.post_globals,
-			customApiExecutor(variables, scenario),
-			variables,
-			scenario.name,
-			scriptTypes.postGlobal
-		);
-	}
-	return variables;
+	return { status: true, variables }
 }
+
+
+/**
+ * Execute the custom js scripts for endpoint
+ *
+ * @param {object} variables Variables to be used for executing the script
+ * @param {object} scenario scenaio from which the api is executed.
+ */
+const executeEndpointScripts = async (variables, api, type) => {
+	let status = true
+	if (!!api && !!api.scripts && !!api.scripts[type]) {
+		let response = await utils.executeEndpointScript(
+			api.scripts[type],
+			customApiExecutor(variables, api),
+			variables,
+			api,
+			type
+		)
+		if (response) {
+			api = response.api
+			variables = response.variables
+			status = response.status
+		}
+	}
+	return { status, api, variables }
+}
+
+
 
 /**
  * Replace Dataset texts in the variables
@@ -302,6 +253,7 @@ const executePostGeneratorScripts = async (variables, scenario) => {
  * @param {string} value The string in which dataset is to be replaced
  */
 const replaceDataSetPlaceHolders = value => {
+	value.split('{dataset.name}').join('{dataset.names}')
 	if (value.includes('{dataset.')) {
 		for (const name of dataSets.names) {
 			if (value.includes('{dataset.' + name)) {
@@ -417,9 +369,9 @@ const replacePlaceholderInString = (objectToBeParsed, variables, useRegex = true
 		}
 
 		for (const variableName of Object.keys(variables)) {
-			if (typeof variables[variableName] === 'function') {
+			if (Object.keys(timeVariables).includes(variableName)) {
 				// variables that vibranium provides
-				stringToBeReplaced = stringToBeReplaced.split(`{${variableName}}`).join(variables[variableName]());
+				stringToBeReplaced = stringToBeReplaced.split(`{${variableName}}`).join(timeVariables[variableName]());
 			} else if (typeof variables[variableName] === 'object') {
 				// The variable value is an object
 				stringToBeReplaced = replacePlaceholderWhenValueIsAnObject(stringToBeReplaced, variableName,
@@ -759,14 +711,79 @@ const loadDependendentEndpoint = async (endpoint, dependency, endpointVariables)
  * @returns {object} endpoint eith the variable set
  */
 const setRangeIndexForEndpoint = (endpoint, index) => {
-	let variables = endpoint.variables ? endpoint.variables : {};
-
+	let variables = endpoint.variables ? endpoint.variables : {}
 	variables['_range_index'] = index + 1;
 	endpoint.variables = variables;
 	return endpoint;
 };
 
 
+// /**
+//  * Return the promise that handles the api execution
+//  *
+//  * @param {object} scenarioVariables variables set at the scenario level
+//  * @param {object} endpoint endpoint object
+//  * @param {integer} repeatIndex index if the endpoint is reunning in repeat
+//  */
+// const getApiExecuterPromise = (scenarioVariables, endpoint, repeatIndex) => new Promise(resolveEndpoint => {
+// 	let beforeEachResponse = await executeEndpointScripts(scenarioVariables, endpoint, scriptTypes.beforeEach);
+// 	let beforeEndpointResponse = await executeEndpointScripts({ ...scenarioVariables, ...beforeEachResponse.variables }, endpoint, scriptTypes.beforeEndpoint);
+
+// 	let endpointVariables = { ...scenarioVariables, ...beforeEachResponse.variables, ...beforeEndpointResponse.variables }
+// 	endpoint.payload = beforeEndpointResponse.payload
+
+// 	let dependencyResolver = Promise.resolve();
+
+// 	endpoint = { ...setRangeIndexForEndpoint(endpoint, repeatIndex) };
+
+// 	if (!!endpoint.dependencies && endpoint.dependencies.length > 0) {
+// 		endpoint.dependencies.forEach(dependency => {
+// 			dependencyResolver = dependencyResolver.then(response => {
+// 				if (response) endpointVariables = { ...endpointVariables, ...response };
+// 				return loadDependendentEndpoint(endpoint, dependency, endpointVariables);
+// 			})
+// 		});
+// 	}
+// 	dependencyResolver
+// 		.then(response => {
+// 			if (response) endpointVariables = { ...endpointVariables, ...response };
+// 			return executeEndpointScripts(endpointVariables, endpoint, scriptTypes.afterEndpoint)
+// 		})
+// 		.then(scriptResponse => {
+// 			endpointVariables = scriptResponse.variables
+// 			endpoint.payload = scriptResponse.payload
+
+// 			return executeAPI(endpoint, endpointVariables)
+// 		})
+// 		.then(executeEndpointScripts(endpointVariables, endpoint, scriptTypes.afterEndpoint))
+// 		.then(resolveEndpoint)
+// 		.catch(error => {
+// 			endpoint._result = {
+// 				response: {},
+// 				status: -1,
+// 				message: error.message
+// 			};
+// 			logger.error(`Dependency execution failed: ${error.message}`, error)
+
+// 			endpoint._status = false;
+// 			executeEndpointScripts(endpointVariables, endpoint, scriptTypes.afterEndpoint)
+// 				.then(resolveEndpoint(endpoint))
+// 		});
+// })
+
+
+
+const returnFailedEndpoint = (endpoint, message, error) => {
+	endpoint._result = {
+		response: {},
+		status: -1,
+		message: error ? error.message : message
+	};
+	logger.error(message, error)
+
+	endpoint._status = false;
+	return endpoint
+}
 /**
  * Return the promise that handles the api execution
  *
@@ -774,55 +791,53 @@ const setRangeIndexForEndpoint = (endpoint, index) => {
  * @param {object} endpoint endpoint object
  * @param {integer} repeatIndex index if the endpoint is reunning in repeat
  */
-const getApiExecuterPromise = (scenarioVariables, endpoint, repeatIndex) => new Promise(resolveEndpoint => {
-	let endPointVariables = executeEndpointPreScripts(scenarioVariables, endpoint);
+const getApiExecuterPromise = async (scenario, scenarioVariables, endpoint, repeatIndex) => {
+	await executeScenarioScripts(scenarioVariables, scenario, scriptTypes.beforeEach)
+	let beforeEndpointResponse = await executeEndpointScripts(scenarioVariables, endpoint, scriptTypes.beforeEndpoint);
+	let response
+
+	if (!beforeEndpointResponse.status) {
+		await executeScenarioScripts(scenarioVariables, scenario, scriptTypes.afterEach)
+		let response = returnFailedEndpoint(endpoint, 'Script execution failed')
+		logHandler.printApiExecutionEnd(logger, response)
+		return response
+	}
+
+	let endpointVariables = beforeEndpointResponse.variables ?
+		{ ...scenarioVariables, ...beforeEndpointResponse.variables } :
+		{ ...scenarioVariables }
+
+
+	endpoint.payload = beforeEndpointResponse.api && beforeEndpointResponse.api.payload ?
+		beforeEndpointResponse.api.payload : endpoint.payload
+
 	let dependencyResolver = Promise.resolve();
 
-	endpoint = { ...setRangeIndexForEndpoint(endpoint, repeatIndex) };
+	endpoint = { ...setRangeIndexForEndpoint(endpoint, repeatIndex) }
 
 	if (!!endpoint.dependencies && endpoint.dependencies.length > 0) {
 		endpoint.dependencies.forEach(dependency => {
 			dependencyResolver = dependencyResolver.then(response => {
-				if (response) endPointVariables = { ...endPointVariables, ...response };
-				return loadDependendentEndpoint(endpoint, dependency, endPointVariables);
+				if (response) endpointVariables = { ...endpointVariables, ...response };
+				return loadDependendentEndpoint(endpoint, dependency, endpointVariables);
 			})
 		});
 	}
-	dependencyResolver
-		.then(response => {
-			if (response) endPointVariables = { ...endPointVariables, ...response };
-			endPointVariables = executeEndpointPostDependencyScripts(endPointVariables, endpoint);
-			executeAPI(endpoint, endPointVariables)
-				.then(resolveEndpoint);
-		})
-		.catch(error => {
-			endpoint._result = {
-				response: {},
-				status: -1,
-				message: error.message
-			};
-			logger.error(`Dependency execution failed: ${error.message}`, error)
 
-			endpoint._status = false;
-			resolveEndpoint(endpoint);
-		});
-})
+	try {
+		response = await dependencyResolver
+	} catch (error) {
+		return returnFailedEndpoint(endpoint, `Dependency execution failed: ${error.message}`, error)
+	}
 
+	if (response && response.status) endpointVariables = { ...endpointVariables, ...response.variables };
 
-/**
- * Resolve with the results set in the endpoint
- *
- * @param {object} endpoint endpoint object
- * @param {array} results List of results of API execution
- * @param {function} resolve Promise resolve function
- */
-const resolveEndpointResponses = (endpoint, results) => {
-	endpoint._result = results.map(endpoint => endpoint._result)
-	endpoint._status = results.every(endpoint => !!endpoint._status)
-	endpoint._variables = results.map(endpoint => endpoint._variables)
-	endpoint._expect = results.length === 1 ? results[0]._expect : results.map(endpoint => endpoint._expect)
-	return endpoint;
-};
+	let endpointResponse = await executeAPI(endpoint, endpointVariables)
+
+	await executeEndpointScripts(endpointVariables, endpoint, scriptTypes.afterEndpoint)
+	await executeScenarioScripts(scenarioVariables, scenario, scriptTypes.afterEach)
+	return endpointResponse
+}
 
 
 /**
@@ -833,14 +848,14 @@ const resolveEndpointResponses = (endpoint, results) => {
  * @param {string} scenarioName scenario name
  * @param {string} collection collection name
  */
-const processEndpoint = async (scenarioVariables, endpoint, scenarioName, collection) => {
+const processEndpoint = async (scenario, scenarioVariables, endpoint, scenarioName, collection) => {
 	let results = []
 
 	endpoint.scenario = scenarioName
 	endpoint.collection = collection
-	if (!!endpoint.async && !this.executionOptions.sync && !endpoint.globals) {
+	if (!!endpoint.async && !this.executionOptions.sync) {
 		let endpointExecutors = [...(endpoint.repeat || 1)].map(i =>
-			getApiExecuterPromise(scenarioVariables, endpoint, i)
+			getApiExecuterPromise(scenario, scenarioVariables, endpoint, i)
 		);
 		results = await Promise.all(endpointExecutors)
 
@@ -849,14 +864,20 @@ const processEndpoint = async (scenarioVariables, endpoint, scenarioName, collec
 		[...(endpoint.repeat || 1)].forEach(i => {
 			endpointResolver = endpointResolver.then(result => {
 				if (result) results.push(result);
-				return getApiExecuterPromise(scenarioVariables, endpoint, i);
+				return getApiExecuterPromise(scenario, scenarioVariables, endpoint, i);
 			});
 		});
 
 		const result = await endpointResolver;
 		results.push(result);
 	}
-	return resolveEndpointResponses(endpoint, results)
+
+	endpoint._result = results.map(endpoint => endpoint._result)
+	endpoint._status = results.every(endpoint => !!endpoint._status)
+	endpoint._expect = results.length === 1 ? results[0]._expect : results.map(endpoint => endpoint._expect)
+	endpoint._variables = results.map(endpoint => endpoint._variables)
+
+	return endpoint;
 }
 
 
@@ -870,25 +891,26 @@ const processEndpoint = async (scenarioVariables, endpoint, scenarioName, collec
 const performScenarioExecutionSteps = async (scenario, variables, overrideIgnoreFlag = false, isDependency = false) => {
 	try {
 		// Execute the pre scenario scripts
-		let preScriptVariables = await executePreScenarioScripts(variables, scenario);
+		let preScriptVariables = await executeScenarioScripts(variables, scenario, scriptTypes.beforeScenario);
 		// Process Generators and global variables
-		let globalVariables = await processGeneratorsAndGlobals(preScriptVariables, scenario.generate, isDependency);
+		let globalVariables = await processGeneratorsAndGlobals(preScriptVariables.variables, scenario.generate, isDependency);
 		// Execute the post generator scripts
-		let postScriptVariables = await executePostGeneratorScripts({ ...preScriptVariables, ...globalVariables }, scenario);
+		let postScriptVariables = await executeScenarioScripts({ ...preScriptVariables.variables, ...globalVariables }, scenario, scriptTypes.afterGlobals);
 
 		// Combine the results
 		let scenarioVariables = {
-			...preScriptVariables,
+			...preScriptVariables.variables,
 			...globalVariables,
-			...postScriptVariables
+			...postScriptVariables.variables
 		};
+
 		// Take the endpoints that have ignore flag as false and execute them
 		let endpointsToBeProcessed = overrideIgnoreFlag
 			? scenario.endpoints
 			: scenario.endpoints.filter(endpoint => !endpoint.ignore);
 
 		await Promise.all(endpointsToBeProcessed
-			.map(endpoint => processEndpoint(scenarioVariables, endpoint, scenario.name, scenario.collection)))
+			.map(endpoint => processEndpoint(scenario, scenarioVariables, endpoint, scenario.name, scenario.collection)))
 
 		return {
 			scenarioResponse: scenario,
@@ -955,7 +977,7 @@ const processScenario = async (scenario, jobId, variables) => {
 
 	// Do post scenario tasks
 	await Promise.all([
-		executePostScenarioScripts(scenarioVariables, scenarioResult),
+		executeScenarioScripts(scenarioVariables, scenarioResult, scriptTypes.afterScenario),
 		logHandler.logScenarioEnd(logger, scenarioResult)
 	])
 
@@ -995,21 +1017,6 @@ const loadGlobalVariables = jobId => {
 	return {
 		jobId,
 		job_id: jobId,
-
-		timestamp_n: () => new Date().getTime(),
-		timestamp: () => new Date().toISOString(),
-		time: () => new Date().toLocaleTimeString(),
-		time_ms: () => new Date().getMilliseconds(),
-		time_sec: () => new Date().getSeconds(),
-		time_min: () => new Date().getMinutes(),
-		time_hours: () => new Date().getHours(),
-
-		date: () => new Date().toLocaleDateString(),
-		date_date: () => new Date().getDate(),
-		date_month: () => new Date().getMonth(),
-		date_month_name_long: () => new Date().toLocaleString('default', { month: 'long' }),
-		date_month_name: () => new Date().toLocaleString('default', { month: 'short' }),
-		date_year: () => new Date().getFullYear(),
 		...userConfig.env_vars
 	};
 
@@ -1183,18 +1190,19 @@ const updateScenarioResultsAndSaveReports = async (jobId, result, executionOptio
  * @returns {boolean} Execution status
  */
 const runTests = async (scenarios, executionOptions) => {
-	if (scenarios.length === 0) {
+	if (scenarios.length === 0 || scenarios.every(sc => sc.endpoints.length === 0)) {
 		logger.error('No tests found')
 		process.exit(1)
 	}
 	const jobId = Date.now().toString();
 	db = await initializeDatabase()
 	logHandler.logExecutionStart(logger, jobId, scenarios, utils.getParallelExecutorLimit());
+
 	savePreExecutionData(jobId, scenarios)
 	setSystemDetails(executionOptions.systems, executionOptions.cred);
-	this.executionOptions = executionOptions;
+	createScenarioCache(db, scenarios);
 
-	this.scenarioCache = createScenarioCache(db, scenarios);
+	this.executionOptions = executionOptions;
 
 	let globalVariables = loadGlobalVariables(jobId);
 	let userVariables = processUserVariables(executionOptions.variables);
@@ -1224,4 +1232,3 @@ const runTests = async (scenarios, executionOptions) => {
 module.exports = {
 	runTests
 };
-

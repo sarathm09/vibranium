@@ -84,12 +84,20 @@ module.exports = {
 	},
 
 	scriptTypes: {
-		preScenario: Symbol('preScenario'),
-		postScenario: Symbol('postScenario'),
-		postGlobal: Symbol('postGlobal'),
-		preApi: Symbol('preApi'),
-		postApi: Symbol('postApi'),
-		postDependency: Symbol('postDependency')
+		// Scenario level scripts
+		beforeScenario: 'before-scenario',
+		afterScenario: 'after-scenario',
+
+		beforeEach: 'before-each',
+		afterEach: 'after-each',
+		
+		afterGlobals: 'after-globals',
+
+		// Endpoint level scripts
+		beforeEndpoint: 'before-endpoint',
+		afterEndpoint: 'after-endpoint',
+
+		afterDependencies: 'after-dependencies'
 	},
 
 	logLevels: {

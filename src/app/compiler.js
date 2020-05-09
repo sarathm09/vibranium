@@ -227,8 +227,11 @@ const processScenarioFiles = async (scenarioFiles, apis, searchMode) => {
 		let result = await Promise.all(scenarioFiles)
 
 		if (!env.SILENT) {
-			result.filter(obj => !obj.status)
-				.map(obj => logger.warn(`${obj.message}`));
+			result.filter(obj => !obj.status && !obj.error)
+				.map(obj => logger.warn(`${obj.message}`))
+			result.filter(obj => !obj.status && !!obj.error)
+				.map(obj => logger.error(`${obj.message}`))
+
 			logger.info()
 			result.filter(obj => obj.status)
 				.filter(({ data }) => data.name !== data.scenarioFile)

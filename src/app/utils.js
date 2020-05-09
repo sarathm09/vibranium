@@ -305,11 +305,17 @@ module.exports.executeScenarioScript = async (script, getApiResponse, variables,
 		}
 	});
 	logger.debug(`Executing ${scriptType} script [${scriptName}]: ${script}`)
-	let response = await vm.run(`(async function ${scriptName} () {
-		logger.debug('Inside script ${scriptName}')
-		${script}
-	})()`);
-	if (response && response !== variables) variables = { ...variables, ...response }
+	try {
+		let response = await vm.run(`(async function ${scriptName} () {
+			logger.debug('Inside script ${scriptName}')
+			${script}
+		})()`);
+		if (response && response !== variables) variables = { ...variables, ...response }
+	} catch (error) {
+		logger.error(`Error running script ${yellow(scriptType)} script [${scriptName}]: ${redBright(script)}`)
+		logger.error('Check the syntax of the JS snippet and/or check if you have used variables or modules that you don\'t have access to')
+		return { status: false }
+	}
 	return { status: true, variables }
 }
 
@@ -347,7 +353,8 @@ module.exports.executeEndpointScript = async (script, getApiResponse, variables,
 			api = response.api
 		}
 	} catch (error) {
-		logger.error(`Error running script ${scriptType} script [${scriptName}]: ${script}`)
+		logger.error(`Error running script ${yellow(scriptType)} script [${scriptName}]: ${redBright(script)}`)
+		logger.error('Check the syntax of the JS snippet and/or check if you have used variables or modules that you don\'t have access to')
 		return { status: false }
 	}
 

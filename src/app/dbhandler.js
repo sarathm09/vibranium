@@ -45,6 +45,7 @@ const initializeDatabase = async () => {
  * @param {object} scenarios Details to be stored in cache
  */
 const updateApiCache = (db, scenarios) => new Promise((resolve) => {
+	if (db === '') resolve()
 	db.apiCache.insert(scenarios, (err, docs) => {
 		if (err) console.error(err)
 		resolve(docs)
@@ -80,6 +81,7 @@ const findApiDetailsFromCache = (db, collection, scenario, api) => new Promise((
  * @param {object} details Details to be stored in cache
  */
 const insertJobHistory = (db, details) => new Promise(resolve => {
+	if (!db || db === '') resolve()
 	db.jobs.insert(details, (err, docs) => {
 		if (err) console.error(err)
 		resolve(docs)
@@ -125,6 +127,7 @@ const deleteJobHistory = (db, query = {}) => new Promise(resolve => {
  * @param {object} details Details to be stored in cache
  */
 const insertApiExecutionData = (db, details) => new Promise(resolve => {
+	if (!db || db === '') resolve()
 	let data = { ...details }
 	if (!!details._result && !!details._result.response && typeof details._result.response === 'object') {
 		if (Object.values(details._result.response) > 10) {
@@ -136,12 +139,10 @@ const insertApiExecutionData = (db, details) => new Promise(resolve => {
 			data._result.response = { truncatedData: data._result.response.slice(0, 1000) }
 		}
 	}
-
 	db.apis.insert(details, (err, docs) => {
 		if (err) console.error(err)
 		resolve(docs)
 	})
-
 })
 
 /**

@@ -123,7 +123,7 @@ const handleVibraniumSetup = async (options, workspacePath) => {
  * @param {object} options Commander object containing user input
  */
 const getScenarioFileForOptions = async options => {
-	let fileName = join(__dirname, '..', 'res', 'config', `template_${options.template}.json`)
+	let fileName = join(__dirname, '..', 'res', 'templates', `template_${options.template}.json`)
 	if (existsSync(fileName)) {
 		let templateJson = await readFile(fileName, 'utf-8')
 		return JSON.parse(templateJson)

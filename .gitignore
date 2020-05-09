@@ -95,4 +95,4 @@ typings/
 tryout.js
 .idea/*
 *.0x/*
-app/db/*.db
+*.db

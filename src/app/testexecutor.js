@@ -802,7 +802,6 @@ const getApiExecuterPromise = async (scenario, scenarioVariables, endpoint, repe
 		logHandler.printApiExecutionEnd(logger, response)
 		return response
 	}
-
 	let endpointVariables = beforeEndpointResponse.variables ?
 		{ ...scenarioVariables, ...beforeEndpointResponse.variables } :
 		{ ...scenarioVariables }

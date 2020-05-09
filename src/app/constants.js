@@ -90,7 +90,6 @@ module.exports = {
 
 		beforeEach: 'before-each',
 		afterEach: 'after-each',
-
 		afterGlobals: 'after-globals',
 
 		// Endpoint level scripts

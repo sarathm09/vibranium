@@ -1,10 +1,11 @@
-const { VM } = require('vm2');
-const { homedir } = require('os');
-const { green } = require('chalk');
-const { sep, join } = require('path');
-const { platform, env } = require('process');
-const { readFile, unlink } = require('fs').promises;
-const { existsSync, mkdirSync, writeFileSync, readFileSync } = require('fs');
+const { VM } = require('vm2')
+const { homedir } = require('os')
+const { green, yellow, redBright } = require('chalk')
+const fetch = require('node-fetch')
+const { sep, join } = require('path')
+const { platform, env } = require('process')
+const { readFile, unlink } = require('fs').promises
+const { existsSync, mkdirSync, writeFileSync, readFileSync } = require('fs')
 
 const { vibPath, userConfig, logLevels } = require('./constants')
 const moduleLogger = require('./logger')
@@ -122,7 +123,8 @@ const parseJsonFile = async (fileToParse, fileData, payload) => {
 	} catch (error) {
 		fileParseStatus = {
 			status: false,
-			message: `Parsing file ${fileToParse} failed with the error ${error}`
+			error: true,
+			message: `Parsing file ${yellow(fileToParse)} failed with the error ${redBright(error)}`
 		};
 	}
 	return fileParseStatus;
@@ -142,7 +144,7 @@ module.exports.readJsonFile = async (fileToParse, payload = false) => {
 	if (!!fileToParse && fileToParse.split('.').pop() != 'json')
 		return {
 			status: false,
-			message: `The file ${fileToParse} does not have the extension '.json'`
+			message: `The file ${yellow(fileToParse)} does not have the extension '.json'`
 		}
 	else {
 		let fileData = await readFile(fileToParse, 'utf8')
@@ -266,6 +268,91 @@ module.exports.executeScript = (script, getApiResponse, variables, parent, scrip
 	return variables;
 }
 
+
+/**
+ * Convert a text to avalid javascript function name
+ * 
+ * @param {string} text String to be converted
+ */
+const getValidJSVariableName = text => text
+	.split('-').join('_')
+	.split('.').join('_')
+	.split('˜').join('_')
+
+
+/**
+ * Execute a given script and return the variables
+ *
+ * @param {string} script The script to execute
+ * @param {object} variables The variables to be used for script execution and also for setting env vars from script
+ * @param {logger} logger object to log details
+ * @param {function} getApiResponse method to get API response. Used inscripts to get api response.
+ * @returns {object} modified variables
+ */
+module.exports.executeScenarioScript = async (script, getApiResponse, variables, scenarioName, scriptType) => {
+	const scriptName = getValidJSVariableName(`script_${scenarioName}_${scriptType}_${Date.now()}`)
+	const vm = new VM({
+		external: true,
+		timeout: 10 * 60 * 1000,
+		sandbox: {
+			fetch,
+			setTimeout,
+			setInterval,
+
+			variables,
+			getApiResponse,
+			logger: moduleLogger(scriptName)
+		}
+	});
+	logger.debug(`Executing ${scriptType} script [${scriptName}]: ${script}`)
+	let response = await vm.run(`(async function ${scriptName} () {
+		logger.debug('Inside script ${scriptName}')
+		${script}
+	})()`);
+	if (response && response !== variables) variables = { ...variables, ...response }
+	return { status: true, variables }
+}
+
+
+/**
+ * Execute a given script and return the variables
+ *
+ * @param {string} script The script to execute
+ * @param {object} variables The variables to be used for script execution and also for setting env vars from script
+ * @param {logger} logger object to log details
+ * @param {function} getApiResponse method to get API response. Used inscripts to get api response.
+ * @returns {object} modified variables
+ */
+module.exports.executeEndpointScript = async (script, getApiResponse, variables, api, scriptType) => {
+	const scriptName = getValidJSVariableName(`script_${api.name}_${scriptType}_${Date.now()}`)
+	const vm = new VM({
+		external: true,
+		timeout: 10 * 60 * 1000,
+		sandbox: {
+			fetch,
+			setTimeout,
+			setInterval,
+
+			api,
+			variables,
+			getApiResponse,
+			logger: moduleLogger(scriptName)
+		}
+	});
+	try {
+		logger.debug(`Executing ${scriptType} script [${scriptName}]: ${script}`)
+		let response = await vm.run(`(async function ${scriptName} () { \n\tlogger.debug('Inside script ${scriptName}');\n\t${script}\n})()`);
+		if (response && response !== { api, variables }) {
+			variables = { ...variables, ...response.variables }
+			api = response.api
+		}
+	} catch (error) {
+		logger.error(`Error running script ${scriptType} script [${scriptName}]: ${script}`)
+		return { status: false }
+	}
+
+	return { variables, status: true };
+}
 
 /**
  * Check for valid name. Used in scenario name validation

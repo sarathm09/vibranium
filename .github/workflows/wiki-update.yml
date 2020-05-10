@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@master
 
     - name: publish-to-git
       uses: seanmiddleditch/gha-publish-to-git@v1
@@ -15,4 +15,3 @@ jobs:
         branch: master
         github_pat: '${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}'
         source_folder: docs
-      if: success() && github.event == 'push'

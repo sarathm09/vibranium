@@ -1,7 +1,7 @@
 # Vibranium
 [![npm version](https://badge.fury.io/js/vibranium-cli.svg)](https://badge.fury.io/js/vibranium-cli) ![npm](https://img.shields.io/npm/dw/vibranium-cli?style=plastic) ![node-current](https://img.shields.io/node/v/vibranium-cli?style=plastic)
 
-![Lint](https://github.com/sarathm09/vibranium/workflows/Node.js%20Lint/badge.svg)
+<!-- ![NPM](https://img.shields.io/npm/l/vibranium-cli?style=plastic) ![Lint](https://github.com/sarathm09/vibranium/workflows/Node.js%20Lint/badge.svg) -->
 
 Vibranium is a CLI based API testing and data generation tool built on Node JS. 
 
@@ -41,6 +41,15 @@ Vibranium is a Node JS based app, available in npm. To install Vibranium, all yo
 ```shell
   npm install -g vibranium-cli
 ``` 
+
+## Getting Started
+The following pages will help you in getting started with Vibranium.
+- [Introduction](0.1.intro.md)
+- [Workspace](pages/setup/1.1.workspace.md)
+- [Collections, Scenarios and Endpints](pages/setup/1.2.collections_scenarios_endpoints.md)
+- [Instalation](pages/setup/1.3.installation.md)
+- [Configuration](pages/setup/1.4.configuration.md)
+- [Writing Tests](pages/setup/1.6.write_tests.md)
 
 
 ## Documentation
@@ -198,7 +207,7 @@ The documentaion for Vibranium hosted in Github Pages and is [available here](ht
         }
     }
     ```
-    ßß
+    
     
 > More examples available in the documentaion
 

@@ -36,12 +36,12 @@ Some of the biggest features of Vibranium are:
 ## Pages:
 
 - [Introduction](0.1.intro.md)
-- Setup
+- Getting Started
   - [Workspace](pages/setup/1.1.workspace.md)
   - [Collections, Scenarios and Endpints](pages/setup/1.2.collections_scenarios_endpoints.md)
   - [Instalation](pages/setup/1.3.installation.md)
   - [Configuration](pages/setup/1.4.configuration.md)
-  - [Config File](pages/setup/1.5.config_json.md)
+  - [Writing Tests](pages/setup/1.6.write_tests.md)
 - CLI
   - [CLI intro](pages/cli/2.1.vc.md)
   - [Listing Tests](pages/cli/2.2.vc_l.md)
@@ -49,6 +49,7 @@ Some of the biggest features of Vibranium are:
   - [Running Tests](pages/cli/2.4.vc_r.md)
   - [Other commands](pages/cli/2.5.vc_others.md)
 - Docs
+  -  [Config File](pages/setup/1.5.config_json.md)
   -  [Scenario File](pages/docs/3.1.scenario_file.md) 
   -  [A Simple Scenario](pages/docs/3.2.simple_scenario.md) 
   -  [Variables](pages/docs/3.3.variables.md) 

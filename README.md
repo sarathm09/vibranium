@@ -44,12 +44,12 @@ Vibranium is a Node JS based app, available in npm. To install Vibranium, all yo
 
 ## Getting Started
 The following pages will help you in getting started with Vibranium.
-- [Introduction](0.1.intro.md)
-- [Workspace](pages/setup/1.1.workspace.md)
-- [Collections, Scenarios and Endpints](pages/setup/1.2.collections_scenarios_endpoints.md)
-- [Instalation](pages/setup/1.3.installation.md)
-- [Configuration](pages/setup/1.4.configuration.md)
-- [Writing Tests](pages/setup/1.6.write_tests.md)
+- [Introduction](https://sarathm09.github.io/vibranium/0.1.intro.html)
+- [Workspace](https://sarathm09.github.io/vibranium/pages/setup/1.1.workspace.html)
+- [Collections, Scenarios and Endpints](https://sarathm09.github.io/vibranium/pages/setup/1.2.collections_scenarios_endpoints.html)
+- [Instalation](https://sarathm09.github.io/vibranium/pages/setup/1.3.installation.html)
+- [Configuration](https://sarathm09.github.io/vibranium/pages/setup/1.4.configuration.html)
+- [Writing Tests](https://sarathm09.github.io/vibranium/pages/setup/1.6.write_tests.html)
 
 
 ## Documentation
@@ -209,7 +209,7 @@ The documentaion for Vibranium hosted in Github Pages and is [available here](ht
     ```
     
     
-> More examples available in the documentaion
+> More examples available in the [documentation](https://sarathm09.github.io/vibranium/).
 
 
 ## Contributing to the Project

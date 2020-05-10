@@ -15,3 +15,4 @@ jobs:
         branch: master
         github_pat: '${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}'
         source_folder: docs
+        target_folder: wiki

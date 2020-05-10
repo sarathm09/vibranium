@@ -8,7 +8,7 @@ const { readFile } = require('fs').promises
 const SCHEMA_SPECIFICATION_V6_PATH = join(__dirname, '..', 'res', 'schemas', 'draft-06-schema.json'),
 	SCHEMA_SPECIFICATION_V6 = JSON.parse(readFileSync(SCHEMA_SPECIFICATION_V6_PATH))
 
-let workspace = '', systemConfig = {}, userConfig = {}, testsDirectory = '';
+let workspace = '', systemConfig = {}, userConfig = {}, testsDirectory = '', schemas = {}
 
 const validateConfigSchema = config => {
 	const ajv = new Ajv({ allErrors: true })
@@ -32,6 +32,11 @@ try {
 
 	userConfig = { ...systemConfig, ...userConfig };
 	testsDirectory = userConfig.tests_directory ? userConfig.tests_directory : 'Vibranium-Tests';
+
+	schemas = {
+		scenario: JSON.parse(readFileSync(join(__dirname, '..', 'res', 'schemas', 'scenario.json'), 'utf-8')),
+		endpoint: JSON.parse(readFileSync(join(__dirname, '..', 'res', 'schemas', 'endpoint.json'), 'utf-8'))
+	}
 } catch (err) {
 	if (env.LOG_LEVEL === 'debug' || err instanceof SyntaxError) {
 		console.log('Error reading config file: ' + err)
@@ -54,12 +59,15 @@ const loadDataLists = async () => {
 	]
 }
 
+
 module.exports = {
 	userConfig,
+	vibSchemas: schemas,
 
 	SCHEMA_SPECIFICATION_V6,
 
 	vibPath: {
+		systemVibPath: join(homedir(), '.vib'),
 		workspace,
 		jobs: workspace ? join(workspace, 'jobs') : '',
 		logs: workspace ? join(workspace, 'logs') : '',

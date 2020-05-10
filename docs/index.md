@@ -51,7 +51,7 @@ Some of the biggest features of Vibranium are:
 - Docs
   -  [Config File](pages/setup/1.5.config_json.md)
   -  [Scenario File](pages/docs/3.1.scenario_file.md) 
-  -  [A Simple Scenario](pages/docs/3.2.simple_scenario.md) 
+  -  [Endpoint Object](pages/docs/3.2.endpoint_object.md) 
   -  [Variables](pages/docs/3.3.variables.md) 
   -  [Dependencies](pages/docs/3.4.dependencies.md) 
   -  [Scripts](pages/docs/3.5.scripts.md) 

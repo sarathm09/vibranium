@@ -1,19 +1,20 @@
-const open = require('open');
-const uuid4 = require('uuid/v4');
-const { join } = require('path');
-const readline = require('readline');
-const { hostname, homedir } = require('os');
+const open = require('open')
+const { red } = require('chalk')
+const uuid4 = require('uuid/v4')
+const { join } = require('path')
+const readline = require('readline')
+const { hostname, homedir } = require('os')
 const prettyMilliseconds = require('pretty-ms')
 const { readFile, writeFile } = require('fs').promises
 const { mkdirSync, writeFileSync, readFileSync, existsSync,
-	createReadStream, createWriteStream } = require('fs');
+	createReadStream, createWriteStream } = require('fs')
 
-const utils = require('./utils');
-const compiler = require('./compiler');
-const testexecutor = require('./testexecutor');
-const logHandler = require('./loghandler');
-const logger = require('./logger')('cli');
-const { vibPath, userConfig, loadDataLists } = require('./constants');
+const utils = require('./utils')
+const compiler = require('./compiler')
+const testexecutor = require('./testexecutor')
+const logHandler = require('./loghandler')
+const logger = require('./logger')('cli')
+const { vibPath, userConfig, loadDataLists, vibSchemas } = require('./constants')
 
 
 /**
@@ -163,7 +164,7 @@ const handleCreateCommand = options => {
 	const scenarioFileName = join(vibPath.scenarios, options.collection, `${options.scenario}.json`)
 
 	if (existsSync(scenarioFileName)) {
-		logger.error('Scenario already exists. File: ' + scenarioFileName)
+		console.error(red('Scenario already exists. File: ' + scenarioFileName))
 		process.exit(1)
 	}
 
@@ -181,21 +182,25 @@ const createAndOpenScenario = async (options, scenarioFileName) => {
 	let sampleScenario = await getScenarioFileForOptions(options),
 		dt = new Date();
 	let dateString = `${dt.getFullYear()}-${dt.getMonth() + 1}-${dt.getDate()} ${dt.getHours()}:${dt.getMinutes()}:${dt.getSeconds()}`;
+	let scenarioSchema = join(vibPath.systemVibPath, 'scenario.json')
 	let scenarioData = {
 		id: uuid4(),
 		name: options.scenario,
 		author: userConfig.name,
 		email: userConfig.email,
-		created_on: dateString
+		created_on: dateString,
+		'$schema': 'file://' + scenarioSchema
 	};
-	sampleScenario = { ...sampleScenario, ...scenarioData };
+	sampleScenario = { ...sampleScenario, ...scenarioData }
 
 	let scenarioJson = JSON.stringify(sampleScenario, null, 4)
 		.replace('{payloadNameToBeReplaced}', `!${options.scenario}/sample_payload`)
 
 	let tasks = [
+		writeFile(scenarioSchema, JSON.stringify(vibSchemas.scenario, null, 2)),
+		writeFile(join(vibPath.systemVibPath, 'endpoint.json'), JSON.stringify(vibSchemas.endpoint, null, 2)),
 		writeFile(scenarioFileName, scenarioJson),
-		writeFile(join(vibPath.payloads, options.scenario, 'sample_payload.json'), JSON.stringify({}, null, 4))
+		writeFile(join(vibPath.payloads, options.scenario, 'sample_payload.json'), '{}')
 	]
 	await Promise.all(tasks)
 

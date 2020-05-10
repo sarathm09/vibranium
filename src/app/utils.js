@@ -110,6 +110,7 @@ const parseJsonFile = async (fileToParse, fileData, payload) => {
 		let obj = JSON.parse(fileData);
 		// If the file is a scenario file, add filepath and scenario name to the json
 		if (!payload) {
+			delete obj['$schema']
 			let scenarioFileName = fileToParse.replace(vibPath.scenarios, '')
 			obj = {
 				...obj,

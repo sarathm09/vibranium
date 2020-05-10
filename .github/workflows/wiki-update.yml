@@ -1,16 +1,18 @@
 name: Update Wiki
 
 on: [push]
-
-
 jobs:
-  publish:
-    - uses: actions/checkout@master
-    - uses: seanmiddleditch/gha-publish-to-git@master
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: publish-to-git
+      uses: seanmiddleditch/gha-publish-to-git@v1
       with:
         repository: sarathm09/vibranium.wiki
         branch: master
-        github_token: '${{ secrets.GITHUB_TOKEN  }}'
         github_pat: '${{ secrets.GH_PERSONAL_ACCESS_TOKEN }}'
-        source_folder: docs/
+        source_folder: docs
       if: success() && github.event == 'push'

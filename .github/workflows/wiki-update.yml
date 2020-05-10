@@ -5,8 +5,7 @@ on: [push]
 
 jobs:
   publish:
-    - uses: actions/checkout@v1
-
+    - uses: actions/checkout@master
     - uses: seanmiddleditch/gha-publish-to-git@master
       with:
         repository: sarathm09/vibranium.wiki

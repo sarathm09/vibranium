@@ -1,5 +1,5 @@
 # Vibranium
-[![npm version](https://badge.fury.io/js/vibranium-cli.svg)](https://badge.fury.io/js/vibranium-cli) ![npm](https://img.shields.io/npm/dw/vibranium-cli?style=plastic) ![node-current](https://img.shields.io/node/v/vibranium-cli?style=plastic)
+[![npm version](https://badge.fury.io/js/vibranium-cli.svg)](https://www.npmjs.com/package/vibranium-cli) [![npm](https://img.shields.io/npm/dt/vibranium-cli?style=plastic)](https://www.npmjs.com/package/vibranium-cli)  [![node-current](https://img.shields.io/node/v/vibranium-cli?style=plastic)](https://www.npmjs.com/package/vibranium-cli) 
 
 <!-- ![NPM](https://img.shields.io/npm/l/vibranium-cli?style=plastic) ![Lint](https://github.com/sarathm09/vibranium/workflows/Node.js%20Lint/badge.svg) -->
 

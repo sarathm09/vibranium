@@ -46,7 +46,12 @@ module.exports.getLogLevel = level =>
  * @param {string} fileToParse
  * @returns {string}
  */
-module.exports.getCollectionNameForScenario = fileToParse => fileToParse.replace(vibPath.scenarios, '').split(sep)[1];
+module.exports.getCollectionNameForScenario = fileToParse => {
+	if (!fileToParse.includes(vibPath.scenarios) || fileToParse === vibPath.scenarios) return ''
+
+	let parts = fileToParse.replace(vibPath.scenarios, '')
+	return parts.split(sep)[1]
+}
 
 
 /**
@@ -54,12 +59,17 @@ module.exports.getCollectionNameForScenario = fileToParse => fileToParse.replace
  * @param {string} fileToParse
  * @returns {string}
  */
-module.exports.getScenarioFileNameFromPath = fileToParse =>
-	fileToParse
+module.exports.getScenarioFileNameFromPath = fileToParse => {
+	if (!fileToParse.includes(vibPath.scenarios) || fileToParse === vibPath.scenarios) return ''
+
+	let scenario = fileToParse
 		.replace(vibPath.scenarios, '')
 		.split(sep)
 		.pop()
-		.split('.')[0];
+
+	if (scenario.includes('.json')) return scenario.split('.')[0]
+	return ''
+}
 
 
 /**
@@ -94,7 +104,7 @@ module.exports.sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
  * @param {string} input
  * @returns {boolean}
  */
-module.exports.includesRegex = (arr, input) => arr.filter(_ => input.toLowerCase().match(_.toLowerCase())).length > 0;
+module.exports.includesRegex = (arr, input) => !!arr && !!input ? arr.filter(_ => input.toLowerCase().match(_.toLowerCase())).length > 0 : false;
 
 
 /**
@@ -186,6 +196,7 @@ module.exports.cacheExists = () => existsSync(vibPath.cachedScenarios);
  * Load the cached scenarios
  */
 module.exports.loadCachedScenarios = async () => {
+	if (!existsSync(vibPath.cachedScenarios)) return
 	let cachedScenarios = await readFile(vibPath.cachedScenarios, 'utf8');
 	return JSON.parse(cachedScenarios);
 }

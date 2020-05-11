@@ -1,0 +1,20 @@
+{
+    "accounts": {
+        "mock": {
+            "url": "localhost:3000/",
+            "api_url": "http://localhost:3000/",
+            "method": "none"
+        }
+    },
+    "default_account": "mock",
+    "tests_directory": "Vibranium-Tests-master",
+    "env_vars": {},
+    "executor": {
+        "max_parallel_executors": 10
+    },
+    "logger": {
+        "default_log_level": "INFO",
+        "max_log_history_to_keep": "1d",
+        "max_job_history_to_keep": "30"
+    }
+}

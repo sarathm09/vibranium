@@ -74,6 +74,38 @@
             ],
             "additionalProperties": true
         },
+        "language": {
+            "$id": "#/properties/language",
+            "type": "string",
+            "title": "The endpoint accept-language header",
+            "description": "The language in which the endpoint should be called. Used to set the Accept-Language header",
+            "examples": [
+                "en",
+                "de"
+            ]
+        },
+        "headers": {
+            "$id": "#/properties/headers",
+            "type": "object",
+            "title": "The endpoint headers",
+            "description": "Extra headers to be passed on to the endpoint execution.",
+            "examples": [
+                {
+                    "Accept-Language": "en"
+                }
+            ],
+            "properties": {
+                ".*": {
+                    "$id": "#/properties/headers/.*",
+                    "type": "string",
+                    "title": "The header content",
+                    "description": "The extra header content to be passed on to the endpoint execution. The key is the header hey and value is the header value.",
+                    "examples": [
+                        "application/json"
+                    ]
+                }
+            }
+        },
         "ignore": {
             "$id": "#/properties/ignore",
             "type": "boolean",

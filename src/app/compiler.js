@@ -281,6 +281,14 @@ const loadAllScenariosFromCache = async (collections, scenarios, apis) => {
 		.filter(scenario => scenario.endpoints.length > 0);
 };
 
+/**
+ * Filter scenarios based on name
+ * @param {array} scenarios scenario names to be filteres
+ * @param {string} scenarioFile The scenario file name
+ */
+const isScenarioNameSame = (scenarios, scenarioFile) => utils.splitAndTrimInput(scenarios).includes(scenarioFile.name) ||
+	utils.splitAndTrimInput(scenarios).includes(utils.getScenarioFileNameFromPath(scenarioFile.file))
+
 
 /**
  * Load all the scenario files and theie details from disk
@@ -305,12 +313,9 @@ const loadAllScenariosFromSystem = async (collections, scenarios, apis) => {
 		.map(file => utils.readJsonFile(file));
 
 	filteredScenarios = await processScenarioFiles(filteredScenarios, apis);
-	filteredScenarios = filteredScenarios.filter(scenarioFile =>
-		utils.isAll(scenarios)
-			? true
-			: utils.splitAndTrimInput(scenarios).includes(scenarioFile.name) ||
-			utils.splitAndTrimInput(scenarios).includes(utils.getScenarioFileNameFromPath(scenarioFile.file))
-	);
+	filteredScenarios = filteredScenarios
+		.filter(scenarioFile =>
+			utils.isAll(scenarios) ? true : isScenarioNameSame(scenarios, scenarioFile));
 
 	return filteredScenarios.filter(scenario => scenario.endpoints.length > 0);
 };

@@ -54,7 +54,7 @@ const getSchemaFileFromPath = async pathVariable => {
  * 
  * @param {object} endpoint The endpoint object
  * @param {object} response The response object
- * @param {function} replacePlaceholderInString THe utility function to replace variables in the assertion statements
+ * @param {function} replacePlaceholderInString The utility function to replace variables in the assertion statements
  * @param {object} variables Endpoint Variables
  */
 const responseBodyCheck = async (endpoint, response, replacePlaceholderInString, variables) => {
@@ -66,13 +66,17 @@ const responseBodyCheck = async (endpoint, response, replacePlaceholderInString,
     if (!!endpoint.expect && !!endpoint.expect.response) {
         if (!Array.isArray(endpoint.expect.response)) {
             // eslint-disable-next-line no-unused-vars
-            let { schema, ...asserts } = endpoint.expect.response
+            let { schema: _, ...asserts } = endpoint.expect.response
             try {
                 for (let [testName, testString] of Object.entries(asserts)) {
                     testString = replacePlaceholderInString(testString, { ...variables, response: response.response }, false)
                     logger.info(`Running comparison ${cyan(testString)}`)
-                    let scriptResponse = vm.run(testString)
-                    assertResponse.push(getAssertResponse(testName, testString, scriptResponse, scriptResponse === true))
+                    try {
+                        let scriptResponse = vm.run(testString)
+                        assertResponse.push(getAssertResponse(testName, testString, scriptResponse, scriptResponse === true))
+                    } catch (error) {
+                        assertResponse.push(getAssertResponse(testName, testString, error.message, false))
+                    }
                 }
             } catch (err) {
                 console.error(`Error comparing response: ${err}`)
@@ -98,7 +102,6 @@ const ajvResponseParser = (errors) => {
         }
         return getAssertResponse(`Response schema [${err.message}]`, `${err.message}`, '', false)
     })
-
 }
 
 

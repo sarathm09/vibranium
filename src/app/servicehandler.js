@@ -211,10 +211,17 @@ const processBasicAuthBasedSystemCredentials = async system => {
 }
 
 
+/**
+ * Get the system details from the config
+ * 
+ * @param {string} systemName name of the system from config.json
+ */
 const getSystemDetails = systemName => {
 	let system = availableSystems.default;
+
 	if (!!systemName && !!availableSystems[systemName]) system = availableSystems[systemName]
-	else logger.error(`System ${systemName} not found`)
+	else if (systemName) logger.error(`System ${systemName} not found`)
+
 	if (!system.method) system.method = constants.authTypes.oauth2[0]
 
 	return system
@@ -229,10 +236,7 @@ const getSystemDetails = systemName => {
  * @param {string} systemName The system on which the api needs to be executed
  */
 const callApi = (url, method, payload, systemName, language = 'en', headers) => new Promise((resolve, reject) => {
-	let system = availableSystems.default;
-	if (!!systemName && !!availableSystems[systemName]) system = availableSystems[systemName]
-	else logger.error(`System ${systemName} not found`)
-	if (!system.method) system.method = constants.authTypes.oauth2[0]
+	let system = getSystemDetails(systemName)
 
 	if (constants.authTypes.oauth2.includes(system.method)) {
 		processOauth2BasedSystemCredentials(systemName, system)

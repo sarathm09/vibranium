@@ -1,3 +1,4 @@
+const Ajv = require('ajv')
 const { VM } = require('vm2')
 const { homedir } = require('os')
 const { green, yellow, redBright } = require('chalk')
@@ -7,9 +8,14 @@ const { platform, env } = require('process')
 const { readFile, unlink } = require('fs').promises
 const { existsSync, mkdirSync, writeFileSync, readFileSync } = require('fs')
 
-const { vibPath, userConfig, logLevels } = require('./constants')
+const { vibPath, userConfig, logLevels, vibSchemas, SCHEMA_SPECIFICATION_V6 } = require('./constants')
 const moduleLogger = require('./logger')
 const logger = moduleLogger('util')
+
+const ajv = new Ajv({ allErrors: true })
+ajv.addMetaSchema(SCHEMA_SPECIFICATION_V6)
+let validator = ajv.addSchema(vibSchemas.endpoint)
+	.compile(vibSchemas.scenario)
 
 
 /**
@@ -106,6 +112,35 @@ module.exports.sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
  */
 module.exports.includesRegex = (arr, input) => !!arr && !!input ? arr.filter(_ => input.toLowerCase().match(_.toLowerCase())).length > 0 : false;
 
+/**
+ * Parse AJV validation object to get response errors
+ * 
+ * @param {array} errors AJV validation errors
+ */
+const ajvResponseParser = (errors) => {
+	return errors.map(err => {
+		if (err.keyword === 'additionalProperties') {
+			return `${err.message} '${err.params.additionalProperty}'`
+		} if (err.keyword === 'required') {
+			return `required key not found: ${err.message}`
+		}
+		return `${err.message}`
+	})
+}
+
+/**
+ * Validate if the scenario file follows the schema
+ * 
+ * @param {AJV} ajv schema validator object
+ * @param {obkect} scenario scenario file JSON
+ */
+const isScenarioSchemaValid = (isValid, scenario, fileName) => {
+	if (!isValid(scenario)) {
+		logger.error(`Error in scenario ${yellow(fileName)}: ${redBright(ajvResponseParser(isValid.errors))}`)
+		return false
+	}
+	return true
+}
 
 /**
  * Convert the file data to string and then parse the repsonse.
@@ -121,6 +156,13 @@ const parseJsonFile = async (fileToParse, fileData, payload) => {
 		// If the file is a scenario file, add filepath and scenario name to the json
 		if (!payload) {
 			delete obj['$schema']
+
+			if (env.VALIDATE_SCENARIOS && !isScenarioSchemaValid(validator, obj, fileToParse)) {
+				fileParseStatus = {
+					status: false,
+					message: `Parsing file ${yellow(fileToParse)} failed with the error ${redBright(ajvResponseParser(validator.errors))}`
+				};
+			}
 			let scenarioFileName = fileToParse.replace(vibPath.scenarios, '')
 			obj = {
 				...obj,

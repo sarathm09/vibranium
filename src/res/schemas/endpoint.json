@@ -412,21 +412,63 @@
                             "firstByte": "<300"
                         }
                     ],
-                    "enum": [
-                        "total",
-                        "firstByte",
-                        "download",
-                        "dns",
-                        "wait",
-                        "tcp"
-                    ],
                     "additionalProperties": false,
                     "properties": {
-                        ".*": {
-                            "$id": "#/properties/expect/properties/.*",
+                        "total": {
+                            "$id": "#/properties/expect/properties/total",
                             "type": "string",
                             "title": "The total schema",
-                            "description": "The time validation",
+                            "description": "The validation for total parameter of response timing",
+                            "default": "",
+                            "examples": [
+                                "<700"
+                            ]
+                        },
+                        "firstByte": {
+                            "$id": "#/properties/expect/properties/firstByte",
+                            "type": "string",
+                            "title": "The firstByte schema",
+                            "description": "The validation for firstByte parameter of response timing",
+                            "default": "",
+                            "examples": [
+                                "<700"
+                            ]
+                        },
+                        "download": {
+                            "$id": "#/properties/expect/properties/download",
+                            "type": "string",
+                            "title": "The download schema",
+                            "description": "The validation for download parameter of response timing",
+                            "default": "",
+                            "examples": [
+                                "<700"
+                            ]
+                        },
+                        "dns": {
+                            "$id": "#/properties/expect/properties/dns",
+                            "type": "string",
+                            "title": "The dns schema",
+                            "description": "The validation for dns parameter of response timing",
+                            "default": "",
+                            "examples": [
+                                "<700"
+                            ]
+                        },
+                        "wait": {
+                            "$id": "#/properties/expect/properties/wait",
+                            "type": "string",
+                            "title": "The wait schema",
+                            "description": "The validation for wait parameter of response timing",
+                            "default": "",
+                            "examples": [
+                                "<700"
+                            ]
+                        },
+                        "tcp": {
+                            "$id": "#/properties/expect/properties/tcp",
+                            "type": "string",
+                            "title": "The tcp schema",
+                            "description": "The validation for tcp parameter of response timing",
                             "default": "",
                             "examples": [
                                 "<700"

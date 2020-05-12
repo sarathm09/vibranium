@@ -301,9 +301,15 @@
             ],
             "additionalProperties": true,
             "properties": {
-                "*": {
+                ".*": {
                     "$id": "#/properties/.*",
-                    "type": "string",
+                    "type": [
+                        "string",
+                        "integer",
+                        "boolean",
+                        "object",
+                        "array"
+                    ],
                     "title": "The variable value schema",
                     "description": "The key is the variable name and value is the variable value",
                     "examples": [

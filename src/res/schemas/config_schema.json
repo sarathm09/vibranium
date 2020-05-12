@@ -35,7 +35,8 @@
                             "additionalProperty": "something"
                         },
                         "url": "SYSTEM_UI_URL",
-                        "additionalProperty": "test"
+                        "additionalProperty": "test",
+                        "variables": {}
                     }
                 }
             ],
@@ -121,15 +122,23 @@
                                 "https://www.github.com/api/v3/oauth/token"
                             ]
                         },
+                        "variables": {
+                            "$id": "#/properties/accounts/properties/.*/properties/variables",
+                            "type": "object",
+                            "title": "Variables for this system specific",
+                            "description": "Account specific variables",
+                            "default": {},
+                            "examples": [
+                                {
+                                    "systemName": "DEV_1"
+                                }
+                            ]
+                        },
                         "additionalProperties": {
                             "$id": "#/properties/accounts/properties/.*/properties/additionalProperties",
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "object"
-                                }
+                            "type": [
+                                "string",
+                                "object"
                             ],
                             "title": "Any additional property",
                             "description": "Any additional property",

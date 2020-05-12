@@ -211,6 +211,15 @@ const processBasicAuthBasedSystemCredentials = async system => {
 }
 
 
+const getSystemDetails = systemName => {
+	let system = availableSystems.default;
+	if (!!systemName && !!availableSystems[systemName]) system = availableSystems[systemName]
+	else logger.error(`System ${systemName} not found`)
+	if (!system.method) system.method = constants.authTypes.oauth2[0]
+
+	return system
+}
+
 /**
  * fetch the system/auth details and call the api endpoint
  *
@@ -222,6 +231,7 @@ const processBasicAuthBasedSystemCredentials = async system => {
 const callApi = (url, method, payload, systemName, language = 'en', headers) => new Promise((resolve, reject) => {
 	let system = availableSystems.default;
 	if (!!systemName && !!availableSystems[systemName]) system = availableSystems[systemName]
+	else logger.error(`System ${systemName} not found`)
 	if (!system.method) system.method = constants.authTypes.oauth2[0]
 
 	if (constants.authTypes.oauth2.includes(system.method)) {
@@ -289,5 +299,6 @@ const fetchJwtToken = (url, clientId, clientSecret) => new Promise((resolve, rej
 
 module.exports = {
 	callApi,
+	getSystemDetails,
 	setAvailableSystems
 };

@@ -16,7 +16,7 @@ const { initializeDatabase, updateApiCache, findApiDetailsFromCache, insertApiEx
 	insertJobHistory, insertApiResponseCache, findApiResponseFromCache } = require('./dbhandler')
 const { vibPath, executionStatus, scriptTypes, loremGeneratorConfig,
 	userConfig, dataSets, timeVariables } = require('./constants')
-const { callApi, setAvailableSystems } = require('./servicehandler')
+const { callApi, setAvailableSystems, getSystemDetails } = require('./servicehandler')
 
 
 let ACTIVE_PARALLEL_EXECUTORS = 0, lorem = new LoremIpsum(loremGeneratorConfig)
@@ -55,6 +55,10 @@ const executeAPI = async (endpoint, endpointVaribles) => {
 		let cachedResponse = await loadEndpointFromCache(endpoint, endpointVaribles, expectedStatus)
 		if (cachedResponse) return cachedResponse
 	}
+	let systemDetails = getSystemDetails(endpoint.system)
+	if (!!systemDetails.variables && typeof systemDetails.variables === 'object' && Object.keys(systemDetails.variables).length > 0)
+		endpointVaribles = { ...endpointVaribles, ...systemDetails.variables }
+		
 	let api = replaceVariablesInApi(endpoint, endpointVaribles);
 	await waitForExecutors()
 	logHandler.printApiExecutionStart(logger, api, endpointVaribles)
@@ -70,7 +74,7 @@ const executeAPI = async (endpoint, endpointVaribles) => {
 	}
 
 	let assertionResults = []
-	if (endpoint.dependencyLevel === 0 && endpointResponse.status === expectedStatus) {
+	if (endpointResponse.status === expectedStatus) {
 		assertionResults = await processAssertionsInResponse(endpoint, endpointResponse, replacePlaceholderInString, endpointVaribles)
 	}
 

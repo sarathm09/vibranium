@@ -8,9 +8,7 @@
         "id",
         "app",
         "name",
-        "email",
-        "endpoints",
-        "created_on"
+        "endpoints"
     ],
     "additionalProperties": false,
     "properties": {
@@ -25,7 +23,6 @@
             "type": "string",
             "title": "The scenario id",
             "description": "This is an auto generated ID for the scenario file. Do not change this once it is created.",
-            "minLength": 36,
             "examples": [
                 "2186ae65-8707-4520-bd0e-0c486670eb56"
             ]

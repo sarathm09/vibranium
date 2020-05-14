@@ -25,7 +25,7 @@ Some of the biggest features of Vibranium are:
 
 - **Data generation tools** Filling dummy data in APIs is pretty easy with Vibranium. You can easily generate Lorem Ipsum strings of given length, random string just by specifying the regex matching it, use inbuilt data sets like names of Harry Potter, Game of Thrones, Star Wars, Marvel, Pokemon and other characters.
 
-- **Reports** HTML, Excel, Junit and JSON report formats are supported. Vibranium measures the time taken per call for each API endpoint and helps compare the reports of the previous executions. 
+- **Reports** HTML, Excel, Junit and JSON report formats are supported. Vibranium measures the time taken per call for each API endpoint and helps compare the reports of the previous executions. (Check below for a screenshot of the report server UI)
 
 - **Deployment Support** Vibranium tests can be deployed as a Node JS app along with the apps that you are testing and then invoke tests remotely, thus avoiding network delay in executing tests.
 
@@ -210,6 +210,10 @@ The documentaion for Vibranium hosted in Github Pages and is [available here](ht
     
     
 > More examples available in the [documentation](https://sarathm09.github.io/vibranium/).
+
+
+## Sample report
+![Sample report UI](docs/assets/images/vc_ui.png)
 
 
 ## Contributing to the Project

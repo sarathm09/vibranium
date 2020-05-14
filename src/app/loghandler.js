@@ -507,15 +507,18 @@ const generateJunitReportForScenario = async (scenario) => {
 			failures: failedEndpointsCount,
 			errors: 0,
 			skipped: endpoints.filter(e => e.ignore),
-			timestamp: new Date().toISOString()
+			timestamp: new Date().toISOString(),
+			time: endpoints.map(e => e._time && e._time.total)
+				.filter(t => !!t && !isNaN(t)).reduce((a, c) => a + c, 0)
 		})
 
 	for (const endpoint of endpoints) {
 		const testCase = testReport.ele('testcase', {
 			name: endpoint.name,
 			classname: [scenario.collection, scenario.name, endpoint.name].join('.'),
-			assertions: 1,
-			time: endpoint._result.map(res => res.timing.total).reduce((a, c) => a + c, 0)
+			assertions: endpoint._expect ? endpoint._expect.length : 1,
+			time: endpoint._time ? endpoint._time.total :
+				endpoint._result.map(res => res.timing.total).reduce((a, c) => a + c, 0)
 		})
 		if (!endpoint._status) {
 			let endpointResponses = endpoint._result
@@ -529,6 +532,7 @@ const generateJunitReportForScenario = async (scenario) => {
 				.join(',')
 
 			testCase.ele('failure', {
+				time: endpoint._result || 0,
 				message: `Failed [status: ${endpoint._result.map(res => res.status).join(',')}]`
 			}).txt(endpointResponses)
 		}

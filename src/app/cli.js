@@ -20,7 +20,8 @@ const setEnvironmentVariables = options => {
 		silent: 'SILENT',
 		log: 'LOG_LEVEL',
 		parallel: 'MAX_PARALLEL_EXECUTORS',
-		skipWarn: 'NO_WARNING_MESSAGES'
+		skipWarn: 'NO_WARNING_MESSAGES',
+		validate: 'VALIDATE_SCENARIOS'
 	}
 	for (let option of Object.keys(optionsAndVariablesMap)) {
 		if (options[option]) {
@@ -54,6 +55,7 @@ vibranium
 	.option('--no-color', 'Plain text output without colors')
 	.option('--skip-warn', 'Ignore all warning messages. Not recommended', true)
 	.option('--silent', 'Print only the endpoint result')
+	.option('--validate', 'Validate all files')
 	.action(options => {
 		setEnvironmentVariables(options)
 		requestHandler.handleRunCommand(options)
@@ -75,6 +77,7 @@ vibranium
 	.option('--no-color', 'Plain text output without colors')
 	.option('--skip-warn', 'Ignore all warning messages. Not recommended', false)
 	.option('--silent', 'Silent Mode')
+	.option('--validate', 'Validate all files')
 	.action(options => {
 		setEnvironmentVariables(options)
 		requestHandler.handleListCommand(options)

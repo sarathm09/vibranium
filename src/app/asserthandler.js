@@ -1,7 +1,7 @@
 const Ajv = require('ajv')
 const { VM } = require('vm2')
 const { join } = require('path')
-const { cyan } = require('chalk')
+const { cyan, blue } = require('chalk')
 const { readFile } = require('fs').promises
 
 const { SCHEMA_SPECIFICATION_V6, vibPath } = require('./constants')
@@ -61,16 +61,19 @@ const responseBodyCheck = async (endpoint, response, replacePlaceholderInString,
     let assertResponse = []
     const vm = new VM({
         external: true,
-        sandbox: {}
+        sandbox: {
+            api: endpoint,
+            variables
+        }
     });
-    if (!!endpoint.expect && !!endpoint.expect.response) {
+    if (!!endpoint.expect && !!endpoint.expect.response && typeof endpoint.expect.response === 'object') {
         if (!Array.isArray(endpoint.expect.response)) {
             // eslint-disable-next-line no-unused-vars
             let { schema: _, ...asserts } = endpoint.expect.response
             try {
                 for (let [testName, testString] of Object.entries(asserts)) {
                     testString = replacePlaceholderInString(testString, { ...variables, response: response.response }, false)
-                    logger.info(`Running comparison ${cyan(testString)}`)
+                    logger.info(`Checking ${blue(testName)}: ${cyan(testString)}`)
                     try {
                         let scriptResponse = vm.run(testString)
                         assertResponse.push(getAssertResponse(testName, testString, scriptResponse, scriptResponse === true))
@@ -82,7 +85,6 @@ const responseBodyCheck = async (endpoint, response, replacePlaceholderInString,
                 console.error(`Error comparing response: ${err}`)
             }
         }
-
     }
     return assertResponse
 }

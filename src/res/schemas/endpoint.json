@@ -599,7 +599,7 @@
                         "$id": "#/properties/dependencies/items/anyOf/0/properties/variables",
                         "type": "object",
                         "title": "The variables schema",
-                        "description": "The variables to be passes to the dependency",
+                        "description": "The variables to be passed to the dependency",
                         "examples": [
                             {
                                 "userId": "userId",

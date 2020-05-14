@@ -52,7 +52,7 @@ const executeAPI = async (db, endpoint, endpointVaribles) => {
 	let expectedStatus = 200;
 	if (!!endpoint.expect && !!endpoint.expect.status) expectedStatus = endpoint.expect.status;
 	if (endpoint.cache) {
-		let cachedResponse = await loadEndpointFromCache(endpoint, endpointVaribles, expectedStatus)
+		let cachedResponse = await loadEndpointFromCache(db, endpoint, endpointVaribles, expectedStatus)
 		if (cachedResponse) return cachedResponse
 	}
 	let systemDetails = getSystemDetails(endpoint.system)
@@ -117,7 +117,7 @@ const executeAPI = async (db, endpoint, endpointVaribles) => {
  * @param {object} endpointVaribles Variables for executing the api
  * @param {integer} expectedStatus Expected status of the endpoint
  */
-const loadEndpointFromCache = async (endpoint, endpointVaribles, expectedStatus) => {
+const loadEndpointFromCache = async (db, endpoint, endpointVaribles, expectedStatus) => {
 	try {
 		logger.info(`Loading response of ${endpoint.collection}.${endpoint.scenario}.${endpoint.name} from cache`)
 		let { _result: cachedResponse, _expect } = await findApiResponseFromCache(db, endpoint.collection, endpoint.scenario, endpoint.name)
@@ -1104,7 +1104,7 @@ const savePreExecutionData = async (jobId, scenarios) => {
  * @param {string} jobId Job Id
  * @param {object} scenarios list of all scenarios
  */
-const savePostExecutionData = async (jobId, scenarios, executionOptions) => {
+const savePostExecutionData = async (db, jobId, scenarios, executionOptions) => {
 	let jobDirPath = join(vibPath.jobs, jobId), latestDirPath = join(vibPath.jobs, 'latest')
 	let scenarioExecutionData = {
 		scenarios,
@@ -1188,7 +1188,7 @@ const runTests = async (scenarios, executionOptions, jobId, db) => {
 
 	await Promise.all([
 		logHandler.logExecutionEnd(logger, jobId, scenarioResults, totalEndpointsExecuted, totalEndpointsSuccessful),
-		savePostExecutionData(jobId, scenarioResults, executionOptions),
+		savePostExecutionData(db, jobId, scenarioResults, executionOptions),
 		...scenarioResults.map(result =>
 			updateScenarioResultsAndSaveReports(jobId, result, executionOptions))
 	])

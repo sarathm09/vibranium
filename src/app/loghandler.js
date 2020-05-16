@@ -28,7 +28,16 @@ const getAPIIndex = api => api.repeat ? `${api.variables._range_index}/${(api.re
  * @param {boolean} result The assertion status
  * @param {string} test The test statement
  */
-const getAssertLogString = ({ result, test }) => utils.isMac ? result ? chalk.green('✔  ') + test : chalk.red('✖  ') + test : test
+const getAssertLogString = ({ result, test, expected, obtained }) => {
+	if (typeof expected === 'object') obtained = JSON.stringify(obtained)
+	if (typeof expected === 'object') obtained = JSON.stringify(expected)
+
+	let assertionResponseText = result ? test : `${test}, expected: ${chalk.yellowBright(expected)}, obtained: ${chalk.yellowBright(obtained)}`
+	if (utils.isMac) {
+		return result ? chalk.green('✔  ') + assertionResponseText : chalk.red('✖  ') + assertionResponseText
+	}
+	return assertionResponseText
+}
 
 
 /**
@@ -245,12 +254,13 @@ const getAPIExecutionResultLogObject = (api, contentType, response, isResponseJs
 	'Method': api.method ? api.method.toUpperCase() : 'GET',
 	'Url': api.url,
 	'Complete Url': api.fullUrl,
-	'Payload': (!!api.payload && typeof (api.payload) === 'object') ? JSON.stringify(api.payload, null, 2) : '{}',
+	'Payload': api.payload || {},
+	'Variables': api._variables || {},
 	'Repeat Index': getAPIIndex(api),
 	'StatusCode': status,
 	'Status': prettyPrint('status', api._status),
 	'Content-Type': contentType,
-	'Response': (!!response && isResponseJson) ? JSON.stringify(response, null, 2) : response,
+	'Response': (!!response && isResponseJson) ? response : response ? response : {},
 	'Timing': api._result.timing ? Object.entries(api._result.timing).map(([key, value]) => chalk.cyan(key) + ': ' +
 		chalk.cyanBright(ms(value))).join(', ') : 'not available',
 	'Assertions': ''
@@ -271,10 +281,7 @@ const printApiExecutionStart = async (logger, api, variables) => {
 		spinner.prefixText = ''
 	}
 	logger.info(`${prettyPrint('scenario', api.scenario)}.${prettyPrint('api', api.name)} started`);
-	logger.debug('Variables' + utils.printSpaces('Variables') + ': ' + JSON.stringify(variables, null, 2)
-		.split('\n')
-		.map((line, i) => (i > 0 ? utils.printSpaces('Variables', 45) : '') + syntaxHighlight(line))
-		.join('\n'));
+	logger.debug('Variables', null, variables);
 }
 
 
@@ -295,13 +302,10 @@ const printApiExecutionEnd = async (logger, api) => {
 	logger.info()
 
 	for (let [key, value] of Object.entries(details)) {
-		if (['Payload', 'Response'].includes(key)) {
-			if (!api._status || process.env.LOG_LEVEL === 'debug') {
-				let dataToBePrinted = `${key}${utils.printSpaces(key)}: ${value ? value.split('\n')
-					.map((line, i) => (i > 0 ? utils.printSpaces(key, process.env.LOG_LEVEL === 'debug' ? 43 : 33) : '') + syntaxHighlight(line, isResponseJson))
-					.join('\n') : ''}`
-				api._status ? logger.debug(dataToBePrinted) : logger.error(dataToBePrinted);
-			}
+		if (['Payload', 'Response', 'Variables'].includes(key)) {
+			api._status ? logger.debug(`${key}${utils.printSpaces(key)}: `, null, value) :
+				logger.error(`${key}${utils.printSpaces(key)}: `,null, value)
+
 		} else if (key === 'Assertions' && api._expect) {
 			api._status ? logger.info(key + utils.printSpaces(key) + ' ') :
 				logger.error(key + utils.printSpaces(key) + ': ')
@@ -328,7 +332,7 @@ const printApiExecutionEnd = async (logger, api) => {
  * @param {string} jobId job Id string
  * @param {object} result List of all scenario responses
  */
-const logExecutionEnd = (logger, jobId, result, totalEndpointsExecuted, totalEndpointsSuccessful) => {
+const logExecutionEnd = async (logger, jobId, result, totalEndpointsExecuted, totalEndpointsSuccessful) => {
 	const consoleColor = totalEndpointsExecuted === totalEndpointsSuccessful ? chalk.green : chalk.red
 	logger.info()
 	logger.info(`Execution summary for job #${prettyPrint('jobId', jobId)}`)
@@ -382,6 +386,7 @@ const logExecutionEnd = (logger, jobId, result, totalEndpointsExecuted, totalEnd
 		let text = `Result: ${totalEndpointsSuccessful}/${totalEndpointsExecuted} endpoints and ${assertionsSuccess}/${totalAssertions} assertions`
 		apisWithError.length === 0 ? spinner.succeed(chalk.green(text)) : spinner.fail(chalk.red(text))
 	}
+	await logger.log({ jobId, status: '_VIBRANIUM_SESSION_END_'})
 }
 
 
@@ -424,41 +429,6 @@ const processScenarioResult = async (jobId, result, report, jobsPath) => {
 	}
 
 	return
-}
-
-
-/**
- * Pretty print JSOn with syntax highlighting
- * 
- * @param {string} json Json string
- * @param {boolean} isJson Is the object a json
- */
-const syntaxHighlight = (json, isJson) => {
-	if (!isJson) return json
-
-	let jsonRegex = /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+-]?\d+)?)/g
-
-	json = json
-		.split('&').join('&amp;')
-		.split('<').join('&lt;')
-		.split('>').join('&gt;')
-
-	return json.replace(jsonRegex, (match) => {
-		let cls = chalk.yellow
-		if (/^"/.test(match)) {
-			if (/:$/.test(match)) {
-				cls = chalk.blue
-			} else {
-				cls = chalk.yellowBright
-			}
-		} else if (/true|false/.test(match)) {
-			cls = chalk.cyan
-		} else if (/null/.test(match)) {
-			cls = chalk.grey
-		}
-		return cls(match)
-	}
-	)
 }
 
 

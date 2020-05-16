@@ -1,4 +1,4 @@
-const Datastore = require('nedb');
+const Datastore = require('nedb')
 const { join } = require('path')
 
 

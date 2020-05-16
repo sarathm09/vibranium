@@ -10,7 +10,7 @@ const { green, yellow, yellowBright, red } = require('chalk')
 const utils = require('./utils')
 const compiler = require('./compiler')
 const logHandler = require('./loghandler')
-const logger = require('./logger')('runner')
+const moduleLogger = require('./logger')
 const { processAssertionsInResponse } = require('./asserthandler')
 const { initializeDatabase, updateApiCache, findApiDetailsFromCache, insertApiExecutionData,
 	insertJobHistory, insertApiResponseCache, findApiResponseFromCache } = require('./dbhandler')
@@ -19,8 +19,9 @@ const { vibPath, executionStatus, scriptTypes, loremGeneratorConfig,
 const { callApi, setAvailableSystems, getSystemDetails } = require('./servicehandler')
 
 
-let ACTIVE_PARALLEL_EXECUTORS = 0, lorem = new LoremIpsum(loremGeneratorConfig)
-let totalEndpointsExecuted = 0, totalEndpointsSuccessful = 0, db
+let ACTIVE_PARALLEL_EXECUTORS = 0, lorem = new LoremIpsum(loremGeneratorConfig), logger
+let totalEndpointsExecuted = 0, totalEndpointsSuccessful = 0,
+	totalAssertionsProcessed = 0, totalAssertionsSuccessful = 0, db
 
 
 /**
@@ -45,8 +46,6 @@ const waitForExecutors = () => new Promise(resolve => {
  * Execute the api endpoint when executors are available
  *
  * @param {object} api The api to be executed
- * callAPI response:
- * { timing, response, status, contentType }
  */
 const executeAPI = async (db, endpoint, endpointVaribles) => {
 	let expectedStatus = 200;
@@ -77,6 +76,8 @@ const executeAPI = async (db, endpoint, endpointVaribles) => {
 	let assertionResults = []
 	if (endpointResponse.status === expectedStatus) {
 		assertionResults = await processAssertionsInResponse(endpoint, endpointResponse, replacePlaceholderInString, endpointVaribles)
+		totalAssertionsProcessed += assertionResults.length
+		totalAssertionsSuccessful += assertionResults.filter(a => a.result).length
 	}
 
 	// eslint-disable-next-line no-unused-vars
@@ -758,7 +759,7 @@ const getApiExecuterPromise = async (db, scenario, scenarioVariables, endpoint, 
 
 	if (!beforeEndpointResponse.status) {
 		await executeScenarioScripts(scenarioVariables, scenario, scriptTypes.afterEach)
-		let response = returnFailedEndpoint(endpoint, 'Script execution failed', endpointVariables=scenarioVariables)
+		let response = returnFailedEndpoint(endpoint, 'Script execution failed', endpointVariables = scenarioVariables)
 		logHandler.printApiExecutionEnd(logger, response)
 		return response
 	}
@@ -1112,9 +1113,11 @@ const savePostExecutionData = async (db, jobId, scenarios, executionOptions) => 
 			totalEndpointsExecuted,
 			totalEndpointsSuccessful,
 			jobId,
-			status: totalEndpointsExecuted === totalEndpointsSuccessful,
+			status: totalEndpointsExecuted === totalEndpointsSuccessful && totalAssertionsSuccessful === totalAssertionsProcessed,
 			time: new Date(parseInt(jobId)).toLocaleString(),
-			executionOptions
+			executionOptions,
+			totalAssertionsProcessed,
+			totalAssertionsSuccessful
 		}
 	}
 	let scenariosJson = JSON.stringify(scenarioExecutionData, null, 2)
@@ -1158,11 +1161,14 @@ const updateScenarioResultsAndSaveReports = async (jobId, result, executionOptio
  * @returns {boolean} Execution status
  */
 const runTests = async (scenarios, executionOptions, jobId, db) => {
+	jobId = jobId || Date.now().toString()
+	logger = moduleLogger('runner', jobId)
+
 	if (scenarios.length === 0 || scenarios.every(sc => sc.endpoints.length === 0)) {
 		logger.error('No tests found')
 		process.exit(1)
 	}
-	jobId = jobId || Date.now().toString()
+
 	db = db === 'IGNORE' ? '' : await initializeDatabase()
 
 	logHandler.logExecutionStart(logger, jobId, scenarios, utils.getParallelExecutorLimit());

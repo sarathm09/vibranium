@@ -1,12 +1,18 @@
+const chalk = require('chalk')
 const { join } = require('path')
 const { env } = require('process')
-const { readdir, unlink, rmdir } = require('fs').promises
 const { createWriteStream } = require('fs')
+const { readdir, unlink, rmdir, writeFile } = require('fs').promises
 
-const { prettyPrint } = require('./loghandler');
+const utils = require('./utils')
+const { prettyPrint } = require('./loghandler')
 const { userConfig, vibPath, colorCodeRegex, logRotationConstants,
-	logLevels } = require('./constants');
+	logLevels } = require('./constants')
 
+const today = new Date(),
+	logFileTimeStamp = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() / 1000,
+	logFileName = join(vibPath.logs, `log_${logFileTimeStamp}_.log`)
+const logStream = createWriteStream(logFileName), logStore = []
 
 /**
  * Get the default log level
@@ -68,10 +74,10 @@ const rotateOldLogFiles = async () => {
 const rotateOldJobLogs = async () => {
 	try {
 		let maxLimit = 30
-		if (!!userConfig.logger && !!userConfig.logger.max_log_history_to_keep) {
-			if (!isNaN(userConfig.logger.max_log_history_to_keep)) {
-				maxLimit = +userConfig.logger.max_log_history_to_keep
-			} else if (userConfig.logger.max_log_history_to_keep === 'all') {
+		if (!!userConfig.logger && !!userConfig.logger.max_job_history_to_keep) {
+			if (!isNaN(userConfig.logger.max_job_history_to_keep)) {
+				maxLimit = +userConfig.logger.max_job_history_to_keep
+			} else if (userConfig.logger.max_job_history_to_keep === 'all') {
 				return
 			}
 		}
@@ -93,16 +99,30 @@ const rotateOldJobLogs = async () => {
 }
 
 
-/**
- * Log the data to both file and console.
- * 
- * @param {string} moduleName Module from which the logger was called
- * @param {string} level Log Level
- * @param {Stream} logStream Node File stream to the log file
- */
-const logData = (moduleName, level, logStream) => async (message, error) => {
-	let consoleLevel = level, consoleModule = moduleName
+const fileTransport = async (level, moduleName, jobId, message, error, data) => {
+	if (message && typeof message === 'string') {
+		message = message
+			.split(utils.printSpaces('', process.env.LOG_LEVEL === 'debug' ? 38 : 28)).join('')
+			.replace(colorCodeRegex, '')
+			.split('\n').join(' ')
+	} else if (message && typeof message === 'object') {
+		message = JSON.stringify(message)
+	}
+	if (!!data && typeof data === 'object') message += JSON.stringify(data)
+	else if (data) message += data
 
+	logStream.write(`[${level}] [${jobId}] [${moduleName}] ${Date.now()}: ${message || ''}\n`)
+	// Write stack trace
+	if (error) {
+		logStream.write(error.stack ? error.stack : 'no_stack_trace')
+		logStream.write('\n')
+	}
+	return
+}
+
+
+const consoleTransport = async (level, moduleName, message, error, data) => {
+	let consoleLevel = level, consoleModule = moduleName
 	// Simplify the module name to show only first character of the module name
 	if (![logLevels.error, logLevels.warn, logLevels.debug].includes(logLevels[env.LOG_LEVEL])) {
 		consoleLevel = level[0]
@@ -110,21 +130,52 @@ const logData = (moduleName, level, logStream) => async (message, error) => {
 	}
 
 	// write to console only on these conditions
-	if (logLevels[env.LOG_LEVEL] >= logLevels[level] && 
-		!env.SILENT && 
-		!(level === 'warn' && env.NO_WARNING_MESSAGES)) {
-		console.log(`[${prettyPrint('loglevel', consoleLevel)}] [${consoleModule}]: ${message || ''}`)
-	}
+	if (logLevels[env.LOG_LEVEL] >= logLevels[level] && !env.SILENT && !(level === 'warn' && env.NO_WARNING_MESSAGES)) {
+		let log = `[${prettyPrint('loglevel', consoleLevel)}] [${consoleModule}]: ${message || ''}`
+		log += (data && typeof data === 'object') ? JSON.stringify(data) : ''
 
-	// Write to file on all conditions
-	logStream.write(`[${consoleLevel}] [${moduleName}] ${Date.now()}: ${message && typeof message === 'string' ? message.replace(colorCodeRegex, '') : ''}\n`)
+		level === 'error' ?
+			console.error(log) :
+			level === 'warn' ?
+				console.warn(log) :
+				level === 'debug' ?
+					console.debug(log) :
+					console.log(log)
+	}
 
 	// Write stack trace
-	if (error) {
-		if ([logLevels.error, logLevels.warn, logLevels.debug].includes(logLevels[env.LOG_LEVEL]))
-			console.log(`[${consoleLevel}] [${consoleModule}]: ${error.stack || 'no stack trace'} `)
-		logStream.write(error.stack ? error.stack : 'no_stack_trace')
+	if (error && [logLevels.error, logLevels.warn, logLevels.debug].includes(logLevels[env.LOG_LEVEL])) {
+		console.error(`[${consoleLevel}] [${consoleModule}]: ${error.stack || 'no stack trace'} `)
 	}
+	return
+}
+
+
+const dbTransport = async (level, moduleName, jobId, message, error, data) => {
+	if (!message) return
+	logStore.push({
+		level,
+		message: typeof message === 'string' ? message.replace(colorCodeRegex, '') : message,
+		jobId,
+		data,
+		time: Date.now(),
+		module: moduleName,
+		stack: error ? error.stack : ''
+	})
+	return
+}
+
+
+const logData = (transports, moduleName, jobId, level) => async (message, error, data) => {
+	if (!!message && typeof message === 'object' && !!message.status && message.status === '_VIBRANIUM_SESSION_END_') {
+		await writeFile(join(vibPath.jobs, jobId, 'logs.json'), JSON.stringify(logStore, null, 1))
+		return
+	}
+	return await Promise.all([
+		transports.console(level, moduleName, message, error, data),
+		transports.file(level, moduleName, jobId, message, error, data),
+		transports.db(level, moduleName, jobId, message, error, data)
+	])
 }
 
 
@@ -132,24 +183,25 @@ const logData = (moduleName, level, logStream) => async (message, error) => {
  * Create the logger object to print logs.
  * @returns logger object
  */
-module.exports = (moduleName) => {
+module.exports = (moduleName, jobId) => {
 	setImmediate(() => {
 		getDefaultLogLevel()
 		rotateOldLogFiles()
 		rotateOldJobLogs()
 	})
 
-	const today = new Date()
-	const logFileTimeStamp = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() / 1000
-	const logFileName = join(vibPath.logs, `log_${logFileTimeStamp}_.log`)
-	const logStream = createWriteStream(logFileName)
+	let logTransports = {
+		file: fileTransport,
+		console: consoleTransport,
+		db: dbTransport
+	}
 
 	return {
-		log: logData(moduleName, 'log', logStream),
-		info: logData(moduleName, 'info', logStream),
-		warn: logData(moduleName, 'warn', logStream),
-		debug: logData(moduleName, 'debug', logStream),
-		error: logData(moduleName, 'error', logStream),
-		success: logData(moduleName, 'success', logStream)
+		log: logData(logTransports, moduleName, jobId, 'log'),
+		info: logData(logTransports, moduleName, jobId, 'info'),
+		warn: logData(logTransports, moduleName, jobId, 'warn'),
+		debug: logData(logTransports, moduleName, jobId, 'debug'),
+		error: logData(logTransports, moduleName, jobId, 'error'),
+		success: logData(logTransports, moduleName, jobId, 'success')
 	}
 }

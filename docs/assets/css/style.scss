@@ -81,3 +81,8 @@ a.prev-page-link {
 	font-style: italic;
 	margin-top: 2rem;
 }
+
+#content-section,
+#content-wrapper {
+	max-width: 70vw !important;
+}

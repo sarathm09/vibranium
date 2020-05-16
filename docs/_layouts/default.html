@@ -11,6 +11,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     {% seo %} 
+    
     <link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
     <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
     <script src="{{ '/assets/js/respond.js' | relative_url }}"></script>
@@ -85,9 +86,9 @@
       <a href="/vibranium/index.html">Home</a>
     </div>
 
-    <div class="wrapper">
+    <div class="wrapper" id="content-wrapper">
 
-      <section>
+      <section id="content-section">
         <div id="title">
           <h1>{{ site.title | default: site.github.repository_name }}</h1>
           <p>{{ site.description | default: site.github.project_tagline }}</p>

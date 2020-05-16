@@ -48,7 +48,7 @@ const handleRunCommand = async options => {
 	// handle mode_aether and --silent
 	if (options.silent) {
 		handleSilentResponse(result)
-	}
+	} 
 	if (!status) process.exit(1)
 }
 
@@ -80,6 +80,11 @@ const handleListCommand = async options => {
 	}
 	logHandler.printApiList(logger, apiList, options.format, options.color);
 
+	if (options.open && scenarios.length < 5) {
+		scenarios.forEach(sc => {
+			open(join(vibPath.scenarios, sc.file))
+		})
+	}
 	if (options.freeze) {
 		utils.freezeScenarios(scenarios);
 	}

@@ -982,15 +982,11 @@ const markAsIgnored = scenario => {
  * @param {string} jobId Job execution id
  * @returns {object} containing all global variables
  */
-const loadGlobalVariables = jobId => {
-	return {
-		jobId,
-		job_id: jobId,
-		...userConfig.env_vars
-	};
-
-
-};
+const loadGlobalVariables = jobId => ({
+	jobId,
+	job_id: jobId,
+	...userConfig.env_vars
+})
 
 
 /**
@@ -1001,7 +997,7 @@ const loadGlobalVariables = jobId => {
 const loremGenerator = limit => {
 	let generatedString = '';
 
-	if (limit < 0) generatedString = '';
+	if (limit < 1) generatedString = '';
 	if (limit < 10) generatedString = [...limit].join();
 	else {
 		while (limit > 0) {

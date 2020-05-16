@@ -1,4 +1,3 @@
-const chalk = require('chalk')
 const { join } = require('path')
 const { env } = require('process')
 const { createWriteStream } = require('fs')
@@ -11,8 +10,18 @@ const { userConfig, vibPath, colorCodeRegex, logRotationConstants,
 
 const today = new Date(),
 	logFileTimeStamp = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() / 1000,
-	logFileName = join(vibPath.logs, `log_${logFileTimeStamp}_.log`)
-const logStream = createWriteStream(logFileName), logStore = []
+	logFileName = join(vibPath.logs, `log_${logFileTimeStamp}_.log`),
+	logStream = createWriteStream(logFileName), logStore = []
+
+const consoleLogTypes = {
+	log: console.log,
+	info: console.info,
+	warn: console.warn,
+	debug: console.debug,
+	error: console.error,
+	success: console.log
+}
+
 
 /**
  * Get the default log level
@@ -99,6 +108,16 @@ const rotateOldJobLogs = async () => {
 }
 
 
+/**
+ * Log the given details into a log file
+ * 
+ * @param {string} level Log Level
+ * @param {string} moduleName Name of the module that inititated the log
+ * @param {string} jobId Job execution Id
+ * @param {string} message The message to be printed
+ * @param {Error} error Error to be logged, if any
+ * @param {object} data Data (payload/response or other JSON) to be logged
+ */
 const fileTransport = async (level, moduleName, jobId, message, error, data) => {
 	if (message && typeof message === 'string') {
 		message = message
@@ -121,6 +140,15 @@ const fileTransport = async (level, moduleName, jobId, message, error, data) => 
 }
 
 
+/**
+ * Log the given details into console
+ * 
+ * @param {string} level Log Level
+ * @param {string} moduleName Name of the module that inititated the log
+ * @param {string} message The message to be printed
+ * @param {Error} error Error to be logged, if any
+ * @param {object} data Data (payload/response or other JSON) to be logged
+ */
 const consoleTransport = async (level, moduleName, message, error, data) => {
 	let consoleLevel = level, consoleModule = moduleName
 	// Simplify the module name to show only first character of the module name
@@ -134,13 +162,7 @@ const consoleTransport = async (level, moduleName, message, error, data) => {
 		let log = `[${prettyPrint('loglevel', consoleLevel)}] [${consoleModule}]: ${message || ''}`
 		log += (data && typeof data === 'object') ? JSON.stringify(data) : ''
 
-		level === 'error' ?
-			console.error(log) :
-			level === 'warn' ?
-				console.warn(log) :
-				level === 'debug' ?
-					console.debug(log) :
-					console.log(log)
+		consoleLogTypes[level](log)
 	}
 
 	// Write stack trace
@@ -151,6 +173,16 @@ const consoleTransport = async (level, moduleName, message, error, data) => {
 }
 
 
+/**
+ * Log the given details into a JSON
+ * 
+ * @param {string} level Log Level
+ * @param {string} moduleName Name of the module that inititated the log
+ * @param {string} jobId Job execution Id
+ * @param {string} message The message to be printed
+ * @param {Error} error Error to be logged, if any
+ * @param {object} data Data (payload/response or other JSON) to be logged
+ */
 const dbTransport = async (level, moduleName, jobId, message, error, data) => {
 	if (!message) return
 	logStore.push({
@@ -166,9 +198,21 @@ const dbTransport = async (level, moduleName, jobId, message, error, data) => {
 }
 
 
+/**
+ * Log the data into all the transports
+ * 
+ * @param {array} transports List of transports to write to
+ * @param {string} moduleName Module name which initiated the log
+ * @param {string} jobId Job execution Id
+ * @param {string} level Log Level
+ */
 const logData = (transports, moduleName, jobId, level) => async (message, error, data) => {
-	if (!!message && typeof message === 'object' && !!message.status && message.status === '_VIBRANIUM_SESSION_END_') {
-		await writeFile(join(vibPath.jobs, jobId, 'logs.json'), JSON.stringify(logStore, null, 1))
+	if (!!jobId && !!message && typeof message === 'object' && !!message.status &&
+		message.status === '_VIBRANIUM_SESSION_END_') {
+		await writeFile(join(vibPath.jobs, jobId, 'logs.json'), JSON.stringify(logStore.map(l => {
+			l.jobId = jobId;
+			return l
+		}), null, 1))
 		return
 	}
 	return await Promise.all([
@@ -180,8 +224,10 @@ const logData = (transports, moduleName, jobId, level) => async (message, error,
 
 
 /**
- * Create the logger object to print logs.
- * @returns logger object
+ *  Create the logger object to print logs.
+ * 
+ * @param {string} moduleName The module that initiated the logger
+ * @param {string} jobId The job execution Id
  */
 module.exports = (moduleName, jobId) => {
 	setImmediate(() => {
@@ -205,3 +251,4 @@ module.exports = (moduleName, jobId) => {
 		success: logData(logTransports, moduleName, jobId, 'success')
 	}
 }
+

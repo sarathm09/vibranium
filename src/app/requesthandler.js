@@ -81,9 +81,7 @@ const handleListCommand = async options => {
 	logHandler.printApiList(logger, apiList, options.format, options.color);
 
 	if (options.open && scenarios.length < 5) {
-		scenarios.forEach(sc => {
-			open(join(vibPath.scenarios, sc.file))
-		})
+		scenarios.forEach(sc => open(join(vibPath.scenarios, sc.file)))
 	}
 	if (options.freeze) {
 		utils.freezeScenarios(scenarios);

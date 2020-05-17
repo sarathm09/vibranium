@@ -29,8 +29,8 @@ const getAPIIndex = api => api.repeat ? `${api.variables._range_index}/${(api.re
  * @param {string} test The test statement
  */
 const getAssertLogString = ({ result, test, expected, obtained }) => {
-	if (typeof expected === 'object') obtained = JSON.stringify(obtained)
-	if (typeof expected === 'object') obtained = JSON.stringify(expected)
+	if (typeof obtained === 'object') obtained = JSON.stringify(obtained)
+	if (typeof expected === 'object') expected = JSON.stringify(expected)
 
 	let assertionResponseText = result ? test : `${test}, expected: ${chalk.yellowBright(expected)}, obtained: ${chalk.yellowBright(obtained)}`
 	if (utils.isMac) {
@@ -364,8 +364,7 @@ const logExecutionEnd = async (logger, jobId, result, totalEndpointsExecuted, to
 		logger.error()
 		logger.error(chalk.redBright('Failed Tests'))
 
-		apisWithError
-			.forEach(e => logger.error(`\t${e.scenario}.${chalk.redBright(e.name)}`))
+		apisWithError.forEach(e => logger.error(`\t${e.scenario}.${chalk.redBright(e.name)}`))
 
 		logger.error()
 
@@ -386,7 +385,7 @@ const logExecutionEnd = async (logger, jobId, result, totalEndpointsExecuted, to
 		let text = `Result: ${totalEndpointsSuccessful}/${totalEndpointsExecuted} endpoints and ${assertionsSuccess}/${totalAssertions} assertions`
 		apisWithError.length === 0 ? spinner.succeed(chalk.green(text)) : spinner.fail(chalk.red(text))
 	}
-	await logger.log({ jobId, status: '_VIBRANIUM_SESSION_END_'})
+	return await logger.log({ jobId, status: '_VIBRANIUM_SESSION_END_'})
 }
 
 
@@ -420,7 +419,7 @@ const processScenarioResult = async (jobId, result, report, jobsPath) => {
 		await (Promise.all(tasks))
 
 	} else if (!!report && report.split(',').includes('html')) {
-		// TODO: generate JUNIT report
+		// TODO: generate html report
 		await generateJunitReportForScenario(result)
 
 		if (existsSync(join(jobsPath, 'latest', 'reports', 'html'))) {

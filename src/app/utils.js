@@ -1,21 +1,22 @@
 const Ajv = require('ajv')
 const { VM } = require('vm2')
 const { homedir } = require('os')
-const { green, yellow, redBright } = require('chalk')
+let { promisify } = require('util')
 const fetch = require('node-fetch')
 const { sep, join } = require('path')
+const { exec } = require('child_process')
 const { platform, env } = require('process')
 const { readFile, unlink } = require('fs').promises
+const { green, yellow, redBright } = require('chalk')
 const { existsSync, mkdirSync, writeFileSync, readFileSync } = require('fs')
 
-const { vibPath, userConfig, logLevels, vibSchemas, SCHEMA_SPECIFICATION_V6 } = require('./constants')
-const moduleLogger = require('./logger')
 const logger = moduleLogger('util')
+const moduleLogger = require('./logger')
+const { vibPath, userConfig, logLevels, vibSchemas, SCHEMA_SPECIFICATION_V6 } = require('./constants')
 
 const ajv = new Ajv({ allErrors: true })
 ajv.addMetaSchema(SCHEMA_SPECIFICATION_V6)
-let validator = ajv.addSchema(vibSchemas.endpoint)
-	.compile(vibSchemas.scenario)
+let validator = ajv.addSchema(vibSchemas.endpoint).compile(vibSchemas.scenario)
 
 
 /**
@@ -37,14 +38,14 @@ module.exports.isMac = platform === 'darwin';
 /**
  * Get the loglevel object from the string
  */
-module.exports.getLogLevel = level =>
-	level.toLowerCase() === 'error'
-		? logLevels.error
-		: level.toLowerCase() === 'debug'
-			? logLevels.debug
-			: level.toLowerCase() === 'warn'
-				? logLevels.warn
-				: logLevels.info;
+module.exports.getLogLevel = level => ({
+	error: logLevels.error,
+	debug: logLevels.debug,
+	warn: logLevels.warn,
+	info: logLevels.info,
+	log: logLevels.log,
+	success: logLevels.success
+}[level.toLowerCase()])
 
 
 /**
@@ -352,6 +353,7 @@ module.exports.executeScenarioScript = async (script, getApiResponse, variables,
 			fetch,
 			setTimeout,
 			setInterval,
+			exec:  promisify(exec),
 
 			variables,
 			getApiResponse,
@@ -392,6 +394,7 @@ module.exports.executeEndpointScript = async (script, getApiResponse, variables,
 			fetch,
 			setTimeout,
 			setInterval,
+			exec:  promisify(exec),
 
 			api,
 			variables,

@@ -363,9 +363,9 @@ const logExecutionEnd = async (logger, jobId, result, totalEndpointsExecuted, to
 		logger.error(`Successful assertions ${utils.printSpaces('', 25)}: ${consoleColor(assertionsSuccess + ' out of ' + totalAssertions)}`)
 		logger.error()
 		logger.error(chalk.redBright('Failed Tests'))
+
 		apisWithError
-			.map(e => `\t${e.scenario}.${chalk.redBright(e.name)}`)
-			.map(logger.error)
+			.forEach(e => logger.error(`\t${e.scenario}.${chalk.redBright(e.name)}`))
 
 		logger.error()
 

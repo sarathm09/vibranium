@@ -30,7 +30,7 @@
             "method": "basic",
             "credentials": {
                 "username": "MY_SUPER_SECRET_USERNAME",
-                "password": "MY_SUPER_SECRET_PASSWORD",
+                "password": "MY_SUPER_SECRET_PASSWORD"
             }
         }
     },

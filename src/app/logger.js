@@ -1,6 +1,6 @@
 const { join } = require('path')
 const { env } = require('process')
-const { createWriteStream } = require('fs')
+const { createWriteStream, existsSync } = require('fs')
 const { readdir, unlink, rmdir, writeFile } = require('fs').promises
 
 const utils = require('./utils')
@@ -10,8 +10,12 @@ const { userConfig, vibPath, colorCodeRegex, logRotationConstants,
 
 const today = new Date(),
 	logFileTimeStamp = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() / 1000,
-	logFileName = join(vibPath.logs, `log_${logFileTimeStamp}_.log`),
-	logStream = createWriteStream(logFileName), logStore = []
+	logFileName = join(vibPath.logs, `log_${logFileTimeStamp}_.log`), logStore = []
+let logStream
+
+if (existsSync(vibPath.logs)) {
+	logStream = createWriteStream(logFileName)
+}
 
 const consoleLogTypes = {
 	log: console.log,
@@ -36,7 +40,7 @@ const getDefaultLogLevel = () => {
 		env.LOG_LEVEL = logLevel.toLowerCase()
 	}
 	return logLevel.toLocaleLowerCase()
-};
+}
 
 
 /**
@@ -45,6 +49,8 @@ const getDefaultLogLevel = () => {
  */
 const rotateOldLogFiles = async () => {
 	try {
+		if (!existsSync(vibPath.logs)) return
+
 		let rotationMills = 10 * 24 * 60 * 60; // 10 days
 		const today = new Date()
 		const logFileTimeStamp = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime() / 1000
@@ -82,6 +88,8 @@ const rotateOldLogFiles = async () => {
  */
 const rotateOldJobLogs = async () => {
 	try {
+		if (!existsSync(vibPath.jobs)) return
+
 		let maxLimit = 30
 		if (!!userConfig.logger && !!userConfig.logger.max_job_history_to_keep) {
 			if (!isNaN(userConfig.logger.max_job_history_to_keep)) {
@@ -100,11 +108,10 @@ const rotateOldJobLogs = async () => {
 			await Promise.all(filesToDelete
 				.map(f => rmdir(join(vibPath.jobs, f), { recursive: true })))
 		}
-		return
 	} catch (error) {
 		console.error(error)
-		return
 	}
+	return
 }
 
 
@@ -119,6 +126,8 @@ const rotateOldJobLogs = async () => {
  * @param {object} data Data (payload/response or other JSON) to be logged
  */
 const fileTransport = async (level, moduleName, jobId, message, error, data) => {
+	if (!logStream) return
+
 	if (message && typeof message === 'string') {
 		message = message
 			.split(utils.printSpaces('', process.env.LOG_LEVEL === 'debug' ? 38 : 28)).join('')
@@ -207,19 +216,24 @@ const dbTransport = async (level, moduleName, jobId, message, error, data) => {
  * @param {string} level Log Level
  */
 const logData = (transports, moduleName, jobId, level) => async (message, error, data) => {
-	if (!!jobId && !!message && typeof message === 'object' && !!message.status &&
-		message.status === '_VIBRANIUM_SESSION_END_') {
-		await writeFile(join(vibPath.jobs, jobId, 'logs.json'), JSON.stringify(logStore.map(l => {
-			l.jobId = jobId;
-			return l
-		}), null, 1))
-		return
+	try {
+		if (!!jobId && !!message && typeof message === 'object' && !!message.status &&
+			message.status === '_VIBRANIUM_SESSION_END_' && existsSync(vibPath.jobs)) {
+			await writeFile(join(vibPath.jobs, jobId, 'logs.json'), JSON.stringify(logStore.map(l => {
+				l.jobId = jobId;
+				return l
+			}), null, 1))
+			return
+		}
+		return await Promise.all([
+			transports.console(level, moduleName, message, error, data),
+			transports.file(level, moduleName, jobId, message, error, data),
+			transports.db(level, moduleName, jobId, message, error, data)
+		])
+		// eslint-disable-next-line no-empty
+	} catch (error) {
+
 	}
-	return await Promise.all([
-		transports.console(level, moduleName, message, error, data),
-		transports.file(level, moduleName, jobId, message, error, data),
-		transports.db(level, moduleName, jobId, message, error, data)
-	])
 }
 
 

@@ -81,6 +81,7 @@ const executeAPI = async (db, endpoint, endpointVaribles) => {
 	let { auth, ...responseDataWithoutAuth } = endpointResponse
 	api = {
 		...api,
+		status: endpointResponse.status,
 		fullUrl: endpointResponse.fullUrl,
 		_expect: assertionResults,
 		_result: responseDataWithoutAuth,
@@ -805,6 +806,7 @@ const repeatExecutionUntilAssertionsAreTrue = async (endpoint, endpointVariables
 			endpointResponse = await executeAPI(db, endpoint, endpointVariables)
 			let assertionResults = await processAssertionsInResponse({ expect: endpoint['repeat-until'] || {} }, endpointResponse, replacePlaceholderInString, endpointVariables)
 			if (!!assertionResults && (assertionResults.length === 0 || assertionResults.every(r => r.result))) break
+
 			logger.error('Repeat assertion failed. Repeating the execution...')
 			await utils.sleep(endpoint['repeat-delay'] || 0)
 		}

@@ -1,3 +1,7 @@
-const cli = require('./src/cli');
+const rh = require('./app/requesthandler');
 
-module.exports = cli;
+module.exports = {
+    createScenario: rh.handleCreateCommand,
+    listTests: rh.handleListCommand,
+    runTests: rh.handleRunCommand
+}

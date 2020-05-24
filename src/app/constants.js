@@ -24,6 +24,10 @@ const validateConfigSchema = config => {
 
 
 try {
+	schemas = {
+		scenario: JSON.parse(readFileSync(join(__dirname, '..', 'res', 'schemas', 'scenario.json'), 'utf-8')),
+		endpoint: JSON.parse(readFileSync(join(__dirname, '..', 'res', 'schemas', 'endpoint.json'), 'utf-8'))
+	}
 	systemConfig = JSON.parse(readFileSync(join(homedir(), '.vib', 'config.json'), 'utf-8'));
 	workspace = systemConfig.workspace;
 	userConfig = JSON.parse(readFileSync(join(workspace, 'config.json'), 'utf-8'));
@@ -33,10 +37,6 @@ try {
 	userConfig = { ...systemConfig, ...userConfig };
 	testsDirectory = userConfig.tests_directory ? userConfig.tests_directory : 'Vibranium-Tests';
 
-	schemas = {
-		scenario: JSON.parse(readFileSync(join(__dirname, '..', 'res', 'schemas', 'scenario.json'), 'utf-8')),
-		endpoint: JSON.parse(readFileSync(join(__dirname, '..', 'res', 'schemas', 'endpoint.json'), 'utf-8'))
-	}
 } catch (err) {
 	if (env.LOG_LEVEL === 'debug' || err instanceof SyntaxError) {
 		console.log('Error reading config file: ' + err)
@@ -75,6 +75,7 @@ module.exports = {
 		templates: workspace ? join(workspace, testsDirectory, 'templates') : '',
 		payloads: workspace ? join(workspace, testsDirectory, 'payloads') : '',
 		schemas: workspace ? join(workspace, testsDirectory, 'schemas') : '',
+		scripts: workspace ? join(workspace, testsDirectory, 'scripts') : '',
 		cache: workspace ? join(workspace, '.cache') : '',
 		cachedScenarios: workspace ? join(workspace, '.cache', 'scenarios.json') : ''
 	},

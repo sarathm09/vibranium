@@ -10,13 +10,22 @@ const { readFile, unlink } = require('fs').promises
 const { green, yellow, redBright } = require('chalk')
 const { existsSync, mkdirSync, writeFileSync, readFileSync } = require('fs')
 
-const logger = moduleLogger('util')
 const moduleLogger = require('./logger')
 const { vibPath, userConfig, logLevels, vibSchemas, SCHEMA_SPECIFICATION_V6 } = require('./constants')
 
+const logger = moduleLogger('util')
 const ajv = new Ajv({ allErrors: true })
+let validator
+let commonScriptVariables = {
+	fetch,
+	Error,
+	setTimeout,
+	setInterval,
+	exec: promisify(exec)
+}
+
 ajv.addMetaSchema(SCHEMA_SPECIFICATION_V6)
-let validator = ajv.addSchema(vibSchemas.endpoint).compile(vibSchemas.scenario)
+validator = ajv.addSchema(vibSchemas.endpoint).compile(vibSchemas.scenario)
 
 
 /**
@@ -112,6 +121,7 @@ module.exports.sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
  * @returns {boolean}
  */
 module.exports.includesRegex = (arr, input) => !!arr && !!input ? arr.filter(_ => input.toLowerCase().match(_.toLowerCase())).length > 0 : false;
+
 
 /**
  * Parse AJV validation object to get response errors
@@ -265,7 +275,7 @@ module.exports.isVibraniumInitialized = () => {
 		status = false;
 	} else {
 		try {
-			let systemConfig = JSON.parse(readFileSync(join(homedir(), '.vib', 'config.json'), 'utf-8'));
+			let systemConfig = JSON.parse(readFileSync(join(homedir(), '.vib', 'config.json'), 'utf8'));
 			let workspace = systemConfig.workspace;
 			if (
 				!existsSync(join(workspace, 'config.json')) ||
@@ -274,7 +284,7 @@ module.exports.isVibraniumInitialized = () => {
 			) {
 				status = false;
 			}
-			let userConfig = JSON.parse(readFileSync(join(workspace, 'config.json'), 'utf-8'));
+			let userConfig = JSON.parse(readFileSync(join(workspace, 'config.json'), 'utf8'));
 			let testsDirectory = userConfig.tests_directory ? userConfig.tests_directory : 'tests';
 			if (!existsSync(join(workspace, testsDirectory)) || !existsSync(join(workspace, testsDirectory, 'scenarios'))) {
 				status = false;
@@ -336,6 +346,45 @@ const getValidJSVariableName = text => text
 
 
 /**
+ * Load the script file to be executed
+ * 
+ * @param {string} fileName script file name
+ */
+const readScriptFile = async (fileName) => {
+	if (!existsSync(join(vibPath.scripts, fileName))) {
+		let errorMessage = `Script file ${redBright(join(vibPath.scripts, fileName))} not found.`
+		logger.error(errorMessage)
+		throw new Error(errorMessage)
+	}
+
+	return await readFile(join(vibPath.scripts, fileName), 'utf8')
+}
+
+
+/**
+ * Replace scriptFile() with the script file text
+ * 
+ * @param {string} script the script string
+ */
+const replaceScriptFileValues = async script => {
+	let scriptFileRegex = /scriptFile\(['"`]([a-zA-Z0-9.-]+)['"`]\)/gm, scriptLines = []
+	if (script.match(scriptFileRegex).length > 0) {
+		let lines = script.split(';'), length = lines.length
+		for (let lineNum = 0; lineNum < length; lineNum++) {
+			let matches = lines[lineNum].match(scriptFileRegex)
+			if (matches.length === 0) scriptLines.push(lines[lineNum])
+			else {
+				let filePath = matches[0].match(/\(['"`]([a-zA-Z0-9.-]+)['"`]\)/)[0].replace(/['"`()]/g, '')
+				scriptLines.push(lines[lineNum].replace(scriptFileRegex, await readScriptFile(filePath)))
+			}
+		}
+	} else {
+		return script
+	}
+	return scriptLines.join(';\n')
+}
+
+/**
  * Execute a given script and return the variables
  *
  * @param {string} script The script to execute
@@ -350,18 +399,16 @@ module.exports.executeScenarioScript = async (script, getApiResponse, variables,
 		external: true,
 		timeout: 10 * 60 * 1000,
 		sandbox: {
-			fetch,
-			setTimeout,
-			setInterval,
-			exec:  promisify(exec),
+			...commonScriptVariables,
 
 			variables,
 			getApiResponse,
 			logger: moduleLogger(scriptName)
 		}
 	});
-	logger.debug(`Executing ${scriptType} script [${scriptName}]: ${script}`)
 	try {
+		script = await replaceScriptFileValues(script)
+		logger.debug(`Executing ${scriptType} script [${scriptName}]: ${script}`)
 		let response = await vm.run(`(async function ${scriptName} () {
 			logger.debug('Inside script ${scriptName}')
 			${script}
@@ -391,10 +438,7 @@ module.exports.executeEndpointScript = async (script, getApiResponse, variables,
 		external: true,
 		timeout: 10 * 60 * 1000,
 		sandbox: {
-			fetch,
-			setTimeout,
-			setInterval,
-			exec:  promisify(exec),
+			...commonScriptVariables,
 
 			api,
 			variables,
@@ -403,8 +447,12 @@ module.exports.executeEndpointScript = async (script, getApiResponse, variables,
 		}
 	});
 	try {
+		script = await replaceScriptFileValues(script)
 		logger.debug(`Executing ${scriptType} script [${scriptName}]: ${script}`)
-		let response = await vm.run(`(async function ${scriptName} () { \n\tlogger.debug('Inside script ${scriptName}');\n\t${script}\n})()`);
+		let response = await vm.run(`(async function ${scriptName} () { 
+			logger.debug('Inside script ${scriptName}');
+			${script}
+		})()`);
 		if (response && response !== { api, variables }) {
 			variables = { ...variables, ...response.variables }
 			api = response.api

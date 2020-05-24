@@ -15,9 +15,7 @@ const { vibPath, userConfig, logLevels, vibSchemas, SCHEMA_SPECIFICATION_V6 } = 
 
 const logger = moduleLogger('util')
 const ajv = new Ajv({ allErrors: true })
-ajv.addMetaSchema(SCHEMA_SPECIFICATION_V6)
-let validator = ajv.addSchema(vibSchemas.endpoint).compile(vibSchemas.scenario)
-
+let validator
 let commonScriptVariables = {
 	fetch,
 	Error,
@@ -25,6 +23,9 @@ let commonScriptVariables = {
 	setInterval,
 	exec: promisify(exec)
 }
+
+ajv.addMetaSchema(SCHEMA_SPECIFICATION_V6)
+validator = ajv.addSchema(vibSchemas.endpoint).compile(vibSchemas.scenario)
 
 
 /**

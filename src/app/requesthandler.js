@@ -109,8 +109,8 @@ const handleVibraniumSetup = async (options, workspacePath) => {
 	if (!existsSync(userConfigPath)) {
 		createReadStream(configTemplatePath).pipe(createWriteStream(userConfigPath))
 	} else {
-		let configTemplate = JSON.parse(readFileSync(configTemplatePath)),
-			userConfigData = JSON.parse(readFileSync(userConfigPath))
+		let configTemplate = JSON.parse(readFileSync(configTemplatePath, 'utf8'))
+		let userConfigData = JSON.parse(readFileSync(userConfigPath, 'utf8'))
 
 		writeFileSync(userConfigPath, JSON.stringify({ ...configTemplate, ...userConfigData }, null, 4))
 	}
@@ -218,9 +218,14 @@ const createAndOpenScenario = async (options, scenarioFileName) => {
  * @param {string} workspace Vibranium workspace path
  */
 const createVibraniumDirectories = workspace => {
-	if (!existsSync(workspace)) mkdirSync(workspace);
-	if (!existsSync(join(workspace, 'jobs'))) mkdirSync(join(workspace, 'jobs'));
-	if (!existsSync(join(workspace, 'logs'))) mkdirSync(join(workspace, 'logs'));
+	try {
+		if (!existsSync(workspace)) mkdirSync(workspace);
+		if (!existsSync(join(workspace, 'jobs'))) mkdirSync(join(workspace, 'jobs'));
+		if (!existsSync(join(workspace, 'logs'))) mkdirSync(join(workspace, 'logs'));
+	} catch (error) {
+		logger.error(`Could not create directories: ${error}`)
+		process.exit(1)
+	}
 }
 
 

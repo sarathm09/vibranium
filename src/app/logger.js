@@ -36,7 +36,7 @@ const getDefaultLogLevel = () => {
 		env.LOG_LEVEL = logLevel.toLowerCase()
 	}
 	return logLevel.toLocaleLowerCase()
-};
+}
 
 
 /**
@@ -100,11 +100,10 @@ const rotateOldJobLogs = async () => {
 			await Promise.all(filesToDelete
 				.map(f => rmdir(join(vibPath.jobs, f), { recursive: true })))
 		}
-		return
 	} catch (error) {
 		console.error(error)
-		return
 	}
+	return
 }
 
 

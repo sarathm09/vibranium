@@ -141,7 +141,6 @@ const printApiListAsCSV = apis => {
 				.map(api => api)])
 
 		apisList = [...apisList, ...apisInCollection]
-
 	}
 	console.log(apisList.join(','));
 }

@@ -17,9 +17,7 @@ Some of the biggest features of Vibranium are:
 
 - **Reusability** One of the biggest issue with API tests and data generation logic is that you have a lot of dependent objects that are reused in multiple places. Once these objects are defined in Vibranium, all you need to do is mention this as the dependency for the other object and the objects become highly reusable.
 
-- **Assertions** Writing assertions in Vibranium is plain simple and supports JS in JSON syntax. We can also fail the tests if the time taken to executa an API exceeds a given value.
-
-- **Schema Validations** Validate API responses by bust specifying the expected schema. Vibranium will run the API, validate it against the schema and report all errors, and so writing tests are pretty easy
+- **Assertions** Writing assertions in Vibranium is plain simple and supports JS in JSON syntax. We can also fail the tests if the time taken to executa an API exceeds a given value. You can also validate API responses by just specifying the expected schema. Vibranium will run the API, validate it against the schema and report all errors, and so writing tests are pretty easy
 
 - **Simple Data Parsing** Want to parse a JSON response and get seome value? You can use simple Javascript dot notation to parse the JSON. You can easily specify to pick a random value in JSON array or to do a map of an array  inside the JSON tests.
 
@@ -27,12 +25,7 @@ Some of the biggest features of Vibranium are:
 
 - **Reports** HTML, Excel, Junit and JSON report formats are supported. Vibranium measures the time taken per call for each API endpoint and helps compare the reports of the previous executions. (Check below for a screenshot of the report server UI)
 
-- **Deployment Support** Vibranium tests can be deployed as a Node JS app along with the apps that you are testing and then invoke tests remotely, thus avoiding network delay in executing tests.
-
 - **Declarative tests** The tests are written in JSON, by mentioning just the required properties of the test and then the expected values. No need to worry about how things work.
-
-- **Fast** Vibranium uses Node and so is single threaded, but the event driven nature of Node makes it really fast for handling code with a lot of I/O, hence making Vibranium pretty fast
-
 
 
 ## Installation

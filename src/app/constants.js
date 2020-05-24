@@ -75,6 +75,7 @@ module.exports = {
 		templates: workspace ? join(workspace, testsDirectory, 'templates') : '',
 		payloads: workspace ? join(workspace, testsDirectory, 'payloads') : '',
 		schemas: workspace ? join(workspace, testsDirectory, 'schemas') : '',
+		scripts: workspace ? join(workspace, testsDirectory, 'scripts') : '',
 		cache: workspace ? join(workspace, '.cache') : '',
 		cachedScenarios: workspace ? join(workspace, '.cache', 'scenarios.json') : ''
 	},

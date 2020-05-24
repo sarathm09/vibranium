@@ -148,12 +148,32 @@
                 false
             ]
         },
+        "timeout": {
+            "$id": "#/properties/timeout",
+            "type": "integer",
+            "title": "The timeout schema",
+            "description": "Timeout for the execution. If the endpoint takes more than the given time, it fails.",
+            "default": 120000,
+            "examples": [
+                5000
+            ]
+        },
+        "delay": {
+            "$id": "#/properties/delay",
+            "type": "integer",
+            "title": "The delay schema",
+            "description": "Delay the start of the execution by given time in milliseconds. This applies only for the first repetition.",
+            "default": 0,
+            "examples": [
+                5000
+            ]
+        },
         "repeat": {
             "$id": "#/properties/repeat",
             "type": "integer",
             "title": "The repeat schema",
             "description": "The number of times this endpoint execution should repeat",
-            "default": 0,
+            "default": 1,
             "examples": [
                 10
             ]

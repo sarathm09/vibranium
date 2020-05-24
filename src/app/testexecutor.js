@@ -10,7 +10,7 @@ const { green, yellow, yellowBright, red } = require('chalk')
 const utils = require('./utils')
 const compiler = require('./compiler')
 const logHandler = require('./loghandler')
-const logger = require('./logger')('runner')
+const moduleLogger = require('./logger')
 const { processAssertionsInResponse } = require('./asserthandler')
 const { initializeDatabase, updateApiCache, findApiDetailsFromCache, insertApiExecutionData,
 	insertJobHistory, insertApiResponseCache, findApiResponseFromCache } = require('./dbhandler')
@@ -19,8 +19,9 @@ const { vibPath, executionStatus, scriptTypes, loremGeneratorConfig,
 const { callApi, setAvailableSystems, getSystemDetails } = require('./servicehandler')
 
 
-let ACTIVE_PARALLEL_EXECUTORS = 0, lorem = new LoremIpsum(loremGeneratorConfig)
-let totalEndpointsExecuted = 0, totalEndpointsSuccessful = 0, db
+let ACTIVE_PARALLEL_EXECUTORS = 0, lorem = new LoremIpsum(loremGeneratorConfig), logger
+let totalEndpointsExecuted = 0, totalEndpointsSuccessful = 0,
+	totalAssertionsProcessed = 0, totalAssertionsSuccessful = 0, db
 
 
 /**
@@ -45,8 +46,6 @@ const waitForExecutors = () => new Promise(resolve => {
  * Execute the api endpoint when executors are available
  *
  * @param {object} api The api to be executed
- * callAPI response:
- * { timing, response, status, contentType }
  */
 const executeAPI = async (db, endpoint, endpointVaribles) => {
 	let expectedStatus = 200;
@@ -74,10 +73,9 @@ const executeAPI = async (db, endpoint, endpointVaribles) => {
 		logger.error(`Executing api ${endpoint.name} failed: ${red(error)}`)
 	}
 
-	let assertionResults = []
-	if (endpointResponse.status === expectedStatus) {
-		assertionResults = await processAssertionsInResponse(endpoint, endpointResponse, replacePlaceholderInString, endpointVaribles)
-	}
+	let assertionResults = await processAssertionsInResponse(endpoint, endpointResponse, replacePlaceholderInString, endpointVaribles)
+	totalAssertionsProcessed += assertionResults.length
+	totalAssertionsSuccessful += assertionResults.filter(a => a.result).length
 
 	// eslint-disable-next-line no-unused-vars
 	let { auth, ...responseDataWithoutAuth } = endpointResponse
@@ -535,8 +533,7 @@ const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
 				let numberOfItems = parseInt(key.split('_')[1])
 				if (numberOfItems > Object.values(parsedResponse).length) numberOfItems = Object.values(parsedResponse).length
 
-				parsedResponse = utils.shuffleArray([...numberOfItems]
-					.map(key => parsedResponse[Math.abs(parseInt(key))]))
+				parsedResponse = utils.shuffleArray([...numberOfItems].map(key => parsedResponse[Math.abs(parseInt(key))]))
 			}
 
 			else if (key.toLocaleUpperCase() === 'ALL') {
@@ -576,7 +573,6 @@ const parseResponseVariableFromPath = (endpointResult, dependencyPath) => {
 	} catch (error) {
 		logger.error(`Could not parse ${yellow(path.join('.'))} from ${green(typeof (parsedResponse) === 'object' ? JSON.stringify(parsedResponse) : parsedResponse)}`, error)
 	}
-
 
 	return parsedResponse;
 }
@@ -752,35 +748,25 @@ const returnFailedEndpoint = (endpoint, message, error, endpointVaribles) => {
  * @param {integer} repeatIndex index if the endpoint is reunning in repeat
  */
 const getApiExecuterPromise = async (db, scenario, scenarioVariables, endpoint, repeatIndex) => {
+	let dependencyResolver = Promise.resolve(), response
 	await executeScenarioScripts(scenarioVariables, scenario, scriptTypes.beforeEach)
 	let beforeEndpointResponse = await executeEndpointScripts(scenarioVariables, endpoint, scriptTypes.beforeEndpoint);
-	let response
 
 	if (!beforeEndpointResponse.status) {
 		await executeScenarioScripts(scenarioVariables, scenario, scriptTypes.afterEach)
-		let response = returnFailedEndpoint(endpoint, 'Script execution failed', endpointVariables=scenarioVariables)
+		let response = returnFailedEndpoint(endpoint, 'Script execution failed', endpointVariables = scenarioVariables)
 		logHandler.printApiExecutionEnd(logger, response)
 		return response
 	}
-	let endpointVariables = beforeEndpointResponse.variables ?
-		{ ...scenarioVariables, ...beforeEndpointResponse.variables } :
-		{ ...scenarioVariables }
-
-
-	endpoint.payload = beforeEndpointResponse.api && beforeEndpointResponse.api.payload ?
-		beforeEndpointResponse.api.payload : endpoint.payload
-
-	let dependencyResolver = Promise.resolve();
-
+	let endpointVariables = beforeEndpointResponse.variables ? { ...scenarioVariables, ...beforeEndpointResponse.variables } : { ...scenarioVariables }
+	endpoint.payload = (beforeEndpointResponse.api && beforeEndpointResponse.api.payload) ? beforeEndpointResponse.api.payload : endpoint.payload
 	endpoint = { ...setRangeIndexForEndpoint(endpoint, repeatIndex) }
 
 	if (!!endpoint.dependencies && endpoint.dependencies.length > 0) {
-		endpoint.dependencies.forEach(dependency => {
-			dependencyResolver = dependencyResolver.then(response => {
-				if (response) endpointVariables = { ...endpointVariables, ...response };
-				return loadDependendentEndpoint(db, endpoint, dependency, endpointVariables);
-			})
-		});
+		endpoint.dependencies.forEach(dependency => dependencyResolver = dependencyResolver.then(response => {
+			if (response) endpointVariables = { ...endpointVariables, ...response };
+			return loadDependendentEndpoint(db, endpoint, dependency, endpointVariables);
+		}));
 	}
 
 	try {
@@ -790,11 +776,41 @@ const getApiExecuterPromise = async (db, scenario, scenarioVariables, endpoint, 
 	}
 
 	if (response && response.status) endpointVariables = { ...endpointVariables, ...response.variables };
-	await executeScenarioScripts(scenarioVariables, scenario, scriptTypes.afterDependencies)
-	let endpointResponse = await executeAPI(db, endpoint, endpointVariables)
+	await executeEndpointScripts(endpointVariables, endpoint, scriptTypes.afterDependencies)
+
+	if (repeatIndex > 0) await utils.sleep(endpoint['repeat-delay'] || 0)
+	if (repeatIndex == 0) await utils.sleep(endpoint.delay || 0)
+
+	let endpointResponse = await repeatExecutionUntilAssertionsAreTrue(endpoint, endpointVariables)
 
 	await executeEndpointScripts(endpointVariables, endpoint, scriptTypes.afterEndpoint)
 	await executeScenarioScripts(scenarioVariables, scenario, scriptTypes.afterEach)
+
+	return endpointResponse
+}
+
+
+/**
+ * Execute endpoints and return results.
+ * Repeats execution if repeat-until key is specified.
+ * 
+ * @param {object} endpoint Endpoint object
+ * @param {object} endpointVariables Endpoint variables
+ */
+const repeatExecutionUntilAssertionsAreTrue = async (endpoint, endpointVariables) => {
+	let endpointResponse, startTime = Date.now()
+	if (endpoint['repeat-until']) {
+		while ((Date.now() - startTime) < (endpoint.timeout || 2 * 60 * 1000)) { //default timeout is 2 minutes
+			endpoint.expect = { ...endpoint.expect, ...endpoint['repeat-until'] }
+			endpointResponse = await executeAPI(db, endpoint, endpointVariables)
+			let assertionResults = await processAssertionsInResponse({ expect: endpoint['repeat-until'] || {} }, endpointResponse, replacePlaceholderInString, endpointVariables)
+			if (!!assertionResults && (assertionResults.length === 0 || assertionResults.every(r => r.result))) break
+			logger.error('Repeat assertion failed. Repeating the execution...')
+			await utils.sleep(endpoint['repeat-delay'] || 0)
+		}
+	} else {
+		endpointResponse = await executeAPI(db, endpoint, endpointVariables)
+	}
 
 	return endpointResponse
 }
@@ -981,15 +997,11 @@ const markAsIgnored = scenario => {
  * @param {string} jobId Job execution id
  * @returns {object} containing all global variables
  */
-const loadGlobalVariables = jobId => {
-	return {
-		jobId,
-		job_id: jobId,
-		...userConfig.env_vars
-	};
-
-
-};
+const loadGlobalVariables = jobId => ({
+	jobId,
+	job_id: jobId,
+	...userConfig.env_vars
+})
 
 
 /**
@@ -1000,7 +1012,7 @@ const loadGlobalVariables = jobId => {
 const loremGenerator = limit => {
 	let generatedString = '';
 
-	if (limit < 0) generatedString = '';
+	if (limit < 1) generatedString = '';
 	if (limit < 10) generatedString = [...limit].join();
 	else {
 		while (limit > 0) {
@@ -1112,9 +1124,11 @@ const savePostExecutionData = async (db, jobId, scenarios, executionOptions) => 
 			totalEndpointsExecuted,
 			totalEndpointsSuccessful,
 			jobId,
-			status: totalEndpointsExecuted === totalEndpointsSuccessful,
+			status: totalEndpointsExecuted === totalEndpointsSuccessful && totalAssertionsSuccessful === totalAssertionsProcessed,
 			time: new Date(parseInt(jobId)).toLocaleString(),
-			executionOptions
+			executionOptions,
+			totalAssertionsProcessed,
+			totalAssertionsSuccessful
 		}
 	}
 	let scenariosJson = JSON.stringify(scenarioExecutionData, null, 2)
@@ -1158,11 +1172,14 @@ const updateScenarioResultsAndSaveReports = async (jobId, result, executionOptio
  * @returns {boolean} Execution status
  */
 const runTests = async (scenarios, executionOptions, jobId, db) => {
+	jobId = jobId || Date.now().toString()
+	logger = moduleLogger('runner', jobId)
+
 	if (scenarios.length === 0 || scenarios.every(sc => sc.endpoints.length === 0)) {
 		logger.error('No tests found')
 		process.exit(1)
 	}
-	jobId = jobId || Date.now().toString()
+
 	db = db === 'IGNORE' ? '' : await initializeDatabase()
 
 	logHandler.logExecutionStart(logger, jobId, scenarios, utils.getParallelExecutorLimit());

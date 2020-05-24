@@ -117,7 +117,7 @@ const responseStatusCheck = async (endpoint, response) => {
     let expectedStatus = 200;
     if (!!endpoint.expect && !!endpoint.expect.status) expectedStatus = endpoint.expect.status;
     return [
-        getAssertResponse('Response status', expectedStatus, response.status, response.status === expectedStatus)
+        getAssertResponse('Response status is ' + expectedStatus, expectedStatus, response.status, response.status === expectedStatus)
     ]
 }
 

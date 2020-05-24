@@ -78,6 +78,7 @@ vibranium
 	.option('--skip-warn', 'Ignore all warning messages. Not recommended', false)
 	.option('--silent', 'Silent Mode')
 	.option('--validate', 'Validate all files')
+	.option('--open', 'Open the files (this option is ignored if the number of files exceeds 5)')
 	.action(options => {
 		setEnvironmentVariables(options)
 		requestHandler.handleListCommand(options)

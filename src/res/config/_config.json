@@ -46,6 +46,7 @@
     },
     "logger": {
         "default_log_level": "INFO",
-        "max_log_history_to_keep": "30d"
+        "max_log_history_to_keep": "30d",
+        "max_job_history_to_keep": "30"
     }
 }

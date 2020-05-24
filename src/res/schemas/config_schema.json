@@ -353,6 +353,18 @@
                         "3d",
                         "1m"
                     ]
+                },
+                "max_job_history_to_keep": {
+                    "$id": "#/properties/logger/properties/max_job_history_to_keep",
+                    "type": "string",
+                    "title": "Log rotation",
+                    "description": "Max number of job history to keep",
+                    "default": "30",
+                    "examples": [
+                        "all",
+                        "10",
+                        "100"
+                    ]
                 }
             }
         }

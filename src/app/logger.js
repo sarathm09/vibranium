@@ -218,7 +218,7 @@ const dbTransport = async (level, moduleName, jobId, message, error, data) => {
 const logData = (transports, moduleName, jobId, level) => async (message, error, data) => {
 	try {
 		if (!!jobId && !!message && typeof message === 'object' && !!message.status &&
-			message.status === '_VIBRANIUM_SESSION_END_' && existsSync(vibPath.jobs)) {
+			message.status === '_VIBRANIUM_SESSION_END_' && existsSync(vibPath.jobs) && !env.JOB_NAME) {
 			await writeFile(join(vibPath.jobs, jobId, 'logs.json'), JSON.stringify(logStore.map(l => {
 				l.jobId = jobId;
 				return l

@@ -12,7 +12,7 @@ const { writeFile, rmdir } = require('fs').promises
 const { executionStatus } = require('./constants')
 const utils = require('./utils')
 
-let spinner = undefined, cachedFormattedString = {}
+let spinner, cachedFormattedString = {}
 
 
 /**
@@ -35,8 +35,9 @@ const getAssertLogString = ({ result, test, expected, obtained }) => {
 	let assertionResponseText = result ? test : `${test}, expected: ${chalk.yellowBright(expected)}, obtained: ${chalk.yellowBright(obtained)}`
 	if (utils.isMac) {
 		return result ? chalk.green('✔  ') + assertionResponseText : chalk.red('✖  ') + assertionResponseText
+	} else {
+		return result ? assertionResponseText + ': SUCCESS': assertionResponseText + ': FAIL'
 	}
-	return assertionResponseText
 }
 
 
@@ -476,17 +477,17 @@ const generateJunitReportForScenario = async (scenario) => {
 			errors: 0,
 			skipped: endpoints.filter(e => e.ignore),
 			timestamp: new Date().toISOString(),
-			time: endpoints.map(e => e._time && e._time.total)
-				.filter(t => !!t && !isNaN(t)).reduce((a, c) => a + c, 0)
+			time: (endpoints.map(e => e._time && e._time.total)
+				.filter(t => !!t && !isNaN(t)).reduce((a, c) => a + c, 0)) / 1000
 		})
 
 	for (const endpoint of endpoints) {
 		const testCase = testReport.ele('testcase', {
 			name: endpoint.name,
-			classname: [scenario.collection, scenario.name, endpoint.name].join('.'),
+			classname: [scenario.collection, scenario.name].join('.'),
 			assertions: endpoint._expect ? endpoint._expect.length : 1,
-			time: endpoint._time ? endpoint._time.total :
-				endpoint._result.map(res => res.timing.total).reduce((a, c) => a + c, 0)
+			time: (endpoint._time ? endpoint._time.total :
+				endpoint._result.map(res => res.timing.total).reduce((a, c) => a + c, 0)) / 1000
 		})
 		if (!endpoint._status) {
 			let endpointResponses = endpoint._result

@@ -1,0 +1,49 @@
+{
+    "id": "3d9ac86a-f2d7-4cb4-a7fc-5910fe0154d4",
+    "app": "demo",
+    "name": "e_demo",
+    "endpoints": [
+        {
+            "name": "create_a_user",
+            "description": "Create a new User",
+            "url": "/api/v1/users",
+            "method": "POST",
+            "scripts": {
+                "before-endpoint": "variables.spells = [...new Array(10)].map(() => '{dataset.spells}'); return { variables }"
+            },
+            "variables": {
+                "userName": "{dataset.harrypotter}",
+                "password": "[a-zA-Z0-9]{7,15}"
+            },
+            "payload": {
+                "name": "{userName}",
+                "country": "{dataset.countries}",
+                "favorites": {
+                    "spells": "{spells}",
+                    "quote": "{dataset.quotes}",
+                    "gameOfThronesCharacter": "{dataset.got}",
+                    "marvelCharacter": "{dataset.marvel}",
+                    "starWarsCharacter": "{dataset.starWars}",
+                    "celestialObject": "{dataset.space}",
+                    "pokemon": "{dataset.pokemon}"
+                }
+            },
+            "expect": {
+                "status": 201
+            }
+        },
+        {
+            "name": "03.get_details_of_a_user",
+            "url": "/api/v1/users/{userId}",
+            "dependencies": [
+                {
+                    "api": "02.create_a_user",
+                    "variable": "userId",
+                    "path": "response.id"
+                }
+            ]
+        }
+    ],
+    "email": "sarathm09@gmail.com",
+    "created_on": "2020-5-7 9:58:35"
+}

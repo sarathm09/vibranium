@@ -86,3 +86,13 @@ typings/
 
 # DynamoDB Local files
 .dynamodb/
+
+
+.cache
+.DS_Store
+.vscode
+
+tryout.js
+.idea/*
+*.0x/*
+*.db

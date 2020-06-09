@@ -1,0 +1,18 @@
+[core]
+	repositoryformatversion = 0
+	filemode = true
+	bare = false
+	logallrefupdates = true
+[remote "origin"]
+	url = https://github.com/sarathm09/vibranium
+	fetch = +refs/heads/*:refs/remotes/origin/*
+[gc]
+	auto = 0
+[http "https://github.com/"]
+	extraheader = AUTHORIZATION: basic eC1hY2Nlc3MtdG9rZW46djEuOTg1MjM4YzJkYmI0MzVkYjY3YmY4MjlkZWQ4ZWIxY2M0YmZjOTY1OQ==
+[branch "docs"]
+	remote = origin
+	merge = refs/heads/docs
+[branch "gh-pages"]
+	remote = origin
+	merge = refs/heads/gh-pages

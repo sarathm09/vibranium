@@ -1,0 +1,60 @@
+---
+title: Create command
+slug: /vibranium/cli/2.3.vc_c
+author: sarathm09
+---
+
+# Creating new tests
+
+You can create new tests by simply creating a new json file and adding the required keys, but to make the process more easier, you can use the `create` command in Vibranium.
+
+```shell
+❯ vc c -h                                  
+Usage: vc create|c [options]
+
+Create a new scenario test file
+
+Options:
+  -c --collection <collection>  Collection Name
+  -s --scenario <scenario>      Scenario Name
+  -t --template [template]      Create scenario with a template. [t1|t2|t3|e1_github] (default: "t1")
+  -h, --help                    output usage information
+```
+
+> While creating tests, you need to specify the collection in which the tests needs to be created using the `-c` option and the scenario name using the `-s` option.
+
+## Templates
+
+Vibranium provides a set of templates that you can use to create tests. These templates can be used by specifying the template name in the `--template` option. They are usually named `t1` to `tn` where each increment stands for increase in complexity. The templates starting with `e` are example templates, like `e1_github` refers to example of github API v3.
+
+
+
+### User provided Templates
+
+You can have user provided templates also. If you want to have a standard structure for all your tests, you can create a template json and place it in the templates directory inside the tests directory in your workspace. For example, if I have my workspace at `˜/workspace` and my tests directory is named `Vibranium-Tests`, then I'll have a directory structure for my templates as follows:
+
+```shell
+˜/
+  workspace/
+    config.json
+    jobs/
+      latest/
+      job_n/
+    logs/
+    Vibranium-Tests/
+      scenarios/
+      payloads/
+      schemas/
+      templates/
+        template_myCustomTemplate.json
+        template_myComplexTemplate.json
+```
+
+
+
+To use the templates, I can use either `vc c --template myCustomTemplate` or `vc c --template myComplexTemplate`
+
+> Make sure the directory structure is correct and that you prefix the templates with `template_`for user provided templates to work.
+
+
+

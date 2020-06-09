@@ -1,0 +1,66 @@
+---
+title: List command
+slug: /vibranium/cli/2.2.vc_l
+author: sarathm09
+---
+
+# Listing Tests
+
+The list command in Vibranium lists all the available tests.
+
+```shell
+❯ vc l -h                
+Usage: vc list|l [options]
+
+List all the Vibranium tests
+
+Options:
+  -c --collections [collections]  Collections to list, separated by comma(,) (default: "all")
+  -s --scenarios [scenarios]      Scenarios to list, separated by comma(,) (default: "all")
+  -a --apis [apis]                API endpoints to list, separated by comma(,) (default: "all")
+  -k --keys [keys]                Search for specific keys. Example: scenario.tag=abc or
+                                  endpoint.payload='!somePayload' (default: "all")
+  -f --format [format]            Format to print the output in, default is tree. [tree, csv, json] (default:
+                                  "tree")
+  --freeze                        Freeze the current list of scenarios into a file so that the files are not
+                                  scanned again and again
+  --unfreeze                      Start scanning for all file changes
+  --no-color                      Plain text output without colors
+  --skip-warn                     Ignore all warning messages. Not recommended (default: false)
+  --silent                        Silent Mode
+  --validate                      Validate all files
+  --open                          Open the files (this option is ignored if the number of files exceeds 5)
+  -h, --help                      output usage information
+```
+
+
+
+The list command can list all or partial tests based on certain parameters. 
+
+### For example:
+
+- To list all tests in some collections, you can use `vc l -c collection1,collection2`
+- To list all tests in some scenario files, you can use `vc l -s scenario1, scenario2`
+- To list all tests with endpoint names, you can use `vc l -a endpoint_name1,endpoint_name2`
+- To list all tests with certain keys, you can use '-k' option. This can use three levels of key checks, `scenario`, `endpoint` and `dependency`; like `vc l -k endpoint.method=GET` to list all GET services, `vc l -k scenario.description` to list all scenarios with a description, `vc l -k dependency.api!=hello_world` for listing all tests that don't use hello_world as a dependency. Supported operators are:
+  - **<** less than operator
+  - **>** greater than operator
+  - **˜** tilde symbol refers to includes, example: `vc l -k GET,PUT,POST˜endpoint.method`
+  - **!==** or **!==** not equal to
+  - **=** equals
+
+
+
+## Supported formats
+
+Listing tests can be done in `json`, `csv` and `tree` format.
+
+
+## Validating scenarios
+Use the `--validate` option to validate your scenario files and check if they comply to to the schema.
+
+
+## Freeze and Unfreeze
+
+`--freeze` option compiles and bundles all tests into one file so that the tests don't have to be scanned again and again. If the freeze command is used, the tests will be loaded from the frozen bundle all the time to list and run tests until the `unfreeze` option is used. This helps save time in scanning and compiling all tests. Please note that if you freeze the tests and then make any changes to the tests, it won't reflect in the tests until you run `freeze` again as Vibranium will not be going through the test till then.
+

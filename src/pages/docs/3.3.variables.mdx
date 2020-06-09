@@ -1,0 +1,201 @@
+---
+title: Variables
+slug: /vibranium/docs/3.3.variables
+author: sarathm09
+---
+
+# Variables
+
+Vibranium allows us to create and use variables in our tests. Variables in Vibranium are usually enclosed in curly brackets (`{` and `}`). They can be used to denote data that changes in a payload or response data from other endpoint and so on. They are usually represented in an object format, where the key stands for the variable name, and the value will be the variable value.
+
+A comparison to some programming languages will be like this:
+
+Javascript variables:
+```javascript
+let variable1 = 1,
+    variable2 = 'something',
+    variable3 = true,
+    variable4 = [],
+    variable5 = {
+        hello: 'world'
+    }
+
+// usage:
+variable1 // 1
+variable4.length // 0
+variable5.hello // world
+
+```
+
+Vibranium variables:
+```js
+"variables": {
+    "variable1": 1,
+    "variable2": "something",
+    "variable3": true,
+    "variable4": [],
+    "variable5": {
+        "hello": "world"
+    }
+}
+
+// usage:
+"{variable1}" // 1
+"{variable4.length}" // 0
+"{variable5.hello}" // world
+
+```
+
+
+## Levels of variable declaration
+Vibranium allows declaration of variables at multiple levels or scopes.
+
+### Endpoint level
+These variables are available in the endpoint scope and are usually declared in the `variables` key in the endpoint object. Variables that need to be used only in the endpoint are declared here
+
+
+### Scenario level
+These variables are available in the scenario file scope and are declared in the `generate` key in the endpoint object. Variables that are needed for all or many endpoints in the scenario are declared here.
+
+
+### System level
+These variables are available in the system scope meaning that any execution happening in the system will have these variables. They are defined in the `config.json`, inside the `env_vars` key. 
+
+
+### Account level
+These variables are declared per account inside the config file. They are defined in the `config.json`, inside the `variables` key in the specific account. 
+
+
+### Execution level
+These variables are available in the job execution scope and are passed on to the job using the `--variables` option while running the tests. These can be used if you need to assign certain values per job.
+
+
+> Please note that variables can also be created in the `script` key, but to make them accessible outside the script, you'll have to return the variables object, as mentioned in [Scripts](../docs/3.5.scripts.md)
+
+
+## Data parsing in variables
+Vibranium uses the dot notation that Javascript uses to parse variables, and in extra to what is available in javascript, we can use some extra keys to easily parse data.
+Common examples are:
+
+- Objects:
+  - to key a key `id` from a variable `user`, you need to specify `{user.id}`
+- Arrays: 
+  - to get n'th element of array, just give the index (eg: `{array.0}`, `{array.10.id}`)
+  - to get random element from array, use the `any` keyword (eg: `{array.any}`, `{array.any.id}`)
+  - to get n random elements from array, use the `any_n` keyword (eg: `{array.any_2}`, `{array.any_5.id}`)
+  - to get all elements in array and map it, use the `all` keyword (eg: `{array.all.id}` maps an array of objects to an array of string)
+  - to get length of items, use the `length` keyword (eg: `{array.length}`)
+
+## Inbuilt variables
+Vibranium provides a set of inbuilt variables that can be used in your tests. They are categorized as follows:
+
+### Execution specific variables
+- `jobId`: returns the current job execution Id
+  
+
+### Time variables
+The available variables for specifying time, and the corresponding JavaScript representation are as follows
+- `timestamp_n` returns the timestamp number, [js: `new Date().getTime()`]
+- `timestamp` returns the ISO timestamp, [js: `new Date().toISOString()`]
+- `time` returns the locale timestamp, [js: `new Date().toLocaleTimeString()`]
+- `time_ms` returns the milliseconds, [js: `new Date().getMilliseconds()`]
+- `time_sec` returns the seconds, [js: `new Date().getSeconds()`]
+- `time_min` returns the minutes, [js: `new Date().getMinutes()`]
+- `time_hours` returns the hours, [js: `new Date().getHours()`]
+- `date` returns the locale date, [js: `new Date().toLocaleDateString()`]
+- `date_date` returns the date, [js: `new Date().getDate()`]
+- `date_month` returns the month (number), [js: `new Date().getMonth()`]
+- `date_month_name_long` returns the month (full name), [js: `new Date().toLocaleString('default', { month: 'long' })`]
+- `date_month_name` returns the month (short name), [js: `new Date().toLocaleString('default', { month: 'short' })`]
+- `date_year` returns the year, [js: `new Date().getFullYear()`]
+
+
+### Lorem Ipsum
+Vibranium has an inbuilt [Lorem Ipsum](https://www.lipsum.com/) generator. All you need to specify in order to generate a lorem ipsum string of max length `n` characters is `{lorem_n}`
+
+
+### Datasets
+Vibranium also provides different data sets to be used in tests. All data sets can be used by specifying `{dataset_datasetName}`, where _datasetName_ can be any of the following (more to be added later)
+
+- `names` a random name
+- `harrypotter` a random Harry Potter character name
+- `starWars` a random star wars character name
+- `space` a random celestial object name
+- `pokemon` a random pokemon name (from generation 1)
+- `quotes` a random quote
+- `got` a random Game of Thrones character
+- `marvel` a random Marvel character name
+- `spells` a random Harry Potter spell/charm
+- `countries` a random country name
+
+
+### Regex strings
+If you want random characters to be used to fill in values, Vibranium can do that too. All you need to do is specify the regex string for the same.
+Like for example, `[a-z0-9]{5,10}` can generate any of "1jdg8sbdsf", "7sb6t34", "g6s2n" and so on
+
+
+## Examples
+
+- Variable declaration
+    ```js
+
+    "hello {world}" // hello and value of the variable `world`
+    "{items.length}" // length of items -> integer
+    "{items}" // value of items -> can be of any type, depending on `items`
+    "[a-z]{5}" // a five letter string with random characters between a-z
+    "[a-zA-Z0-9]{10,15}" // a 10-15 letter string with any characters from a-z, A-Z or 0-9
+    true // boolean value true
+    { "key": "{value}" } // an object with a key 'key' and value as the value in the variable 'value'
+    "{timestamp}" // current timstamp in ISO format, example: 2020-01-1T12:15:38.666Z
+    "{dataset.names}" // some random name
+    "{dataset.quotes}" // some random quote
+    "{dataset.harrypotter} casted {dataset.spells} on {timestamp}" // eg: Hermione casted Wingardium Leviosa on 2020-01-1T12:15:38.666Z
+    "Job #{jobId}" // Job #735295637281
+    "{lorem_60}" // Lorem ipsum dolor sit amet, consectetur adipiscing elit
+    "{lorem_1000}" // Lorem ipsum with max 1000 characters
+    "/api/v1/users/{userId}" // same string with {userId} replaced with it's value.
+
+    ```
+
+
+- JSON parsing
+  
+  Let us assume that we have a variable `v` with the value as follows
+    ```json
+    {
+        "this": [
+            "is",
+            "an"
+        ],
+        "example": {
+            "to": "show",
+            "how": [
+                {
+                    "nested": "objects",
+                    "work": "and"
+                },
+                {
+                    "how": "deeply",
+                    "nested": "objects",
+                    "can": "be"
+                }
+            ],
+            "easily": "parsed"
+        }
+    }
+    ```
+
+    Now, we have
+
+    ```js
+    - `{v}`                                // whole json object            
+    - `{v.this.any}`                       // `"is"` or `"an"`             
+    - `{v.this.all}`                       // `[ "is", "an" ]`             
+    - `{v.example.to}`                     // `"show"`                     
+    - `{v.example.how.length}`             // `2`                          
+    - `{v.example.how.any_1.how}`          // `undefined` or `"deeply"`    
+    - `{v.example.how.1.can}`              // `"be"`                       
+    - `{v.example.how.any.nested.length}`  // `7` (both values are same)   
+    - `{v.example.how.all.nested}`         // `["objects", "objects"]`     
+    - `{v.example.how.all.nested.length}`  // `2`               
+    ```           

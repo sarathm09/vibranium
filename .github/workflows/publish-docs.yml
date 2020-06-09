@@ -1,0 +1,49 @@
+name: Deploy docs
+
+on:
+  push:
+    branches: [docs]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Gatsby globally
+        run: sudo npm i -g gatsby-cli
+
+      - name: Build the project and generate static files
+        run: |
+          npm i
+          gatsby clean
+          gatsby build --prefix-paths
+
+      - name: Backup generated files
+        run: |
+          sudo cp -r public /tmp/vib-docs
+          gatsby clean
+
+      - name: Checkout gh-pages and update it
+        run: |
+          git fetch --all
+          git checkout -b gh-pages origin/gh-pages
+          sudo cp -r .git /tmp/vib-git/
+          sudo rm -r *
+          sudo cp -r /tmp/vib-git/* .
+          sudo cp -r /tmp/vib-docs/* .
+          git status
+          git config --global user.email "sarathm09@gmail.com"
+          git config --global user.name "Sarath S Menon"
+          git add -A
+          git commit -m "[update] static site files"
+          ls
+          git status
+
+      - name: Github Push
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          branch: gh-pages
+          force: true

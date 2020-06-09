@@ -1,0 +1,57 @@
+---
+title: Introduction
+slug: /vibranium
+author: sarathm09
+---
+
+# Vibranium
+
+Vibranium is a CLI based API testing and data generation tool built on Node JS. 
+
+All the tests in Vibranium are written using JSON, making it readable by any person, irrespective of the programming languages they usually use.
+
+# Features
+
+Some of the biggest features of Vibranium are:
+
+- **JSON based tests** JSON is a very simple and maintainable way to represent any data and so writing tests in JSON makes Vibranium very simple and fasts to get started with. This also means that Vibranium tests are easily maintainable.
+
+- **Reusability** One of the biggest issue with API tests and data generation logic is that you have a lot of dependent objects that are reused in multiple places. Once these objects are defined in Vibranium, all you need to do is mention this as the dependency for the other object and the objects become highly reusable.
+
+- **Assertions** Writing assertions in Vibranium is plain simple and supports JS in JSON syntax. We can also fail the tests if the time taken to execute an API exceeds a given value. You can also validate API responses by just specifying the expected schema. Vibranium will run the API, validate it against the schema and report all errors, and so writing tests are pretty easy
+
+- **Simple Data Parsing** Want to parse a JSON response and get some value? You can use simple Javascript dot notation to parse the JSON. You can easily specify to pick a random value in JSON array or to do a map of an array  inside the JSON tests.
+
+- **Data generation tools** Filling dummy data in APIs is pretty easy with Vibranium. You can easily generate Lorem Ipsum strings of given length, random string just by specifying the regex matching it, use inbuilt data sets like names of Harry Potter, Game of Thrones, Star Wars, Marvel, Pokemon and other characters.
+
+- **Reports** HTML, Excel, JUnit and JSON report formats are supported. Vibranium measures the time taken per call for each API endpoint and helps compare the reports of the previous executions. (Check below for a screenshot of the report server UI)
+
+- **Declarative tests** The tests are written in JSON, by mentioning just the required properties of the test and then the expected values. No need to worry about how things work.
+
+
+## Installation
+
+Vibranium is a Node JS based app, available in npm. To install Vibranium, all you need to do is run the following command in the terminal
+```shell
+  npm install -g vibranium-cli
+``` 
+
+## Getting started
+To get started with your first steps, go through the [step by step guide](setup/1.1.workspace) which explains the basic terms like workspace, collections, scenarios, endpoints and gives an idea on how to get started with writing your first test.
+
+
+## History
+Vibranium was initially built around two years ago, using Python as a simple tool that can test APIs that have deep nested dependencies and to use it as a data generation tool. 
+The name Vibranium was suggested by my friend, primarily because we were a fan or Marvel, and secondly because this was meant to be a tool that is powerful enough to break all apps by finding bugs and making them stronger in the process. 
+
+Though it was just meant to be a simple project, people liked the concept and it's simplicity and so started asking for feature requests. Though it was updated for around two years, I felt the need to move from Python because it was getting hard to implement parallel and even driven logic in Python (and also finding contributors in Python was hard for some reason!). 
+So I decided to rewrite the project in a different language that can handle concurrency and I/O very well. My initial plan for the rewrite was to use Go, but somehow using Go for JSON processing with unknown types was hard (maybe because I'm a beginner in Golang) and so I decided to use Node JS as JSON+JS combination is amazing and because Node JS handles async I/O very well.
+
+
+## Future Plans
+Vibranium includes a lot of features as of now, but there are a lot of new features that I have in plan, though I can't give an ETA for them.
+
+
+## Contributing to the Project
+If you would like to contribute to the project development, you're always welcome. Feel free to make changes and raise a PR, and/or raise issues in GitHub.
+

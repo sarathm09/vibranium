@@ -1,0 +1,71 @@
+---
+title: Collections, Scenarios and Endpoints
+slug: /vibranium/setup/1.2.collections_scenarios_endpoints
+author: sarathm09
+---
+
+# Collections, Scenarios and Endpoints
+
+Before we get into creating tests, there are a few terms that we need to be aware of, like collections, scenarios and endpoints
+
+## Endpoints
+An endpoint refers to the actual test JSON object inside the scenario. It'll have a name, description of the endpoint test case, the API url, API method, payload etc. An endpoint is also referred to as an API in Vibranium. When listing or running test cases using the CLI, we use the option `-a` with the endpoint name to run just the endpoint specified.
+
+
+## Scenarios
+A scenario refers to the json file that contains all the endpoints belonging to one particular use case. A scenario can be any use case related, like for all CRUD operations for an object or an end to end flow. The scenario JSON has a name key, denoting the name of the scenario. A scenario can also be referred to by the file name (without the .json extension). It is recommended to keep the scenario name and the file name as the same to avoid confusion. So if I have a scenario file named scenario1.json, the recommended scenario name is scenario1. When listing or running test cases using the CLI, we use the option `-s` with the scenario name to run all the endpoints in the scenarios specified.
+
+
+## Collections
+A collection refers to a folder with scenarios inside it. All the collections will be placed inside the scenarios directory inside the tests directory. It is just a means to group or organize scenario files. When listing or running test cases using the CLI, we use the option `-c` with the collection name (directory name) to select all tests inside the collection.
+
+
+
+---
+### Directory Structure
+Like mentioned in the previous section, if I have my workspace at `˜/workspace` and my tests directory is named `Vibranum-Tests`, then I'll have a directory structure 
+
+```shell
+˜/
+  workspace/
+    config.json
+    jobs/
+      latest/
+      job_1/
+      ...
+      job_n/
+    logs/
+    Vibranium-Tests/
+      scenarios/
+        collection1/
+          scenario1.json
+          scenario2.json
+          scenario3.json
+        collection2/
+          scenario4.json
+          scenario5.json
+        collection3/
+          scenario6.json
+          ...
+        ...
+      payloads/
+        payloadForEndpoint1.json
+        payloadForEndpoint2.json
+        collection2/
+          payloadForEndpoint3.json
+          payloadForEndpoint4.json
+          ...
+        ...
+      schemas/
+        schemaForEndpoint1.json
+        schemaForEndpoint2.json
+        collection2/
+          schemaForEndpoint3.json
+          schemaForEndpoint4.json
+          ...
+        ...
+      templates/
+      docs/
+```
+[Previous](1.1.workspace.md)
+[Next](1.3.installation.md)

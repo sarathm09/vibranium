@@ -1,0 +1,808 @@
+---
+title: The Endpoint Object
+slug: /vibranium/docs/3.2.endpoint_object
+author: sarathm09
+---
+
+# The Endpoint Object
+
+## Important keys
+
+- `name` [string]: The Endpoint/API name
+- `description` [string]: An explanation about the purpose of this instance.
+- `url` [string]: API/Endpoint URL. Should be a continuation of whatever api url is defined in the config.json
+- `method` [string]: The HTTP request method to be used
+- `payload` [object or array or string]: The request payload. Can be any of any type. If the payload is defined as a JSON in the payloads directory, then the payload value will be a string starting with '!' and then the path to the json inside the payload directory
+- `language` [string]: The language in which the endpoint should be called. Used to set the Accept-Language header
+- `headers` [object]: Extra headers to be passed on to the endpoint execution.
+    - The extra header content to be passed on to the endpoint execution. The key is the header hey and value is the header value.
+- `ignore` [boolean]: If set to true, the endpoint will be skipped/ignored while running tests.
+- `cache` [boolean]: If set to true, the response will be cached throughout the execution
+- `system` [string]: The name of the system to be used for executing this endpoint. The name should be one of the systems defined inside the config.json
+- `async` [boolean]: If set to true, all endpoints with this flag set to true will run synchronously
+- `delay` [integer]: Delay the start of the execution by given time in milliseconds. This applies only for the first repetition.
+- `timeout` [integer]: Timeout for the execution. If the endpoint takes more than the given time, it fails.
+- `repeat` [integer]: The number of times this endpoint execution should repeat
+- `repeat-delay` [integer]: The delay between each repetition in milliseconds, if 'repeat' or 'repeat-until' key is specified
+- `repeat-until` [object]: Repeat the endpoint execution until the assertions are met.
+   - `status` [integer]: The expected status
+   - `headers` [object]: Validate the response headers. The key is the header name and value is the expected value
+   - `response` [object]: Validate the response body. The key is the test name and value is the assertion script.
+   - `timing` [object]: Validate the time taken by the endpoint to respond. The key refers to the timing property and value is a JS comparison
+- `variables` [object]: The variables to be passes to the dependency
+    - The key is the variable name and value is the variable value
+- `expect` [object]: An explanation about the purpose of this instance.
+   - `status` [integer]: The expected status
+   - `headers` [object]: Validate the response headers. The key is the header name and value is the expected value
+   - `response` [object]: Validate the response body. The key is the test name and value is the assertion script.
+   - `timing` [object]: Validate the time taken by the endpoint to respond. The key refers to the timing property and value is a JS comparison
+- `dependencies` [array]: The list of dependencies for the endpoint
+   - `collection` [string]: The name of the collection in which the endpoint is available
+   - `scenario` [string]: The name of the scenario in which the endpoint is available
+   - `api` [string]: The dependency endpoint name
+   - `repeat` [integer]: Number of times the endpoint is to be repeated
+   - `cache` [boolean]: Should the endpoint be cached or loaded from cache?
+   - `variable` [string or object]: The variable name and path to be parsed from the endpoint response
+   - `path` [string]: The path from which the variable is to be parsed from the dependency (to be used only if the value of 'variable' key is s string)
+   - `variables` [object]: The variables to be passed to the dependency
+- `scripts` [object]: Scripts to be executed in the endpoint life cycle.
+   - `before-endpoint` [string]: The script to be executed in the before-endpoint life cycle hook of the endpoint.
+   - `after-endpoint` [string]: The script to be executed in the after-endpoint life cycle hook of the endpoint.
+   - `after-dependencies` [string]: The script to be executed in the after-dependencies life cycle hook of the endpoint.
+
+<!-- 
+let ignoredKeys = [
+  "$id",
+  "examples",
+  "additionalItems",
+  "default",
+  "title",
+  "type",
+  "required",
+];
+
+const getObjectType = (o) => {
+  if (!!o && !!o.type) {
+    if (typeof o.type === "object") return `[${o.type.join(" or ")}]`;
+    else return `[${o.type}]`;
+  }
+  return "";
+};
+
+Object.entries(en)
+  .map(([k, v]) => {
+    let lines = [`- \`${k}\` ${getObjectType(v)}: ${v.description}`],
+      items = [],
+      properties = [];
+    if (v.items) {
+      items = v.items.map((item) =>
+        item[".*"]
+          ? item[".*"].description
+          : Object.entries(item)
+              .filter(
+                ([k, v]) => !ignoredKeys.includes(k) && typeof v === "object"
+              )
+              .map(
+                ([k, v]) =>
+                  `   - \`${k}\` ${getObjectType(v)}: ${v.description}`
+              )
+              .join("\n")
+      );
+    } else if (v.properties && typeof v.properties === "object") {
+      properties = v.properties[".*"]
+        ? ["    - " + v.properties[".*"].description]
+        : Object.entries(v.properties)
+            .filter(
+              ([k, v]) => !ignoredKeys.includes(k) && typeof v === "object"
+            )
+            .map(
+              ([k, v]) => `   - \`${k}\` ${getObjectType(v)}: ${v.description}`
+            );
+    }
+
+    return [...lines, ...items, ...properties].join("\n");
+  })
+  .join("\n");
+
+ -->
+
+## Endpoint Schema
+
+```json
+{
+    "$schema": "http://json-schema.org/draft-06/schema",
+    "$id": "endpoint.json",
+    "type": "object",
+    "title": "The Endpoint object",
+    "description": "The Endpoint object schema",
+    "examples": [
+        {
+            "url": "/api/v1/test",
+            "description": "Sample API",
+            "name": "sample_api"
+        }
+    ],
+    "required": [
+        "name",
+        "url"
+    ],
+    "properties": {
+        "name": {
+            "$id": "#/properties/name",
+            "type": "string",
+            "title": "The endpoint name",
+            "description": "The Endpoint/API name",
+            "examples": [
+                "get_all_users"
+            ]
+        },
+        "description": {
+            "$id": "#/properties/description",
+            "type": "string",
+            "title": "The description schema",
+            "description": "An explanation about the purpose of this instance.",
+            "examples": [
+                "Get all the users from the system"
+            ]
+        },
+        "url": {
+            "$id": "#/properties/url",
+            "type": "string",
+            "title": "The endpoint url",
+            "description": "API/Endpoint URL. Should be a continuation of whatever api url is defined in the config.json",
+            "examples": [
+                "/api/v1/users"
+            ]
+        },
+        "method": {
+            "$id": "#/properties/method",
+            "type": "string",
+            "title": "The request method",
+            "description": "The HTTP request method to be used",
+            "enum": [
+                "GET",
+                "PUT",
+                "POST",
+                "PATCH",
+                "DELETE"
+            ]
+        },
+        "payload": {
+            "$id": "#/properties/payload",
+            "type": [
+                "object",
+                "array",
+                "string"
+            ],
+            "title": "The payload schema",
+            "description": "The request payload. Can be any of any type. If the payload is defined as a JSON in the payloads directory, then the payload value will be a string starting with '!' and then the path to the json inside the payload directory",
+            "examples": [
+                {
+                    "hello": "world"
+                },
+                "string payload",
+                "!collectionName/payloadName"
+            ],
+            "additionalProperties": true
+        },
+        "language": {
+            "$id": "#/properties/language",
+            "type": "string",
+            "title": "The endpoint accept-language header",
+            "description": "The language in which the endpoint should be called. Used to set the Accept-Language header",
+            "examples": [
+                "en",
+                "de"
+            ]
+        },
+        "headers": {
+            "$id": "#/properties/headers",
+            "type": "object",
+            "title": "The endpoint headers",
+            "description": "Extra headers to be passed on to the endpoint execution.",
+            "examples": [
+                {
+                    "Accept-Language": "en"
+                }
+            ],
+            "properties": {
+                ".*": {
+                    "$id": "#/properties/headers/.*",
+                    "type": "string",
+                    "title": "The header content",
+                    "description": "The extra header content to be passed on to the endpoint execution. The key is the header hey and value is the header value.",
+                    "examples": [
+                        "application/json"
+                    ]
+                }
+            }
+        },
+        "ignore": {
+            "$id": "#/properties/ignore",
+            "type": "boolean",
+            "title": "The ignore key",
+            "description": "If set to true, the endpoint will be skipped/ignored while running tests.",
+            "default": false,
+            "enum": [
+                true,
+                false
+            ]
+        },
+        "cache": {
+            "$id": "#/properties/cache",
+            "type": "boolean",
+            "title": "Enable caching",
+            "description": "If set to true, the response will be cached throughout the excecution",
+            "default": false,
+            "enum": [
+                true,
+                false
+            ]
+        },
+        "system": {
+            "$id": "#/properties/system",
+            "type": "string",
+            "title": "System to be used",
+            "description": "The name of the system to be used for executing this endpoint. The name should be one of the systems defined inside the config.json",
+            "examples": [
+                "default"
+            ]
+        },
+        "async": {
+            "$id": "#/properties/async",
+            "type": "boolean",
+            "title": "The async schema",
+            "description": "If set to true, all endpoints with this flag set to true will run synchronously",
+            "default": false,
+            "enum": [
+                true,
+                false
+            ]
+        },
+        "timeout": {
+            "$id": "#/properties/timeout",
+            "type": "integer",
+            "title": "The timeout schema",
+            "description": "Timeout for the execution. If the endpoint takes more than the given time, it fails.",
+            "default": 120000,
+            "examples": [
+                5000
+            ]
+        },
+        "delay": {
+            "$id": "#/properties/delay",
+            "type": "integer",
+            "title": "The delay schema",
+            "description": "Delay the start of the execution by given time in milliseconds. This applies only for the first repetition.",
+            "default": 0,
+            "examples": [
+                5000
+            ]
+        },
+        "repeat": {
+            "$id": "#/properties/repeat",
+            "type": "integer",
+            "title": "The repeat schema",
+            "description": "The number of times this endpoint execution should repeat",
+            "default": 1,
+            "examples": [
+                10
+            ]
+        },
+        "repeat-delay": {
+            "$id": "#/properties/repeat-delay",
+            "type": "integer",
+            "title": "The repeat-delay schema",
+            "description": "The delay between each repetition in milliseconds, if 'repeat' or 'repeat-until' key is specified",
+            "default": 0,
+            "examples": [
+                5000
+            ]
+        },
+        "repeat-until": {
+            "$id": "#/properties/repeat-until",
+            "type": "object",
+            "title": "The repeat-until schema",
+            "description": "Repeat the endpoint execution until the assertions are met.",
+            "default": {
+                "status": 200
+            },
+            "additionalProperties": false,
+            "properties": {
+                "status": {
+                    "$id": "#/properties/repeat-until/properties/status",
+                    "type": "integer",
+                    "title": "The status schema",
+                    "description": "The expected status",
+                    "default": 200,
+                    "examples": [
+                        200,
+                        201,
+                        400
+                    ]
+                },
+                "headers": {
+                    "$id": "#/properties/repeat-until/properties/headers",
+                    "type": "object",
+                    "title": "The headers schema",
+                    "description": "Validate the response headers. The key is the header name and value is the expected value",
+                    "examples": [
+                        {
+                            "content-type": "application/json"
+                        }
+                    ],
+                    "properties": {
+                        ".*": {
+                            "$id": "#/properties/repeat-until/properties/headers/properties/.*",
+                            "type": "string",
+                            "title": "The header key",
+                            "description": "Response header key",
+                            "examples": [
+                                "application/json"
+                            ]
+                        }
+                    }
+                },
+                "response": {
+                    "$id": "#/properties/repeat-until/properties/response",
+                    "type": "object",
+                    "title": "The response schema",
+                    "description": "Validate the response body. The key is the test name and value is the assertion script.",
+                    "examples": [
+                        {
+                            "All users have an ID of 36 characters": "{response.all.id}.every(id => id.length === 36)",
+                            "There should be more than 1 users": "{response.length} > 1",
+                            "Atleast one user should be admin": "{response.all.isAdmin}.filter(isAdmin => isAdmin).length === 0"
+                        }
+                    ],
+                    "additionalProperties": true,
+                    "properties": {
+                        "schema": {
+                            "$id": "#/properties/repeat-until/properties/response/properties/schema",
+                            "type": "string",
+                            "title": "The expected schema",
+                            "description": "The expected response schema JSON file path. The file should be under schemas directory in the test directory.",
+                            "examples": [
+                                "!collectionName/schemaName"
+                            ]
+                        },
+                        ".*": {
+                            "$id": "#/properties/repeat-until/properties/response/properties/.*",
+                            "type": "string",
+                            "title": "The expected test name",
+                            "description": "The assertion to be done. The key is the test name and value is the assertion script.",
+                            "default": "",
+                            "examples": [
+                                "{response.length} > 1",
+                                "{response.all.isAdmin}.filter(isAdmin => isAdmin).length === 0",
+                                "{response.all.id}.every(id => id.length === 36)"
+                            ]
+                        }
+                    }
+                },
+                "timing": {
+                    "$id": "#/properties/repeat-until/properties/timing",
+                    "type": "object",
+                    "title": "The timing schema",
+                    "description": "Validate the time taken by the endpoint to respond. The key refers to the timing property and value is a JS comparison",
+                    "examples": [
+                        {
+                            "total": "<700",
+                            "firstByte": "<300"
+                        }
+                    ],
+                    "enum": [
+                        "total",
+                        "firstByte",
+                        "download",
+                        "dns",
+                        "wait",
+                        "tcp"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        ".*": {
+                            "$id": "#/properties/repeat-until/properties/timing/properties/.*",
+                            "type": "string",
+                            "title": "The total schema",
+                            "description": "The time validation",
+                            "default": "",
+                            "examples": [
+                                "<700"
+                            ]
+                        }
+                    }
+                }
+            },
+            "additionalPropeties": false
+        },
+        "variables": {
+            "$id": "#/properties/variables",
+            "type": "object",
+            "title": "The variables schema",
+            "description": "The variables to be passes to the dependency",
+            "examples": [
+                {
+                    "userId": "userId",
+                    "password": "[a-zA-Z0-9]{15,30}",
+                    "name": "{dataset.names}",
+                    "quote": "{dataset.quotes}",
+                    "loremIpsum": "{lorem_5000}"
+                }
+            ],
+            "additionalProperties": true,
+            "properties": {
+                ".*": {
+                    "$id": "#/properties/.*",
+                    "type": [
+                        "string",
+                        "integer",
+                        "boolean",
+                        "object",
+                        "array"
+                    ],
+                    "title": "The variable value schema",
+                    "description": "The key is the variable name and value is the variable value",
+                    "examples": [
+                        "[a-zA-Z0-9]{15,30}",
+                        "{dataset.names}",
+                        "{userId}"
+                    ]
+                }
+            }
+        },
+        "expect": {
+            "$id": "#/properties/expect",
+            "type": "object",
+            "title": "The expect schema",
+            "description": "An explanation about the purpose of this instance.",
+            "default": {
+                "status": 200
+            },
+            "additionalProperties": false,
+            "properties": {
+                "status": {
+                    "$id": "#/properties/expect/properties/status",
+                    "type": "integer",
+                    "title": "The status schema",
+                    "description": "The expected status",
+                    "default": 200,
+                    "examples": [
+                        200,
+                        201,
+                        400
+                    ]
+                },
+                "headers": {
+                    "$id": "#/properties/expect/properties/headers",
+                    "type": "object",
+                    "title": "The headers schema",
+                    "description": "Validate the response headers. The key is the header name and value is the expected value",
+                    "examples": [
+                        {
+                            "content-type": "application/json"
+                        }
+                    ],
+                    "properties": {
+                        ".*": {
+                            "$id": "#/properties/expect/properties/headers/properties/.*",
+                            "type": "string",
+                            "title": "The header key",
+                            "description": "Response header key",
+                            "examples": [
+                                "application/json"
+                            ]
+                        }
+                    }
+                },
+                "response": {
+                    "$id": "#/properties/expect/properties/response",
+                    "type": "object",
+                    "title": "The response schema",
+                    "description": "Validate the response body. The key is the test name and value is the assertion script.",
+                    "examples": [
+                        {
+                            "All users have an ID of 36 characters": "{response.all.id}.every(id => id.length === 36)",
+                            "There should be more than 1 users": "{response.length} > 1",
+                            "Atleast one user should be admin": "{response.all.isAdmin}.filter(isAdmin => isAdmin).length === 0"
+                        }
+                    ],
+                    "additionalProperties": true,
+                    "properties": {
+                        "schema": {
+                            "$id": "#/properties/expect/properties/response/properties/schema",
+                            "type": "string",
+                            "title": "The expected schema",
+                            "description": "The expected response schema JSON file path. The file should be under schemas directory in the test directory.",
+                            "examples": [
+                                "!collectionName/schemaName"
+                            ]
+                        },
+                        ".*": {
+                            "$id": "#/properties/expect/properties/response/properties/.*",
+                            "type": "string",
+                            "title": "The expected test name",
+                            "description": "The assertion to be done. The key is the test name and value is the assertion script.",
+                            "default": "",
+                            "examples": [
+                                "{response.length} > 1",
+                                "{response.all.isAdmin}.filter(isAdmin => isAdmin).length === 0",
+                                "{response.all.id}.every(id => id.length === 36)"
+                            ]
+                        }
+                    }
+                },
+                "timing": {
+                    "$id": "#/properties/expect/properties/timing",
+                    "type": "object",
+                    "title": "The timing schema",
+                    "description": "Validate the time taken by the endpoint to respond. The key refers to the timing property and value is a JS comparison",
+                    "examples": [
+                        {
+                            "total": "<700",
+                            "firstByte": "<300"
+                        }
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                        "total": {
+                            "$id": "#/properties/expect/properties/total",
+                            "type": "string",
+                            "title": "The total schema",
+                            "description": "The validation for total parameter of response timing",
+                            "default": "",
+                            "examples": [
+                                "<700"
+                            ]
+                        },
+                        "firstByte": {
+                            "$id": "#/properties/expect/properties/firstByte",
+                            "type": "string",
+                            "title": "The firstByte schema",
+                            "description": "The validation for firstByte parameter of response timing",
+                            "default": "",
+                            "examples": [
+                                "<700"
+                            ]
+                        },
+                        "download": {
+                            "$id": "#/properties/expect/properties/download",
+                            "type": "string",
+                            "title": "The download schema",
+                            "description": "The validation for download parameter of response timing",
+                            "default": "",
+                            "examples": [
+                                "<700"
+                            ]
+                        },
+                        "dns": {
+                            "$id": "#/properties/expect/properties/dns",
+                            "type": "string",
+                            "title": "The dns schema",
+                            "description": "The validation for dns parameter of response timing",
+                            "default": "",
+                            "examples": [
+                                "<700"
+                            ]
+                        },
+                        "wait": {
+                            "$id": "#/properties/expect/properties/wait",
+                            "type": "string",
+                            "title": "The wait schema",
+                            "description": "The validation for wait parameter of response timing",
+                            "default": "",
+                            "examples": [
+                                "<700"
+                            ]
+                        },
+                        "tcp": {
+                            "$id": "#/properties/expect/properties/tcp",
+                            "type": "string",
+                            "title": "The tcp schema",
+                            "description": "The validation for tcp parameter of response timing",
+                            "default": "",
+                            "examples": [
+                                "<700"
+                            ]
+                        }
+                    }
+                }
+            }
+        },
+        "dependencies": {
+            "$id": "#/properties/dependencies",
+            "type": "array",
+            "title": "The dependencies schema",
+            "description": "The list of dependencies for the endpoint",
+            "default": [],
+            "examples": [
+                [
+                    {
+                        "api": "get_team_details",
+                        "variable": "teamId",
+                        "path": "response.any.id"
+                    },
+                    {
+                        "collection": "teams_collection",
+                        "api": "get_team_details",
+                        "scenario": "teams_crud",
+                        "variable": {
+                            "userId": "userId"
+                        }
+                    }
+                ]
+            ],
+            "additionalItems": true,
+            "items": [
+                {
+                    "$id": "#/properties/dependencies/items",
+                    "type": "object",
+                    "required": [
+                        "api",
+                        "variable"
+                    ],
+                    "collection": {
+                        "$id": "#/properties/dependencies/items/anyOf/0/properties/collection",
+                        "type": "string",
+                        "title": "The collection schema",
+                        "description": "The name of the collection in which the endpoint is available",
+                        "examples": [
+                            "teams_collection"
+                        ]
+                    },
+                    "scenario": {
+                        "$id": "#/properties/dependencies/items/anyOf/0/properties/scenario",
+                        "type": "string",
+                        "title": "The scenario schema",
+                        "description": "The name of the scenario in which the endpoint is available",
+                        "examples": [
+                            "teams_crud"
+                        ]
+                    },
+                    "api": {
+                        "$id": "#/properties/dependencies/items/anyOf/0/properties/api",
+                        "type": "string",
+                        "title": "The api schema",
+                        "description": "The dependency endpoint name",
+                        "examples": [
+                            "get_team_details"
+                        ]
+                    },
+                    "repeat": {
+                        "$id": "#/properties/dependencies/items/anyOf/0/properties/repeat",
+                        "type": "integer",
+                        "title": "The repeat schema",
+                        "description": "Number of times the endpoint is to be repeated",
+                        "default": 0,
+                        "examples": [
+                            10
+                        ]
+                    },
+                    "cache": {
+                        "$id": "#/properties/dependencies/items/anyOf/0/properties/cache",
+                        "type": "boolean",
+                        "title": "The cache schema",
+                        "description": "Should the endpoint be cached or loaded from cache?",
+                        "default": false,
+                        "enum": [
+                            true,
+                            false
+                        ]
+                    },
+                    "variable": {
+                        "$id": "#/properties/dependencies/items/anyOf/0/properties/variable",
+                        "type": [
+                            "string",
+                            "object"
+                        ],
+                        "title": "The variable schema",
+                        "description": "The variable name and path to be parsed from the endpoint response",
+                        "examples": [
+                            {
+                                "equList": "response.all.id"
+                            }
+                        ],
+                        "additionalProperties": true,
+                        "properties": {
+                            ".*": {
+                                "$id": "#/properties/dependencies/items/anyOf/0/properties/variable/properties/.*",
+                                "type": "string",
+                                "title": "The variable value schema",
+                                "description": "The key is the variable name and value is the path to parse from response",
+                                "default": "",
+                                "examples": [
+                                    "response.all.id"
+                                ]
+                            }
+                        }
+                    },
+                    "path": {
+                        "$id": "#/properties/dependencies/items/anyOf/0/properties/path",
+                        "type": "string",
+                        "title": "The path schema",
+                        "description": "The path from which the variable is to be parsed from the dependency (to be used only if the value of 'variable'key is s atring)",
+                        "examples": [
+                            "response.id",
+                            "response.all.name"
+                        ]
+                    },
+                    "variables": {
+                        "$id": "#/properties/dependencies/items/anyOf/0/properties/variables",
+                        "type": "object",
+                        "title": "The variables schema",
+                        "description": "The variables to be passed to the dependency",
+                        "examples": [
+                            {
+                                "userId": "userId",
+                                "password": "[a-zA-Z0-9]{15,30}",
+                                "name": "{dataset.names}",
+                                "quote": "{dataset.quotes}",
+                                "loremIpsum": "{lorem_5000}"
+                            }
+                        ],
+                        "additionalProperties": true,
+                        "properties": {
+                            "*": {
+                                "$id": "#/properties/dependencies/items/anyOf/0/properties/variables/properties/.*",
+                                "type": "string",
+                                "title": "The variable value schema",
+                                "description": "The key is the variable name and value is the variable value",
+                                "examples": [
+                                    "[a-zA-Z0-9]{15,30}",
+                                    "{dataset.names}",
+                                    "{userId}"
+                                ]
+                            }
+                        }
+                    }
+                }
+            ]
+        },
+        "scripts": {
+            "$id": "#/properties/scripts",
+            "type": "object",
+            "title": "The scripts schema",
+            "description": "Scripts to be executed in the endpoint lifecycle.",
+            "default": {},
+            "examples": [
+                {
+                    "after-endpoint": "logger.log('Lifecycle Hook: after-endpoint')",
+                    "before-endpoint": "logger.log('Lifecycle Hook: before-endpoint')",
+                    "after-dependencies": "logger.log('Lifecycle Hook: after-dependencies')"
+                }
+            ],
+            "additionalProperties": false,
+            "properties": {
+                "before-endpoint": {
+                    "$id": "#/properties/scripts/properties/before-endpoint",
+                    "type": "string",
+                    "title": "The before-endpoint schema",
+                    "description": "The script to be executed in the before-endpoint lifecycle hook of the endpoint.",
+                    "examples": [
+                        "logger.log('Lifecycle Hook: before-endpoint')"
+                    ]
+                },
+                "after-endpoint": {
+                    "$id": "#/properties/scripts/properties/after-endpoint",
+                    "type": "string",
+                    "title": "The after-endpoint schema",
+                    "description": "The script to be executed in the after-endpoint lifecycle hook of the endpoint.",
+                    "examples": [
+                        "logger.log('Lifecycle Hook: after-endpoint')"
+                    ]
+                },
+                "after-dependencies": {
+                    "$id": "#/properties/scripts/properties/after-dependencies",
+                    "type": "string",
+                    "title": "The after-dependencies schema",
+                    "description": "The script to be executed in the after-dependencies lifecycle hook of the endpoint.",
+                    "examples": [
+                        "logger.log('Lifecycle Hook: after-dependencies')"
+                    ]
+                }
+            }
+        }
+    },
+    "additionalProperties": false
+}
+```

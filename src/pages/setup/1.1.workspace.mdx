@@ -1,0 +1,44 @@
+---
+title: Vibranium Workspace
+slug: /vibranium/setup/1.1.workspace
+author: sarathm09
+---
+
+# Vibranium Workspace
+
+In Vibranium, a workspace refers to the directory in your system where you'll have your tests written.
+
+Irrespective of the directory you choose as your workspace, once Vibranium is installed and configured, you can run Vibranium commands from any directory. The setup process ensures that the path to the workspace is stored in the Vibranium configuration.
+
+
+After you setup your workspace, you'll find a few directories available in it, namely jobs, logs and your tests directory. 
+
+- **Jobs** directory stores the execution history for previous test executions. After each execution, there will be a new directory with name as the job number and the related files, including reports under it. There will be one extra directory, named `latest`, which will have the same contents as the last job executed.
+  
+- **Logs**  directory is where all your logs will be stored. You can configure log rotation in the config file, about which you can refer in the [configuration section](setup/1.4.configuration.md).
+  
+- **Tests** directory is the directory where all the tests will be stored. This can be of any name, like `Vibranium-Tests` or `tests`. Whatever name you give to this directory, it should be updated in the config file, using the `tests_directory` key. If you already have some tests available and you are cloning them, this is will be the cloned directory. The directory structure inside this directory is explained in the [next section](setup/1.2.collections_scenarios_endpoints.md).
+
+
+
+For example, if I have my workspace at `˜/workspace` and my tests directory is named `Vibranium-Tests`, then I'll have a directory structure as follows
+
+```shell
+˜/
+  workspace/
+    config.json
+    jobs/
+      latest/
+      job_1/
+      ...
+      job_n/
+    logs/
+    Vibranium-Tests/
+      scenarios/
+      payloads/
+      schemas/
+      templates/
+      docs/
+```
+
+[Next](1.2.collections_scenarios_endpoints.md)

@@ -1,0 +1,32 @@
+---
+title: Other commands
+slug: /vibranium/cli/2.5.vc_others
+author: sarathm09
+---
+
+# Other commands
+
+## Debug
+
+The debug command is an internal debugging tool, used to print details like path for workspace, source, config, log etc and open them directly.
+
+```shell
+❯ vc d --help
+Usage: vc debug|d [options]
+
+Enter debug mode
+
+Options:
+  -w --workspace  Open the Vibranium workspace
+  -s --src        Open the source directory for Vibranium
+  -v --vibconfig  Open the central configuration files for Vibranium
+  -c --config     Open the configuration files for Vibranium
+  -l --log        Open the log files for Vibranium
+  -h, --help      output usage information
+
+```
+
+## UI
+
+The UI command in Vibranium bring up the report UI server and opens the UI in your browser.
+Please note that the server dows not do hot reloading as of now, and so you will have to re start the server using the `ui` command after every execution.

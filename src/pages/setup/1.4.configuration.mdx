@@ -1,0 +1,45 @@
+---
+title: Configure Vibranium
+slug: /vibranium/setup/1.4.configuration
+author: sarathm09
+---
+
+# Configure Vibranium
+
+This step initializes Vibranium configurations. Open Command Line/ Terminal and change the directory to the directory that you with to make as your workspace and run the following command and enter the answers to the questions that follow
+
+```shell
+vc setup
+```
+
+> Make sure you navigate to the workspace directory before running this command as it sets the current working directory as the workspace.
+
+### Example:
+
+```shell
+cd ˜  
+mkdir workspace
+cd  workspace
+
+vc setup
+                                         
+Please enter your user id: sarathm09
+Please enter your email id: some.email@domain.com
+Please enter your name: VibraniumTester
+```
+
+This step basically register the current working directory as the workspace in the internal Vibranium configuration, and creates the initial set of directories like `jobs` and `logs`. 
+
+
+
+## Clone test cases
+
+If you have test cases already available, you'll have to clone the test cases into the workspace
+
+```shell
+cd ˜/workspace
+git clone https://github.com/someUserOrOrg/Vibranium-Tests.git
+```
+
+[Previous](1.3.installation.md)
+[Next](1.5.config_json.md)

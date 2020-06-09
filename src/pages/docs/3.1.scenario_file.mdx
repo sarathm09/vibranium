@@ -1,0 +1,291 @@
+---
+title: The Scenario File
+slug: /vibranium/docs/3.1.scenario_file
+author: sarathm09
+---
+
+# The Scenario File
+
+The scenario file is just a combination of one or more endpoints grouped together in a file.
+
+A scenario can refer to any group, like all APIs for one entity, all endpoints doing an end to end flow or even all internal/external apis separately.
+
+## Important keys
+
+- `id` [string]: This is an auto generated ID for the scenario file. Do not change this once it is created.
+- `email` [string]: The email of the user creating the scenario. Used to mail scenario reports
+- `created_on` [string]: A timestamp string to represent when the schema was created.
+- `app` [string]: The App name or code to represent to which app the scenario belongs to
+- `name` [string]: The scenario name. This should be unique in the collection and is recommended to name it as the JSON file name, without the extension
+- `tags` [string]: An optional set of tags associated with the schema. Can be used for filtering tests.
+- `ignore` [boolean]: If set to true, the scenario will be skipped/ignored while running tests.
+- `additionalProperties` [object]: Additional properties for the scenario, if any.
+- `scripts` [object]: This object contains the scripts that should be executed in the life cycle of the execution.
+   - `before-scenario` [string]: The javascript that needs to be executed in the before-scenario life cycle hook
+   - `after-scenario` [string]: The javascript that needs to be executed in the after-scenario life cycle hook
+   - `before-each` [string]: The javascript that needs to be executed in the he before-each life cycle hook
+   - `after-each` [string]: The javascript that needs to be executed in the The after-each life cycle hook
+   - `after-globals` [string]: The javascript that needs to be executed in the  after-globals life cycle hook
+- `generate` [object]: The generate object is used to generate global variables for the entire schema
+    - The key is the variable name and value is the variable value
+- `endpoints` [array]: The list of endpoints
+
+<!-- Generated using 
+let ignoredKeys = [
+  "$id",
+  "examples",
+  "additionalItems",
+  "default",
+  "title",
+  "type",
+  "required",
+];
+
+const getObjectType = (o) => {
+  if (!!o && !!o.type) {
+    if (typeof o.type === "object") return `[${o.type.join(" or ")}]`;
+    else return `[${o.type}]`;
+  }
+  return "";
+};
+
+Object.entries(en)
+  .map(([k, v]) => {
+    let lines = [`- \`${k}\` ${getObjectType(v)}: ${v.description}`],
+      items = [],
+      properties = [];
+    if (v.items) {
+      items = v.items.map((item) =>
+        item[".*"]
+          ? item[".*"].description
+          : Object.entries(item)
+              .filter(
+                ([k, v]) => !ignoredKeys.includes(k) && typeof v === "object"
+              )
+              .map(
+                ([k, v]) =>
+                  `   - \`${k}\` ${getObjectType(v)}: ${v.description}`
+              )
+              .join("\n")
+      );
+    } else if (v.properties && typeof v.properties === "object") {
+      properties = v.properties[".*"]
+        ? ["    - " + v.properties[".*"].description]
+        : Object.entries(v.properties)
+            .filter(
+              ([k, v]) => !ignoredKeys.includes(k) && typeof v === "object"
+            )
+            .map(
+              ([k, v]) => `   - \`${k}\` ${getObjectType(v)}: ${v.description}`
+            );
+    }
+
+    return [...lines, ...items, ...properties].join("\n");
+  })
+  .join("\n");
+
+
+on the json below-->
+
+## Scenario Schema
+
+```json
+{
+    "$schema": "http://json-schema.org/draft-06/schema",
+    "$id": "scenario.json",
+    "type": "object",
+    "title": "The scenario schema",
+    "description": "The Scenario is a JSON containing multiple endpoint tests",
+    "required": [
+        "id",
+        "app",
+        "name",
+        "email",
+        "endpoints",
+        "created_on"
+    ],
+    "additionalProperties": false,
+    "properties": {
+        "id": {
+            "$id": "#/properties/id",
+            "type": "string",
+            "title": "The scenario id",
+            "description": "This is an auto generated ID for the scenario file. Do not change this once it is created.",
+            "minLength": 36,
+            "examples": [
+                "2186ae65-8707-4520-bd0e-0c486670eb56"
+            ]
+        },
+        "email": {
+            "$id": "#/properties/email",
+            "type": "string",
+            "title": "The email of the user creating the sceario",
+            "description": "The email of the user creating the scenario. Used to mail scenario reports",
+            "examples": [
+                "someone@domain.com"
+            ]
+        },
+        "created_on": {
+            "$id": "#/properties/created_on",
+            "type": "string",
+            "title": "The created on time",
+            "description": "A timestamp string to represent when the schema was created.",
+            "examples": [
+                "2020-5-7 10:32:3"
+            ]
+        },
+        "app": {
+            "$id": "#/properties/app",
+            "type": "string",
+            "title": "The app name/code",
+            "description": "The App name or code to represent to which app the scenario belongs to",
+            "examples": [
+                "exampleApp"
+            ]
+        },
+        "name": {
+            "$id": "#/properties/name",
+            "type": "string",
+            "title": "The scenario name",
+            "description": "The scenario name. This should be unique in the collection and is recommended to name it as the JSON file name, without the extension",
+            "examples": [
+                "scenarioName"
+            ]
+        },
+        "tags": {
+            "$id": "#/properties/tags",
+            "type": "string",
+            "title": "The tags assiciated with the schema",
+            "description": "An optional set of tags associated with the schema. Can be used for filtering tests.",
+            "examples": [
+                "crud,smoke"
+            ]
+        },
+        "ignore": {
+            "$id": "#/properties/ignore",
+            "type": "boolean",
+            "title": "The ignore key",
+            "description": "If set to true, the scenario will be skipped/ignored while running tests.",
+            "default": false,
+            "enum": [
+                true,
+                false
+            ]
+        },
+        "additionalProperties": {
+            "$id": "#/properties/additionalProperties",
+            "type": "object",
+            "title": "The additionalProperties schema",
+            "description": "Additional properties for the scenario, if any.",
+            "additionalProperties": true
+        },
+        "scripts": {
+            "$id": "#/properties/scripts",
+            "type": "object",
+            "title": "The scripts object",
+            "description": "This object contains the scripts that should be executed in the lifecycle of the execution.",
+            "additionalProperties": false,
+            "examples": [
+                {
+                    "before-scenario": "",
+                    "after-scenario": "",
+                    "before-each": "",
+                    "after-each": "",
+                    "after-globals": ""
+                }
+            ],
+            "properties": {
+                "before-scenario": {
+                    "$id": "#/properties/scripts/properties/before-scenario",
+                    "type": "string",
+                    "title": "The before-scenario schema",
+                    "description": "The javascript that needs to be executed in the before-scenario lifecycle hook",
+                    "examples": [
+                        "logger.log('Lifecycle Hook: before-scenario')"
+                    ]
+                },
+                "after-scenario": {
+                    "$id": "#/properties/scripts/properties/after-scenario",
+                    "type": "string",
+                    "title": "The after-scenario schema",
+                    "description": "The javascript that needs to be executed in the after-scenario lifecycle hook",
+                    "examples": [
+                        "logger.log('Lifecycle Hook: after-scenario')"
+                    ]
+                },
+                "before-each": {
+                    "$id": "#/properties/scripts/properties/before-each",
+                    "type": "string",
+                    "title": "The before-each schema",
+                    "description": "The javascript that needs to be executed in the he before-each lifecycle hook",
+                    "examples": [
+                        "logger.log('Lifecycle Hook: before-each')"
+                    ]
+                },
+                "after-each": {
+                    "$id": "#/properties/scripts/properties/after-each",
+                    "type": "string",
+                    "title": "The after-each schema",
+                    "description": "The javascript that needs to be executed in the The after-each lifecycle hook",
+                    "examples": [
+                        "logger.log('Lifecycle Hook: after-each')"
+                    ]
+                },
+                "after-globals": {
+                    "$id": "#/properties/scripts/properties/after-globals",
+                    "type": "string",
+                    "title": "The after-globals schema",
+                    "description": "The javascript that needs to be executed in the  after-globals lifecycle hook",
+                    "examples": [
+                        "logger.log('Lifecycle Hook: after-globals')"
+                    ]
+                }
+            }
+        },
+        "generate": {
+            "$id": "#/properties/generate",
+            "type": [
+                "string",
+                "integer",
+                "boolean",
+                "object",
+                "array"
+            ],
+            "title": "The globals schema",
+            "description": "The generate object is used to generate global variables for the entire schema",
+            "examples": [
+                {
+                    "variableName": "[a-z0-9 ]{100,200}",
+                    "longString": "{lorem_5000}",
+                    "name": "{datasets.name}"
+                }
+            ],
+            "additionalProperties": true,
+            "properties": {
+                ".*": {
+                    "$id": "#/properties/generate/properties/.*",
+                    "type": "string",
+                    "title": "variable details",
+                    "description": "Variable value",
+                    "default": "",
+                    "examples": [
+                        "[a-z0-9 ]{100,200}"
+                    ]
+                }
+            }
+        },
+        "endpoints": {
+            "$id": "#/properties/endpoints",
+            "type": "array",
+            "title": "The endpoints schema",
+            "description": "The list of endpoints",
+            "additionalItems": true,
+            "items": [
+                {
+                    "$ref": "endpoint.json"
+                }
+            ]
+        }
+    }
+}
+```

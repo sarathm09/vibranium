@@ -1,0 +1,64 @@
+---
+title: Run command
+slug: /vibranium/cli/2.4.vc_r
+author: sarathm09
+---
+
+# Running Tests
+
+The run command of Vibranium is used to run tests.
+
+```shell
+❯ vc r -h                                
+Usage: vc run|r [options]
+
+Run the Vibranium tests
+
+Options:
+  -c --collections [collections]            Collections to run, separated by comma(,) (default: "all")
+  -s --scenarios [scenarios]                Scenarios to run, separated by comma(,) (default: "all")
+  -a --apis [apis]                          API endpoints to run, separated by comma(,) (default: "all")
+  -l --log [loglevel]                       Logging level [info, debug, error, minimal] (default: "info")
+  -r --report [reportType]                  Generate reports for the execution. Values can be any of junit, csv
+                                            and json (default: "json")
+  -p --parallel [number_of_parallel_tasks]  Number of parallel tasks. Default is 10
+  -v --variables [variables]                Variables to be used for executions. usage:
+                                            var1=value1,var2=value2...
+  --cred [cred]                             Credentials provided in base64 format
+  --sync                                    Run endpoints in synchronous mode
+  --system [systems]                        The system on which the apis need to be executed. The sytem name
+                                            should be defined in the config file
+  --no-color                                Plain text output without colors
+  --skip-warn                               Ignore all warning messages. Not recommended (default: true)
+  --silent                                  Print only the endpoint result
+  --validate                                Validate all files
+  -h, --help                                output usage information
+```
+
+While running tests, you can specify to run either all tests (not specifying any filters) or select a set of collections, scenarios or apis to be executed, using the `-c`, `-s` or the `-a` options.
+
+
+## Logger options
+
+You can specify the logging level while running tests using the `--log` option. The possible values are `info`, `debug`, `error`, `minimal`. The first three are the usual logging levels. minimal refers to showing minimal logs, with only the endpoint name and it's status in the output.
+
+Irrespective of the logger option you choose, all logs will be saved to a file in the logs directory inside your workspace.
+
+## Validating scenarios
+Use the `--validate` option to validate your scenario files and check if they comply to to the schema.
+
+## Reporting
+
+Vibranium reports can be of type junit, csv, json and html. The default reporting type is json and you can specify multiple types separated by comma. All the reports will be saved to the jobs directory inside the workspace. the same reports will be available in both jobs/jobname as well as jobs/latest.
+
+## Parallel execution
+
+You can specify the number of parallel executions by using the `--parallel` option.
+
+## Multi System execution
+
+The `--system` option is used to specify the system in which you want the execution to happen. If you want to specify the default system that you have specified in the `config.json` file, you just need to specify the new system name as `default=newSystemName`
+
+## Silent
+
+This is an option to avoid all logs and print only the response of the endpoints specified.

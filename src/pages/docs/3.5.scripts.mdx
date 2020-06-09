@@ -1,0 +1,134 @@
+---
+title: Scripts
+slug: /vibranium/docs/3.5.scripts
+author: sarathm09
+---
+
+# Scripts
+Scripts in Vibranium allow you to execute JavaScript snippets in the life cycle phases of execution. There are two levels of scripts available, at scenarios and at endpoint level. 
+
+All the scripts are executed inside and `async` function, so you can use await and other es6 snippets here.
+
+The life cyle events are slightly different at both levels and the flow can be summarized as:
+
+- `before-scenario`
+- `after-globals`
+- 
+- `before-each`
+  - `before-endpoint`
+  - `after-dependencies`
+  - ... (endpoint1 execution)
+  - `after-endpoint`
+- `after-each`
+- 
+- `before-each`
+  - `before-endpoint`
+  - `after-dependencies`
+  - ... (endpoint1 execution)
+  - `after-endpoint`
+- `after-each`
+- 
+- ... (other endpoints)
+- 
+- `after-scenario`
+  
+
+The JS snippets that you can use has a limitation on the available variables and functions. For example, you will not be able to access the `console` object in these scripts, instead you'll have to use the `logger` object.
+
+> If you need to run a script from a file, place the file inside the scripts directory and call the `scriptFile` function with the script fileName. 
+
+## Scenario level
+
+### Variables and functions available
+ - `logger` to print the logs
+ - `setTimeout` for delayed execution
+ - `setInterval` for repeated execution
+ - `fetch` for making network calls using the [fetch api](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+ - `exec` for executing shell commands. Uses the promisified version of [Node exec](https://nodejs.org/api/child_process.html#child_process_child_process_exec_command_options_callback). Example:
+    ```js
+    const { stdout, stderr } = await exec('ls');
+    console.log('stdout:', stdout);
+    console.error('stderr:', stderr);
+    ```
+ - `variables` is an object containing the scenario variables
+ - `getApiResponse` is a function with which you can execute other endpoint tests and return the response. Example: `let response = await getApiResponse(collectionName, scenarioName, endpointName)`
+ - `scriptFile` a function that can be called to load script from a file. The file should be placed inside **scripts** directory inside your tests directory (along with scenarios, payloads, schemas etc). Note: the file extension should be specified, and the file path should be relative path inside the scripts directory. Usage: `scriptFile('scriptFileToExecute.js')`
+
+### Return structure
+If you want the data in the script to be used in your endpoint test, you have to expose it as variables. In order to do this, just add a new key to the `variables` object that you have access to in the script, with the key as the variable name and the value as the variable value, and the in the end of your script, return the variables object.
+
+Example: `"before-scenario": "variables.hello='world'; return variables"`
+
+And then in url/payload, you can use the variable
+```json
+{
+    "payload": {
+        "key": "{hello}"
+    }
+}
+```
+
+### Executing shell scripts
+You can execute shell scripts and get the response from them using the `exec` function available in the scripts. Uses the promisified version of [Node exec](https://nodejs.org/api/child_process.html#child_process_child_process_exec_command_options_callback). Example:
+```js
+const { stdout, stderr } = await exec('npm start');
+console.log('stdout:', stdout);
+console.error('stderr:', stderr);
+```
+
+
+### Example
+```json
+{
+    "before-scenario": "logger.log('Life cycle Hook: before-scenario')",
+    "after-scenario": "logger.log('Life cycle Hook: after-scenario')",
+    "before-each": "logger.log('Life cycle Hook: before-each')",
+    "after-each": "logger.log('Life cycle Hook: after-each')",
+    "after-globals": "logger.log('Life cycle Hook: after-globals')"
+}
+```
+
+## Endpoint level
+
+### Variables and functions available
+ - `logger` to print the logs
+ - `setTimeout` for delayed execution
+ - `setInterval` for repeated execution
+ - `fetch` for making network calls using the [fetch api](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+ - `variables` is an object containing the scenario variables
+ - `exec` for executing shell commands. Uses the promisified version of [Node exec](https://nodejs.org/api/child_process.html#child_process_child_process_exec_command_options_callback). Example:
+    ```js
+    const { stdout, stderr } = await exec('ls');
+    console.log('stdout:', stdout);
+    console.error('stderr:', stderr);
+    ```
+ - `getApiResponse` is a function with which you can execute other endpoint tests and return the response. Example: `let response = await getApiResponse(collectionName, scenarioName, endpointName)`
+ - `api` the endpoint test object, if you need to modify the payload.
+ - `scriptFile` a function that can be called to load script from a file. The file should be placed inside **scripts** directory inside your tests directory (along with scenarios, payloads, schemas etc). Note: the file extension should be specified, and the file path should be relative path inside the scripts directory. Usage: `scriptFile('scriptFileToExecute.js')`
+
+### Return structure
+The return structure for endpoint scripts is slightly different from that of scenario. The response for endpoint scripts contains both the api and the variables. Incase you don't update any of them, you can omit them in the return response.
+
+Response: `{ api, variables }`
+
+Example: `"before-scenario": "variables.hello='world'; return { variables }"`
+
+And then in url/payload, you can use the variable
+```json
+{
+    "payload": {
+        "key": "{hello}"
+    }
+}
+```
+
+### Example
+```json
+{
+    "before-endpoint": "logger.log('Lifecycle Hook: before-endpoint')",
+    "after-endpoint": "logger.log('Lifecycle Hook: after-endpoint')",
+    "after-dependencies": "logger.log('Lifecycle Hook: after-dependencies')"
+}
+```
+
+> [IMPORTANT] please note that the return object structure is different for scenario scripts and for endpoint scripts. In scenario, it is just the variables object and in endpoint, it is both variables and api. If you skip returning values, the changes you make inside the script will be ignored, 

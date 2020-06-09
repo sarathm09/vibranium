@@ -1,0 +1,35 @@
+---
+title: Assertions
+slug: /vibranium/docs/3.12.expect
+author: sarathm09
+---
+
+# Assertions (Expect key)
+
+Assertions in Vibranium are handled using the `expect` key. Even if you don't specify the expect key, Vibranium adds a default assertion to validate if the Endpoint execution is successful and that the response status code is 200.
+
+## Levels of assertions available
+- `status` [integer]: The expected status
+- `headers` [object]: Validate the response headers. The key is the response header name and the value is the expected response header value.
+- `response` [object]: Validate the response body. The key is the test name and value is the assertion script.
+- `timing` [object]: Validate the time taken by the endpoint to respond. The key refers to the timing property and value is a JS comparison
+
+## Example
+
+```json
+"expect": {
+    "status": 200,
+    "headers": {
+        "content-type": "application/json"
+    },
+    "response": {
+        "There should be more than 10 users": "{response.length} > 10",
+        "Atleast one user should be admin": "{response.all.isAdmin}.filter(isAdmin => isAdmin).length === 0",
+        "All users have an ID of 32 characters": "{response.all.id}.every(id => id.length === 36)"
+    },
+    "timing": {
+        "total": "<700",
+        "firstByte": "<300"
+    }
+}
+```

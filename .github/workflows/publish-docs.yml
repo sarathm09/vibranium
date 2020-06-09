@@ -28,6 +28,7 @@ jobs:
       - name: Checkout gh-pages and update it
         run: |
           git fetch --all
+          git stash
           git checkout -b gh-pages origin/gh-pages
           sudo cp -r .git /tmp/vib-git/
           sudo rm -r *

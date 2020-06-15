@@ -136,12 +136,12 @@ const useStyles = makeStyles(theme => ({
 	},
 	menuButton: {
 		marginRight: theme.spacing(2),
-		[theme.breakpoints.up('lg')]: {
+		[theme.breakpoints.up('xl')]: {
 			display: 'none',
 		},
 	},
 	drawer: {
-		[theme.breakpoints.up('md')]: {
+		[theme.breakpoints.up('xl')]: {
 			width: drawerWidth,
 			flexShrink: 0,
 		},

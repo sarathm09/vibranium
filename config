@@ -9,7 +9,7 @@
 [gc]
 	auto = 0
 [http "https://github.com/"]
-	extraheader = AUTHORIZATION: basic eC1hY2Nlc3MtdG9rZW46djEuZTg0NGIyYzdkMTE1NzRiZTBhMjc1MzYwMjg5ZGM1YTg2ZDc4YjdlNw==
+	extraheader = AUTHORIZATION: basic eC1hY2Nlc3MtdG9rZW46djEuYzcwYjMyNWJjMGVmNmUyYzc3NDU3ZDY0YmEwMDZkYTYxZDYxOWY2OQ==
 [branch "docs"]
 	remote = origin
 	merge = refs/heads/docs

@@ -134,7 +134,8 @@ const useStyles = makeStyles(theme => ({
 		marginBottom: '5rem',
 		paddingBottom: 20,
 		[theme.breakpoints.up('lg')]: {
-			paddingLeft: '10rem',
+			paddingLeft: '17rem',
+			maxWidth: '1500px'
 		},
 	},
 	menuButton: {

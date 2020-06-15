@@ -133,15 +133,18 @@ const useStyles = makeStyles(theme => ({
 		marginTop: '20px',
 		marginBottom: '5rem',
 		paddingBottom: 20,
+		[theme.breakpoints.up('lg')]: {
+			paddingLeft: '10rem',
+		},
 	},
 	menuButton: {
 		marginRight: theme.spacing(2),
-// 		[theme.breakpoints.up('xl')]: {
-// 			display: 'none',
-// 		},
+		[theme.breakpoints.up('lg')]: {
+			display: 'none',
+		},
 	},
 	drawer: {
-		[theme.breakpoints.up('xl')]: {
+		[theme.breakpoints.up('md')]: {
 			width: drawerWidth,
 			flexShrink: 0,
 		},
@@ -221,7 +224,7 @@ export default function Layout({ children, location }) {
 				</AppBar>
 
 				<nav className={classes.drawer} aria-label="pages" style={{ backgroundColor: grey[800], color: '#fff' }}>
-					<Hidden xlUp implementation="css">
+					<Hidden mdUp implementation="css">
 						<Drawer
 							container={container}
 							variant="temporary"
@@ -234,7 +237,7 @@ export default function Layout({ children, location }) {
 							{drawer}
 						</Drawer>
 					</Hidden>
-					<Hidden xlDown implementation="css">
+					<Hidden mdDown implementation="css">
 						<Drawer classes={{ paper: classes.drawerPaper }} variant="permanent" open>
 							{drawer}
 						</Drawer>

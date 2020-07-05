@@ -426,12 +426,15 @@ const replaceVariablesInApi = (api, variables) => {
 		}
 	}
 
-	// escape url specifi characters so that they are not replaced by regex string generator
+	// escape url specific characters so that they are not replaced by regex string generator
 	['?', '$', '&', '(', ')'].forEach(char =>
 		api.url = api.url.split(char).join('\\' + char))
 
 	api.url = replacePlaceholderInString(api.url, variables);
 	api.payload = replacePlaceholderInString(api.payload, variables);
+
+	['?', '$', '&', '(', ')'].forEach(char =>
+		api.url = api.url.split(`\\${char}`).join(char))
 
 	return api;
 };
@@ -761,7 +764,7 @@ const getApiExecuterPromise = async (db, scenario, scenarioVariables, endpoint, 
 	}
 	let endpointVariables = beforeEndpointResponse.variables ? { ...scenarioVariables, ...beforeEndpointResponse.variables } : { ...scenarioVariables }
 	endpoint.payload = (beforeEndpointResponse.api && beforeEndpointResponse.api.payload) ? beforeEndpointResponse.api.payload : endpoint.payload
-	endpoint = { ...setRangeIndexForEndpoint(endpoint, repeatIndex) }
+	endpoint = JSON.parse(JSON.stringify(setRangeIndexForEndpoint(endpoint, repeatIndex)))
 
 	if (!!endpoint.dependencies && endpoint.dependencies.length > 0) {
 		endpoint.dependencies.forEach(dependency => dependencyResolver = dependencyResolver.then(response => {
@@ -782,7 +785,7 @@ const getApiExecuterPromise = async (db, scenario, scenarioVariables, endpoint, 
 	if (repeatIndex > 0) await utils.sleep(endpoint['repeat-delay'] || 0)
 	if (repeatIndex == 0) await utils.sleep(endpoint.delay || 0)
 
-	let endpointResponse = await repeatExecutionUntilAssertionsAreTrue(endpoint, endpointVariables)
+	let endpointResponse = await repeatExecutionUntilAssertionsAreTrue(db, endpoint, endpointVariables)
 
 	await executeEndpointScripts(endpointVariables, endpoint, scriptTypes.afterEndpoint)
 	await executeScenarioScripts(scenarioVariables, scenario, scriptTypes.afterEach)
@@ -798,7 +801,7 @@ const getApiExecuterPromise = async (db, scenario, scenarioVariables, endpoint, 
  * @param {object} endpoint Endpoint object
  * @param {object} endpointVariables Endpoint variables
  */
-const repeatExecutionUntilAssertionsAreTrue = async (endpoint, endpointVariables) => {
+const repeatExecutionUntilAssertionsAreTrue = async (db, endpoint, endpointVariables) => {
 	let endpointResponse, startTime = Date.now()
 	if (endpoint['repeat-until']) {
 		while ((Date.now() - startTime) < (endpoint.timeout || 2 * 60 * 1000)) { //default timeout is 2 minutes

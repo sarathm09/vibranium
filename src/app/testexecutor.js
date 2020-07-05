@@ -426,12 +426,15 @@ const replaceVariablesInApi = (api, variables) => {
 		}
 	}
 
-	// escape url specifi characters so that they are not replaced by regex string generator
+	// escape url specific characters so that they are not replaced by regex string generator
 	['?', '$', '&', '(', ')'].forEach(char =>
 		api.url = api.url.split(char).join('\\' + char))
 
 	api.url = replacePlaceholderInString(api.url, variables);
 	api.payload = replacePlaceholderInString(api.payload, variables);
+
+	['?', '$', '&', '(', ')'].forEach(char =>
+		api.url = api.url.split(`\\${char}`).join(char))
 
 	return api;
 };

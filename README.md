@@ -1,5 +1,4 @@
 # Vibranium
-
 [![npm version](https://badge.fury.io/js/vibranium-cli.svg)](https://www.npmjs.com/package/vibranium-cli) [![npm](https://img.shields.io/npm/dt/vibranium-cli?style=plastic)](https://www.npmjs.com/package/vibranium-cli)  [![node-current](https://img.shields.io/node/v/vibranium-cli?style=plastic)](https://www.npmjs.com/package/vibranium-cli)
 
 <!-- ![NPM](https://img.shields.io/npm/l/vibranium-cli?style=plastic) ![Lint](https://github.com/sarathm09/vibranium/workflows/Node.js%20Lint/badge.svg) -->
@@ -37,12 +36,12 @@ Vibranium is a Node JS based app, available in npm. To install Vibranium, all yo
 
 ## Getting Started
 The following pages will help you in getting started with Vibranium.
-- [Introduction](https://sarathm09.github.io/vibranium/)
-- [Workspace](https://sarathm09.github.io/vibranium/setup/1.1.workspace/)
-- [Collections, Scenarios and Endpoints](https://sarathm09.github.io/vibranium/setup/1.2.collections_scenarios_endpoints/)
-- [Installation](https://sarathm09.github.io/vibranium/setup/1.3.installation/)
-- [Configuration](https://sarathm09.github.io/vibranium/setup/1.4.configuration/)
-- [Writing Tests](https://sarathm09.github.io/vibranium/setup/1.6.write_tests/)
+- [Introduction](https://sarathm09.github.io/vibranium)
+- [Workspace](https://sarathm09.github.io/vibranium/setup/1.1.workspace)
+- [Collections, Scenarios and Endpoints](https://sarathm09.github.io/vibranium/setup/1.2.collections_scenarios_endpoints)
+- [Installation](https://sarathm09.github.io/vibranium/setup/1.3.installation)
+- [Configuration](https://sarathm09.github.io/vibranium/setup/1.4.configuration)
+- [Writing Tests](https://sarathm09.github.io/vibranium/setup/1.6.write_tests)
 
 
 ## Documentation

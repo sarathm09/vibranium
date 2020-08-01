@@ -524,7 +524,7 @@ const generateJunitReportForScenario = async (scenario) => {
 				errors: 0,
 				skipped: endpoints.filter(e => e.ignore),
 				timestamp: new Date().toISOString(),
-				time: (endpoints.map(e => e._time && e._time.total)
+				time: (endpoints.map(e => e._time?.total)
 					.filter(t => !!t && !isNaN(t)).reduce((a, c) => a + c, 0)) / 1000
 			})
 
@@ -534,7 +534,7 @@ const generateJunitReportForScenario = async (scenario) => {
 				classname: [scenario.collection, scenario.name].join('.'),
 				assertions: endpoint._expect ? endpoint._expect.length : 1,
 				time: (endpoint._time ? endpoint._time.total :
-					endpoint._result.map(res => res.timing.total).reduce((a, c) => a + c, 0)) / 1000
+					endpoint._result.map(res => res?.timing?.total || 0).reduce((a, c) => a + c, 0)) / 1000
 			})
 			let endpointResponses = endpoint._result
 				.map(res => res.response)
@@ -542,8 +542,8 @@ const generateJunitReportForScenario = async (scenario) => {
 				.join(',')
 			testCase.ele(endpoint._status ? 'system-out' : 'failure', {
 				status: endpoint?._result?.map(({ status }) => status)?.join(',') || 0,
-				time: endpoint?._result?.map(({ timing }) => ms(timing.total))?.join(',') || 0
-			}).dat(endpointResponses)
+				time: endpoint?._result?.map(({ timing }) => ms(timing?.total || 0))?.join(',') || 0
+			}).dat(endpointResponses || '')
 		}
 		return testReport.end({ prettyPrint: true })
 	} catch (e) {

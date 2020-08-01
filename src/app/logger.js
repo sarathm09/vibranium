@@ -236,6 +236,15 @@ const logData = (transports, moduleName, jobId, level) => async (message, error,
 	}
 }
 
+/**
+ * Delete execution reports from previous job
+ */
+const deletePreviousExecutionReports = async () => {
+	if (existsSync(join(vibPath.jobs, 'latest', 'reports'))) {
+		await rmdir(join(vibPath.jobs, 'latest', 'reports'), { recursive: true })
+	}
+}
+
 
 /**
  *  Create the logger object to print logs.
@@ -248,6 +257,7 @@ module.exports = (moduleName, jobId) => {
 		getDefaultLogLevel()
 		rotateOldLogFiles()
 		rotateOldJobLogs()
+		deletePreviousExecutionReports()
 	})
 
 	let logTransports = {

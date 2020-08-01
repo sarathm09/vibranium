@@ -6,7 +6,7 @@ const treeify = require('treeify')
 const { env } = require('process')
 const { create } = require('xmlbuilder2', { encoding: 'utf-8' })
 const { existsSync, mkdirSync } = require('fs')
-const { writeFile, rmdir, readFile } = require('fs').promises
+const { writeFile, readFile } = require('fs').promises
 
 
 const { executionStatus } = require('./constants')
@@ -406,18 +406,15 @@ const processScenarioResult = async (jobId, result, report, jobsPath) => {
 		let junitReportpaths = ['latest', jobId]
 			.map(path => join(jobsPath, path, 'reports', 'junit', result.collection))
 
-		if (existsSync(join(jobsPath, 'latest', 'reports', 'junit'))) {
-			await rmdir(join(jobsPath, 'latest', 'reports', 'junit'), { recursive: true })
-		}
 		junitReportpaths.map(path => {
 			if (!existsSync(path))
 				mkdirSync(path, { recursive: true });
 		})
 
-		let tasks = junitReportpaths.map(path => join(path, `${result.collection}.${result.name}.${jobId}.xml`))
+		let tasks = junitReportpaths
+			.map(path => join(path, `${result.collection}.${result.name}.${jobId}.xml`))
 			.map(p => writeFile(p, junitReport))
 		await (Promise.all(tasks))
-
 	}
 
 	return
@@ -432,23 +429,20 @@ const processScenarioResult = async (jobId, result, report, jobsPath) => {
 const generateHTMLReportForExecution = async (jobId, scenarios, jobsPath) => {
 	try {
 		let htmlReportTemplate = await readFile(join(__dirname, '..', 'res', 'templates', 'execution-report.html'), 'utf-8')
-		let endpointsCount = 0, failedEndpointsCount = 0, timeTaken = 0
+		let endpointsCount = 0, failedEndpointsCount = 0
 		let tableEntries = []
 
-		if (existsSync(join(jobsPath, 'latest', 'reports', 'html'))) {
-			await rmdir(join(jobsPath, 'latest', 'reports', 'html'), { recursive: true })
-		}
 		if (!existsSync(join(jobsPath, 'latest', 'reports', 'html'))) {
 			mkdirSync(join(jobsPath, 'latest', 'reports', 'html'), { recursive: true })
+		}
+		if (!existsSync(join(jobsPath, jobId, 'reports', 'html'))) {
+			mkdirSync(join(jobsPath, jobId, 'reports', 'html'), { recursive: true })
 		}
 
 		scenarios.forEach(scenario => {
 			let endpoints = scenario.endpoints
 			endpointsCount += endpoints.length
 			failedEndpointsCount += endpoints.filter(e => !e._status).length
-			timeTaken += endpoints.map(e => e._time && e._time.total)
-				.filter(t => !!t && !isNaN(t))
-				.reduce((a, c) => a + c, 0)
 
 			for (const endpoint of endpoints) {
 				tableEntries.push([
@@ -465,13 +459,17 @@ const generateHTMLReportForExecution = async (jobId, scenarios, jobsPath) => {
 		})
 
 		htmlReportTemplate = htmlReportTemplate.replace('{jobId}', jobId)
-			.replace('{timeTaken}', ms(timeTaken))
+			.replace('{timeTaken}', `${ms(Math.max(scenarios.map(s => s._result?.timing?.total || 0)))} (Scenario), ${ms(scenarios.map(s => s._result?.timing?.total || 0).reduce((a, c) => a + c, 0))} (Total)`)
 			.replace('{status}', `${failedEndpointsCount === 0 ? 'Success' : 'Fail'}  (${endpointsCount - failedEndpointsCount}/${endpointsCount})`)
 
-		let reportFile = htmlReportTemplate.replace('{reportRows}',
-			tableEntries.map((row, i) => `<tr>${[i + 1, ...row].map(c => `<td>${c}</td>`).join('')}</tr>`).join(''))
+		let reportFile = htmlReportTemplate.replace('{reportRows}', tableEntries.map((row, i) =>
+			`<tr>${[i + 1, ...row].map((c, j) => `<td ${j == 4 ? 'class="url"' : ''}>${c}</td>`).join('')}</tr>`).join(''))
+			.split('\n').join('').split('\t').join('')
 
-		await writeFile(join(jobsPath, 'latest', 'reports', 'html', 'report.html'), reportFile.split('\n').join('').split('\t').join(''))
+		await Promise.allSettled([
+			writeFile(join(jobsPath, 'latest', 'reports', 'html', 'report.html'), reportFile),
+			writeFile(join(jobsPath, jobId, 'reports', 'html', 'report.html'), reportFile)
+		])
 	} catch (e) {
 		console.error(`Error creating HTML Report: ${e}`)
 	}
@@ -542,7 +540,8 @@ const generateJunitReportForScenario = async (scenario) => {
 				.join(',')
 			testCase.ele(endpoint._status ? 'system-out' : 'failure', {
 				status: endpoint?._result?.map(({ status }) => status)?.join(',') || 0,
-				time: endpoint?._result?.map(({ timing }) => ms(timing?.total || 0))?.join(',') || 0
+				time: endpoint?._result?.map(({ timing }) => ms(timing?.total || 0))?.join(',') || 0,
+				message: `Status: ${endpoint?._result?.map(({ status }) => status)?.join(',') || 0} and Time taken: ${endpoint?._result?.map(({ timing }) => ms(timing?.total || 0))?.join(',') || 0}`
 			}).dat(endpointResponses || '')
 		}
 		return testReport.end({ prettyPrint: true })

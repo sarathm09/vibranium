@@ -4,9 +4,9 @@ const ms = require('pretty-ms')
 const { join } = require('path')
 const treeify = require('treeify')
 const { env } = require('process')
-const { create } = require('xmlbuilder2')
-const { existsSync, mkdirSync } = require('fs')
-const { writeFile, rmdir } = require('fs').promises
+const { create } = require('xmlbuilder2', { encoding: 'utf-8' })
+const { existsSync, mkdirSync, stat } = require('fs')
+const { writeFile, rmdir, readFile } = require('fs').promises
 
 
 const { executionStatus } = require('./constants')
@@ -36,7 +36,7 @@ const getAssertLogString = ({ result, test, expected, obtained }) => {
 	if (utils.isMac) {
 		return result ? chalk.green('✔  ') + assertionResponseText : chalk.red('✖  ') + assertionResponseText
 	} else {
-		return result ? assertionResponseText + ': SUCCESS': assertionResponseText + ': FAIL'
+		return result ? assertionResponseText + ': SUCCESS' : assertionResponseText + ': FAIL'
 	}
 }
 
@@ -304,7 +304,7 @@ const printApiExecutionEnd = async (logger, api) => {
 	for (let [key, value] of Object.entries(details)) {
 		if (['Payload', 'Response', 'Variables'].includes(key)) {
 			api._status ? logger.debug(`${key}${utils.printSpaces(key)}: `, null, value) :
-				logger.error(`${key}${utils.printSpaces(key)}: `,null, value)
+				logger.error(`${key}${utils.printSpaces(key)}: `, null, value)
 
 		} else if (key === 'Assertions' && api._expect) {
 			api._status ? logger.info(key + utils.printSpaces(key) + ' ') :
@@ -385,7 +385,7 @@ const logExecutionEnd = async (logger, jobId, result, totalEndpointsExecuted, to
 		let text = `Result: ${totalEndpointsSuccessful}/${totalEndpointsExecuted} endpoints and ${assertionsSuccess}/${totalAssertions} assertions`
 		apisWithError.length === 0 ? spinner.succeed(chalk.green(text)) : spinner.fail(chalk.red(text))
 	}
-	return await logger.log({ jobId, status: '_VIBRANIUM_SESSION_END_'})
+	return await logger.log({ jobId, status: '_VIBRANIUM_SESSION_END_' })
 }
 
 
@@ -418,18 +418,68 @@ const processScenarioResult = async (jobId, result, report, jobsPath) => {
 			.map(p => writeFile(p, junitReport))
 		await (Promise.all(tasks))
 
-	} else if (!!report && report.split(',').includes('html')) {
-		// TODO: generate html report
-		await generateJunitReportForScenario(result)
-
-		if (existsSync(join(jobsPath, 'latest', 'reports', 'html'))) {
-			await rmdir(join(jobsPath, 'latest', 'reports', 'html'), { recursive: true })
-		}
 	}
 
 	return
 }
 
+/**
+ * Generate HTML report
+ * 
+ * @param {string} jobId Execution Job ID
+ * @param {object} scenario scenario response
+ */
+const generateHTMLReportForExecution = async (jobId, scenarios, jobsPath) => {
+	try {
+		let htmlReportTemplate = await readFile(join(__dirname, '..', 'res', 'templates', 'execution-report.html'), 'utf-8')
+		let endpointsCount = 0, failedEndpointsCount = 0, timeTaken = 0
+		let tableEntries = []
+
+		if (existsSync(join(jobsPath, 'latest', 'reports', 'html'))) {
+			await rmdir(join(jobsPath, 'latest', 'reports', 'html'), { recursive: true })
+		}
+		if (!existsSync(join(jobsPath, 'latest', 'reports', 'html'))) {
+			mkdirSync(join(jobsPath, 'latest', 'reports', 'html'), { recursive: true })
+		}
+
+		scenarios.map(scenario => {
+			let endpoints = scenario.endpoints
+			endpointsCount += endpoints.length
+			failedEndpointsCount += endpoints.filter(e => !e._status).length
+			timeTaken += endpoints.map(e => e._time && e._time.total)
+				.filter(t => !!t && !isNaN(t))
+				.reduce((a, c) => a + c, 0)
+
+			for (const endpoint of endpoints) {
+				tableEntries.push({
+					name: endpoint.name,
+					url: endpoint.url,
+					collection: scenario.collection,
+					scenario: scenario.name,
+					status: endpoint._status,
+					responseStatus: (endpoint._result && endpoint._result.map(r => r.status).join(',')) || -1,
+					assertions: endpoint._expect ? endpoint._expect.length : 1,
+					successfulAssertions: (endpoint._expect && endpoint._expect.filter(e => e.result).length) || 0,
+					time: ms((endpoint._time ? endpoint._time.total :
+						endpoint._result.map(res => res.timing.total).reduce((a, c) => a + c, 0)))
+				})
+			}
+		})
+
+		htmlReportTemplate = htmlReportTemplate.replace('{jobId}', jobId)
+			.replace('{timeTaken}', ms(timeTaken))
+			.replace('{status}', `${failedEndpointsCount === 0 ? 'Success' : 'Fail'}  (${endpointsCount - failedEndpointsCount}/${endpointsCount})`)
+
+		let reportFile = htmlReportTemplate.replace('{reportRows}',
+			tableEntries.map((row, i) => `<tr>${[i + 1, row.name, row.scenario, row.collection, row.url, row.time, row.responseStatus,
+			`${row.successfulAssertions}/${row.assertions}`, row.status ? 'Success' : 'Fail']
+				.map(c => `<td>${c}</td>`).join('')}</tr>\n`).join(''))
+
+		await writeFile(join(jobsPath, 'latest', 'reports', 'html', 'report.html'), reportFile)
+	} catch (e) {
+		console.error(`Error creating HTML Report: ${e}`)
+	}
+}
 
 /**
  * Utility function to get a prettified string that contains colors and
@@ -461,52 +511,48 @@ const prettyPrint = (type, text = '', color = true) => {
  * @param {object} scenario Scenario object with results
  */
 const generateJunitReportForScenario = async (scenario) => {
-	let endpoints = scenario.endpoints
-	let endpointsCount = endpoints.length, failedEndpointsCount =
-		endpoints.filter(e => !e._status).length
+	try {
+		let endpoints = scenario.endpoints
+		let endpointsCount = endpoints.length, failedEndpointsCount =
+			endpoints.filter(e => !e._status).length
 
-	let testReport = create({ version: '1.0' })
-		.ele('testsuites', { errors: 0, failures: failedEndpointsCount, tests: endpointsCount })
-		.ele('testsuite', {
-			name: [scenario.collection, scenario.name].join('.'),
-			id: scenario.id,
-			hostname: '',
-			package: scenario.collection,
-			tests: endpointsCount,
-			failures: failedEndpointsCount,
-			errors: 0,
-			skipped: endpoints.filter(e => e.ignore),
-			timestamp: new Date().toISOString(),
-			time: (endpoints.map(e => e._time && e._time.total)
-				.filter(t => !!t && !isNaN(t)).reduce((a, c) => a + c, 0)) / 1000
-		})
+		let testReport = create({ version: '1.0' })
+			.ele('testsuites', { errors: 0, failures: failedEndpointsCount, tests: endpointsCount })
+			.ele('testsuite', {
+				name: [scenario.collection, scenario.name].join('.'),
+				id: scenario.id,
+				hostname: '',
+				package: scenario.collection,
+				tests: endpointsCount,
+				failures: failedEndpointsCount,
+				errors: 0,
+				skipped: endpoints.filter(e => e.ignore),
+				timestamp: new Date().toISOString(),
+				time: (endpoints.map(e => e._time && e._time.total)
+					.filter(t => !!t && !isNaN(t)).reduce((a, c) => a + c, 0)) / 1000
+			})
 
-	for (const endpoint of endpoints) {
-		const testCase = testReport.ele('testcase', {
-			name: endpoint.name,
-			classname: [scenario.collection, scenario.name].join('.'),
-			assertions: endpoint._expect ? endpoint._expect.length : 1,
-			time: (endpoint._time ? endpoint._time.total :
-				endpoint._result.map(res => res.timing.total).reduce((a, c) => a + c, 0)) / 1000
-		})
-		if (!endpoint._status) {
+		for (const endpoint of endpoints) {
+			const testCase = testReport.ele('testcase', {
+				name: endpoint.name,
+				classname: [scenario.collection, scenario.name].join('.'),
+				assertions: endpoint._expect ? endpoint._expect.length : 1,
+				time: (endpoint._time ? endpoint._time.total :
+					endpoint._result.map(res => res.timing.total).reduce((a, c) => a + c, 0)) / 1000
+			})
 			let endpointResponses = endpoint._result
 				.map(res => res.response)
-				.map(res => typeof (res) === 'object' ? JSON.stringify(res) : res)
-				.map(res => res.split('&').join('&amp;')
-					.split('<').join('&lt;')
-					.split('>').join('&gt;')
-					.split('"').join('&quot;')
-					.split('\'').join('&apos;'))
+				.map(res => typeof (res) === 'object' ? JSON.stringify(res, null, 2) : res)
 				.join(',')
-
-			testCase.ele('failure', {
-				time: endpoint._result || 0,
-				message: `Failed [status: ${endpoint._result.map(res => res.status).join(',')}]`
-			}).txt(endpointResponses)
+			testCase.ele(endpoint._status ? 'system-out' : 'failure', {
+				status: endpoint?._result?.map(({ status }) => status)?.join(',') || 0,
+				time: endpoint?._result?.map(({ timing }) => ms(timing.total))?.join(',') || 0
+			}).dat(endpointResponses)
 		}
+		return testReport.end({ prettyPrint: true })
+	} catch (e) {
+		console.error(`Error creating Junit Report: ${e}`)
 	}
-	return testReport.end({ prettyPrint: true })
 };
 
 
@@ -519,5 +565,6 @@ module.exports = {
 	printApiExecutionEnd,
 	logExecutionStart,
 	processScenarioResult,
-	logExecutionEnd
+	logExecutionEnd,
+	generateHTMLReportForExecution
 };

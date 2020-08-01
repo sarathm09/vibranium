@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Execution Report</title>
+		<script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
+		<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.0/css/bulma.min.css" />
+		<style>
+			td {
+				overflow-wrap: anywhere;
+			}
+		</style>
+	</head>
+	<body style="background-color: #f9d7a314; height: 100vh;">
+		<section class="section">
+			<div class="container" style="display: flex; justify-content: center; flex-direction: column;">
+				<h1 class="title" style="margin: 2rem; text-align: center;">
+					Vibranium Execution Report
+				</h1>
+				<h3 style="margin: 2rem; text-align: center;">
+					<b>Job ID:</b> {jobId} <b style="margin-left: 1.6rem;">Time Taken:</b> {timeTaken} <b style="margin-left: 1.5rem;">Status:</b> {status}
+				</h3>
+				<div
+					class="card"
+					style="box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.3), 0 5 5 7px rgba(10, 10, 10, 0.12); padding: 1.2rem; border: 0px solid #fff;"
+				>
+					<div class="card-body">
+						<table class="table is-borderless is-striped is-hoverable is-fullwidth">
+							<thead>
+								<tr>
+									<th><abbr title="Serial number">#</abbr></th>
+									<th>Endpoint</th>
+									<th>Scenario</th>
+									<th>Collection</th>
+									<th>URL</th>
+									<th>Time Taken</th>
+									<th>Response Status</th>
+									<th>Assertion Status</th>
+									<th>Status</th>
+								</tr>
+							</thead>
+							<tbody>
+								{reportRows}
+							</tbody>
+						</table>
+					</div>
+				</div>
+			</div>
+		</section>
+	</body>
+</html>

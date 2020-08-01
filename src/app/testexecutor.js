@@ -1169,7 +1169,6 @@ const updateScenarioResultsAndSaveReports = async (jobId, result, executionOptio
 	await logHandler.processScenarioResult(jobId, result, executionOptions.report, vibPath.jobs)
 }
 
-
 /**
  * Trigger point for all scenario executions
  *
@@ -1212,7 +1211,8 @@ const runTests = async (scenarios, executionOptions, jobId, db) => {
 		logHandler.logExecutionEnd(logger, jobId, scenarioResults, totalEndpointsExecuted, totalEndpointsSuccessful),
 		savePostExecutionData(db, jobId, scenarioResults, executionOptions),
 		...scenarioResults.map(result =>
-			updateScenarioResultsAndSaveReports(jobId, result, executionOptions))
+			updateScenarioResultsAndSaveReports(jobId, result, executionOptions)),
+		logHandler.generateHTMLReportForExecution(jobId, scenarioResults, vibPath.jobs)
 	])
 
 

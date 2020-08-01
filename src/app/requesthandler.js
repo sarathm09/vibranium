@@ -15,6 +15,7 @@ const testexecutor = require('./testexecutor')
 const logHandler = require('./loghandler')
 const logger = require('./logger')('cli')
 const { vibPath, userConfig, loadDataLists, vibSchemas } = require('./constants')
+const { env } = require('process')
 
 
 /**
@@ -25,7 +26,7 @@ const { vibPath, userConfig, loadDataLists, vibSchemas } = require('./constants'
 const handleRunCommand = async options => {
 	let loadDataSetTask = loadDataLists()
 
-	const scenarioList = await compiler.search(options.collections, options.scenarios, options.apis);
+	let scenarioList = await compiler.search(options.collections, options.scenarios, options.apis);
 	const executionOptions = {
 		variables: options.variables,
 		systems: options.system,
@@ -39,6 +40,12 @@ const handleRunCommand = async options => {
 		apis: options.apis
 	};
 
+	if (env.REPEAT_EXECUTION > 1) {
+		scenarioList = scenarioList.map(sc => {
+			sc.endpoints = sc.endpoints.map(e => e.repeat = env.REPEAT_EXECUTION)
+			return sc
+		})
+	}
 	await loadDataSetTask
 	// eslint-disable-next-line no-unused-vars
 	const result = await testexecutor.runTests(scenarioList, executionOptions);
@@ -48,7 +55,7 @@ const handleRunCommand = async options => {
 	// handle mode_aether and --silent
 	if (options.silent) {
 		handleSilentResponse(result)
-	} 
+	}
 	if (!status) process.exit(1)
 }
 

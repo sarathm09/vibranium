@@ -21,7 +21,9 @@ const setEnvironmentVariables = options => {
 		log: 'LOG_LEVEL',
 		parallel: 'MAX_PARALLEL_EXECUTORS',
 		skipWarn: 'NO_WARNING_MESSAGES',
-		validate: 'VALIDATE_SCENARIOS'
+		validate: 'VALIDATE_SCENARIOS',
+		repeat: 'REPEAT_EXECUTION',
+		ignoreNetworkFailure: 'IGNORE_NETWORK_FAILURE'
 	}
 	for (let option of Object.keys(optionsAndVariablesMap)) {
 		if (options[option]) {
@@ -56,6 +58,8 @@ vibranium
 	.option('--skip-warn', 'Ignore all warning messages. Not recommended', true)
 	.option('--silent', 'Print only the endpoint result')
 	.option('--validate', 'Validate all files')
+	.option('--repeat', 'Repeat the execution for each endpoint', 1)
+	.option('--ignore-network-failure', 'Do not stop execution if there is some network issue or the app goes down in between', false)
 	.action(options => {
 		setEnvironmentVariables(options)
 		requestHandler.handleRunCommand(options)

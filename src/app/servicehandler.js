@@ -143,7 +143,10 @@ const getResponseWithRequest = (system, url, method, payload, auth, language = '
 	};
 
 	request(requestOptions, function (error, response, body) {
-		if (error) printErrorAndExit(error)
+		if (error) {
+			printErrorAndExit(error)
+			reject({ response, error })
+		}
 
 		if (!!response && !!response.statusCode) {
 			resolve(parseAndSendResponse(system.api_url + url, url, method, payload, auth, response, body))
@@ -160,13 +163,16 @@ const getResponseWithRequest = (system, url, method, payload, auth, language = '
  * @param {Error} error The error object
  */
 const printErrorAndExit = error => {
-	if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
-		logger.error(red('Error connecting to server') + ', Check if ');
-		logger.error('\t1. You have a stable internet connection');
-		logger.error('\t2. You have maintained the system configuration correctly');
-		logger.error('\t3. The app is running in the server');
-		process.exit(1);
+	if (!process.env.IGNORE_NETWORK_FAILURE) {
+		if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+			logger.error(red('Error connecting to server') + ', Check if ');
+			logger.error('\t1. You have a stable internet connection');
+			logger.error('\t2. You have maintained the system configuration correctly');
+			logger.error('\t3. The app is running in the server');
+			process.exit(1);
+		}
 	}
+
 	return true
 }
 

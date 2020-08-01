@@ -17,7 +17,6 @@ const copyReportFiles = async () => {
     }
 }
 
-
-console.log(`Copying report files: started`)
+console.log('Copying report files: started')
 copyReportFiles()
-console.log(`Copying report files: done`)
+console.log('Copying report files: done')

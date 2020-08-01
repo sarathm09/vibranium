@@ -81,7 +81,7 @@ module.exports = {
 	},
 
 	authTypes: {
-		oauth2: ['jwt', 'cf-jwt', 'client-credentials', 'oauth2', 'jwt-token'],
+		oauth2: ['jwt', 'cf-jwt', 'client-credentials', 'cf-client-credentials', 'oauth2', 'jwt-token'],
 		basic: ['basic', 'username-password', 'basic-authentication'],
 		none: ['none']
 	},

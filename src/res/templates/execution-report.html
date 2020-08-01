@@ -10,21 +10,34 @@
 			td {
 				overflow-wrap: anywhere;
 			}
+			.card {
+				box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.3), 0 5 5 7px rgba(10, 10, 10, 0.12);
+				padding: 1.2rem;
+				border: 0px solid #fff;
+			}
+			.container {
+				display: flex;
+				justify-content: center;
+				flex-direction: column;
+			}
+			h1,
+			h3 {
+				margin-top: 1rem;
+				margin-bottom: 2rem;
+				text-align: center;
+			}
 		</style>
 	</head>
 	<body style="background-color: #f9d7a314; height: 100vh;">
 		<section class="section">
-			<div class="container" style="display: flex; justify-content: center; flex-direction: column;">
-				<h1 class="title" style="margin: 2rem; text-align: center;">
+			<div class="container">
+				<h1 class="title">
 					Vibranium Execution Report
 				</h1>
-				<h3 style="margin: 2rem; text-align: center;">
+				<h3>
 					<b>Job ID:</b> {jobId} <b style="margin-left: 1.6rem;">Time Taken:</b> {timeTaken} <b style="margin-left: 1.5rem;">Status:</b> {status}
 				</h3>
-				<div
-					class="card"
-					style="box-shadow: 0 0.5em 1em -0.125em rgba(10, 10, 10, 0.3), 0 5 5 7px rgba(10, 10, 10, 0.12); padding: 1.2rem; border: 0px solid #fff;"
-				>
+				<div class="card">
 					<div class="card-body">
 						<table class="table is-borderless is-striped is-hoverable is-fullwidth">
 							<thead>

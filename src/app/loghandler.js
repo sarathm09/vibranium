@@ -5,7 +5,7 @@ const { join } = require('path')
 const treeify = require('treeify')
 const { env } = require('process')
 const { create } = require('xmlbuilder2', { encoding: 'utf-8' })
-const { existsSync, mkdirSync, stat } = require('fs')
+const { existsSync, mkdirSync } = require('fs')
 const { writeFile, rmdir, readFile } = require('fs').promises
 
 
@@ -442,7 +442,7 @@ const generateHTMLReportForExecution = async (jobId, scenarios, jobsPath) => {
 			mkdirSync(join(jobsPath, 'latest', 'reports', 'html'), { recursive: true })
 		}
 
-		scenarios.map(scenario => {
+		scenarios.forEach(scenario => {
 			let endpoints = scenario.endpoints
 			endpointsCount += endpoints.length
 			failedEndpointsCount += endpoints.filter(e => !e._status).length
@@ -451,18 +451,16 @@ const generateHTMLReportForExecution = async (jobId, scenarios, jobsPath) => {
 				.reduce((a, c) => a + c, 0)
 
 			for (const endpoint of endpoints) {
-				tableEntries.push({
-					name: endpoint.name,
-					url: endpoint.url,
-					collection: scenario.collection,
-					scenario: scenario.name,
-					status: endpoint._status,
-					responseStatus: (endpoint._result && endpoint._result.map(r => r.status).join(',')) || -1,
-					assertions: endpoint._expect ? endpoint._expect.length : 1,
-					successfulAssertions: (endpoint._expect && endpoint._expect.filter(e => e.result).length) || 0,
-					time: ms((endpoint._time ? endpoint._time.total :
-						endpoint._result.map(res => res.timing.total).reduce((a, c) => a + c, 0)))
-				})
+				tableEntries.push([
+					endpoint.name,
+					scenario.name,
+					scenario.collection,
+					endpoint.url,
+					ms((endpoint._time ? endpoint._time.total : endpoint._result.map(res => res.timing.total).reduce((a, c) => a + c, 0))),
+					(endpoint._result && endpoint._result.map(r => r.status).join(',')) || -1,
+					`${(endpoint._expect && endpoint._expect.filter(e => e.result).length) || 0}/${endpoint._expect ? endpoint._expect.length : 0}`,
+					endpoint._status ? 'Success' : 'Fail'
+				])
 			}
 		})
 
@@ -471,11 +469,9 @@ const generateHTMLReportForExecution = async (jobId, scenarios, jobsPath) => {
 			.replace('{status}', `${failedEndpointsCount === 0 ? 'Success' : 'Fail'}  (${endpointsCount - failedEndpointsCount}/${endpointsCount})`)
 
 		let reportFile = htmlReportTemplate.replace('{reportRows}',
-			tableEntries.map((row, i) => `<tr>${[i + 1, row.name, row.scenario, row.collection, row.url, row.time, row.responseStatus,
-			`${row.successfulAssertions}/${row.assertions}`, row.status ? 'Success' : 'Fail']
-				.map(c => `<td>${c}</td>`).join('')}</tr>\n`).join(''))
+			tableEntries.map((row, i) => `<tr>${[i + 1, ...row].map(c => `<td>${c}</td>`).join('')}</tr>`).join(''))
 
-		await writeFile(join(jobsPath, 'latest', 'reports', 'html', 'report.html'), reportFile)
+		await writeFile(join(jobsPath, 'latest', 'reports', 'html', 'report.html'), reportFile.split('\n').join('').split('\t').join(''))
 	} catch (e) {
 		console.error(`Error creating HTML Report: ${e}`)
 	}

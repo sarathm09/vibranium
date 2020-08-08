@@ -76,7 +76,8 @@ const rotateOldLogFiles = async () => {
 			}
 		}
 	} catch (error) {
-		console.error(error)
+		if (!error.code === 'ENOENT')
+			console.error(error)
 	}
 	return
 }
@@ -109,7 +110,8 @@ const rotateOldJobLogs = async () => {
 				.map(f => rmdir(join(vibPath.jobs, f), { recursive: true })))
 		}
 	} catch (error) {
-		console.error(error)
+		if (!error.code === 'ENOENT')
+			console.error(error)
 	}
 	return
 }
@@ -240,8 +242,13 @@ const logData = (transports, moduleName, jobId, level) => async (message, error,
  * Delete execution reports from previous job
  */
 const deletePreviousExecutionReports = async () => {
-	if (existsSync(join(vibPath.jobs, 'latest', 'reports'))) {
-		await rmdir(join(vibPath.jobs, 'latest', 'reports'), { recursive: true })
+	try {
+		if (existsSync(join(vibPath.jobs, 'latest', 'reports'))) {
+			await rmdir(join(vibPath.jobs, 'latest', 'reports'), { recursive: true })
+		}
+	} catch (error) {
+		if (!error.code === 'ENOENT')
+			console.error(error)
 	}
 }
 

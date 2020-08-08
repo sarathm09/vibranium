@@ -458,8 +458,11 @@ const generateHTMLReportForExecution = async (jobId, scenarios, jobsPath) => {
 			}
 		})
 
+		const maxTime = Math.max(...scenarios.map(s => s.endpoints.map(e => e._time?.total || 0).reduce((a, c) => a + c, 0)).filter(n => !isNaN(n))),
+			totalTime = scenarios.map(s => s.endpoints.map(e => e._time?.total || 0).reduce((a, c) => a + c, 0)).filter(n => !isNaN(n)).reduce((a, c) => a + c, 0)
+
 		htmlReportTemplate = htmlReportTemplate.replace('{jobId}', jobId)
-			.replace('{timeTaken}', `${ms(Math.max(scenarios.map(s => s._result?.timing?.total || 0)))} (Scenario), ${ms(scenarios.map(s => s._result?.timing?.total || 0).reduce((a, c) => a + c, 0))} (Total)`)
+			.replace('{timeTaken}', `${ms(maxTime)} (Scenario), ${ms(totalTime)} (Total)`)
 			.replace('{status}', `${failedEndpointsCount === 0 ? 'Success' : 'Fail'}  (${endpointsCount - failedEndpointsCount}/${endpointsCount})`)
 
 		let reportFile = htmlReportTemplate.replace('{reportRows}', tableEntries.map((row, i) =>

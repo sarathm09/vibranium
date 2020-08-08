@@ -853,15 +853,17 @@ const processEndpoint = async (db, scenario, scenarioVariables, endpoint, scenar
 		results.push(result);
 	}
 
-	let endTime = Date.now()
+	let totalTimeTaken = results.map(endpoint => endpoint?._result?.timing?.total || 0).reduce((a, c) => a + c, 0)
+
 	endpoint._result = results.map(endpoint => endpoint._result)
 	endpoint._status = results.every(endpoint => !!endpoint._status)
 	endpoint._expect = results.length === 1 ? results[0]._expect : results.map(endpoint => endpoint._expect)
 	endpoint._variables = results.map(endpoint => endpoint._variables)
+
 	endpoint._time = {
 		start: startTime,
-		total: endTime - startTime,
-		displayTime: ms(endTime - startTime)
+		total: totalTimeTaken,
+		displayTime: ms(totalTimeTaken)
 	}
 
 	return endpoint;

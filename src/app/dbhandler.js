@@ -18,9 +18,10 @@ const initializeDatabase = async () => {
 		apiCache: new Datastore({ inMemoryOnly: true, autoload: true }),
 		apiResponseCache: new Datastore({ inMemoryOnly: true, autoload: true }),
 
-		apis: new Datastore({ filename: join(__dirname, '..', 'db', 'apis.db'), autoload: true }),
-		jobs: new Datastore({ filename: join(__dirname, '..', 'db', 'jobs.db'), autoload: true })
-	};
+		apis: new Datastore({ filename: join(__dirname, '..', 'db', 'apis.db'), autoload: true, timestampData: true }),
+		jobs: new Datastore({ filename: join(__dirname, '..', 'db', 'jobs.db'), autoload: true, timestampData: true })
+	}
+	let dbExpirationTimeInSeconds = 60 * 60 * 24 * 10;
 
 	['name', 'scenario', 'collection'].forEach(key => {
 		db.apiResponseCache.ensureIndex({ fieldName: key }, logErrorInDatabaseIndexCreation)
@@ -29,6 +30,9 @@ const initializeDatabase = async () => {
 
 	['name', 'scenario', 'collection', 'jobId'].forEach(key =>
 		db.apis.ensureIndex({ fieldName: key }, logErrorInDatabaseIndexCreation));
+
+	db.apis.ensureIndex({ fieldName: 'createdAt', expireAfterSeconds: dbExpirationTimeInSeconds }, logErrorInDatabaseIndexCreation);
+	db.jobs.ensureIndex({ fieldName: 'createdAt', expireAfterSeconds: dbExpirationTimeInSeconds }, logErrorInDatabaseIndexCreation);
 
 	return db;
 }
@@ -128,15 +132,18 @@ const deleteJobHistory = (db, query = {}) => new Promise(resolve => {
  */
 const insertApiExecutionData = (db, details) => new Promise(resolve => {
 	if (!db || db === '') resolve()
+
+	const maxCharactersToInsert = 300, maxObjectsToInsert = 10
 	let data = { ...details }
 	if (!!details._result && !!details._result.response && typeof details._result.response === 'object') {
-		if (Object.values(details._result.response) > 10) {
-			data._result.response = { truncatedData: data._result.response.slice(0, 10) }
+		// The response is an object/array. insert only the first {maxObjectsToInsert} values
+		if (Object.values(details._result.response) > maxObjectsToInsert) {
+			data._result.response = { truncatedData: data._result.response.slice(0, maxObjectsToInsert) }
 		}
-	} else {
-		let size = JSON.stringify(details._result.response).length;
-		if (size > 1000) {
-			data._result.response = { truncatedData: data._result.response.slice(0, 1000) }
+	} else if (!!details._result && !!details._result.response && typeof details._result.response === 'string') {
+		// The response is a string. insert only the first {maxCharactersToInsert} characters from it
+		if (details._result.response.length > maxCharactersToInsert) {
+			data._result.response = { truncatedData: data._result.response.slice(0, maxCharactersToInsert) }
 		}
 	}
 	db.apis.insert(details, (err, docs) => {

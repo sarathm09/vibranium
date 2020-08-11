@@ -458,8 +458,8 @@ const generateHTMLReportForExecution = async (jobId, scenarios, jobsPath) => {
 			}
 		})
 
-		const maxTime = Math.max(...scenarios.map(s => s.endpoints.map(e => e._time?.total || 0).reduce((a, c) => a + c, 0)).filter(n => !isNaN(n))),
-			totalTime = scenarios.map(s => s.endpoints.map(e => e._time?.total || 0).reduce((a, c) => a + c, 0)).filter(n => !isNaN(n)).reduce((a, c) => a + c, 0)
+		const maxTime = Math.max(...scenarios.map(s => s.endpoints.map(e => e._time && e._time.total || 0).reduce((a, c) => a + c, 0)).filter(n => !isNaN(n))),
+			totalTime = scenarios.map(s => s.endpoints.map(e => e._time && e._time.total || 0).reduce((a, c) => a + c, 0)).filter(n => !isNaN(n)).reduce((a, c) => a + c, 0)
 
 		htmlReportTemplate = htmlReportTemplate.replace('{jobId}', jobId)
 			.replace('{timeTaken}', `${ms(maxTime)} (Scenario), ${ms(totalTime)} (Total)`)
@@ -525,7 +525,7 @@ const generateJunitReportForScenario = async (scenario) => {
 				errors: 0,
 				skipped: endpoints.filter(e => e.ignore),
 				timestamp: new Date().toISOString(),
-				time: (endpoints.map(e => e._time?.total)
+				time: (endpoints.map(e => e._time && e._time.total)
 					.filter(t => !!t && !isNaN(t)).reduce((a, c) => a + c, 0)) / 1000
 			})
 
@@ -535,16 +535,16 @@ const generateJunitReportForScenario = async (scenario) => {
 				classname: [scenario.collection, scenario.name].join('.'),
 				assertions: endpoint._expect ? endpoint._expect.length : 1,
 				time: (endpoint._time ? endpoint._time.total :
-					endpoint._result.map(res => res?.timing?.total || 0).reduce((a, c) => a + c, 0)) / 1000
+					endpoint._result.map(res => res && res.timing && res.timing.total || 0).reduce((a, c) => a + c, 0)) / 1000
 			})
 			let endpointResponses = endpoint._result
 				.map(res => res.response)
 				.map(res => typeof (res) === 'object' ? JSON.stringify(res, null, 2) : res)
 				.join(',')
 			testCase.ele(endpoint._status ? 'system-out' : 'failure', {
-				status: endpoint?._result?.map(({ status }) => status)?.join(',') || 0,
-				time: endpoint?._result?.map(({ timing }) => ms(timing?.total || 0))?.join(',') || 0,
-				message: `Status: ${endpoint?._result?.map(({ status }) => status)?.join(',') || 0} and Time taken: ${endpoint?._result?.map(({ timing }) => ms(timing?.total || 0))?.join(',') || 0}`
+				status: endpoint._result && endpoint._result.map(({ status }) => status).join(',') || 0,
+				time: endpoint._result && endpoint._result.map(({ timing }) => ms(timing && timing.total || 0)).join(',') || 0,
+				message: `Status: ${endpoint._result && endpoint._result.map(({ status }) => status).join(',') || 0} and Time taken: ${endpoint._result && endpoint._result.map(({ timing }) => ms(timing && timing.total || 0)).join(',') || 0}`
 			}).dat(endpointResponses || '')
 		}
 		return testReport.end({ prettyPrint: true })

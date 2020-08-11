@@ -406,15 +406,19 @@ const processScenarioResult = async (jobId, result, report, jobsPath) => {
 		let junitReportpaths = ['latest', jobId]
 			.map(path => join(jobsPath, path, 'reports', 'junit', result.collection))
 
-		junitReportpaths.map(path => {
-			if (!existsSync(path))
-				mkdirSync(path, { recursive: true });
-		})
+		if (junitReport) {
+			junitReportpaths.map(path => {
+				if (!existsSync(path))
+					mkdirSync(path, { recursive: true });
+			})
 
-		let tasks = junitReportpaths
-			.map(path => join(path, `${result.collection}.${result.name}.${jobId}.xml`))
-			.map(p => writeFile(p, junitReport))
-		await (Promise.all(tasks))
+			let tasks = junitReportpaths
+				.map(path => join(path, `${result.collection}.${result.name}.${jobId}.xml`))
+				.map(p => writeFile(p, junitReport))
+			await (Promise.all(tasks))
+		} else {
+			console.error('Some error occured in generating the report')
+		}
 	}
 
 	return
@@ -450,7 +454,7 @@ const generateHTMLReportForExecution = async (jobId, scenarios, jobsPath) => {
 					scenario.name,
 					scenario.collection,
 					endpoint.url,
-					ms((endpoint._time ? endpoint._time.total : endpoint._result.map(res => res.timing.total).reduce((a, c) => a + c, 0))),
+					ms((endpoint._time ? endpoint._time.total : endpoint._result && endpoint._result.map(res => res.timing.total).reduce((a, c) => a + c, 0) || 0)),
 					(endpoint._result && endpoint._result.map(r => r.status).join(',')) || -1,
 					`${(endpoint._expect && endpoint._expect.filter(e => e.result).length) || 0}/${endpoint._expect ? endpoint._expect.length : 0}`,
 					endpoint._status ? 'Success' : 'Fail'
@@ -535,9 +539,9 @@ const generateJunitReportForScenario = async (scenario) => {
 				classname: [scenario.collection, scenario.name].join('.'),
 				assertions: endpoint._expect ? endpoint._expect.length : 1,
 				time: (endpoint._time ? endpoint._time.total :
-					endpoint._result.map(res => res && res.timing && res.timing.total || 0).reduce((a, c) => a + c, 0)) / 1000
+					endpoint._result && endpoint._result.map(res => res && res.timing && res.timing.total || 0).reduce((a, c) => a + c, 0)) / 1000
 			})
-			let endpointResponses = endpoint._result
+			let endpointResponses = endpoint._result && endpoint._result
 				.map(res => res.response)
 				.map(res => typeof (res) === 'object' ? JSON.stringify(res, null, 2) : res)
 				.join(',')

@@ -853,7 +853,7 @@ const processEndpoint = async (db, scenario, scenarioVariables, endpoint, scenar
 		results.push(result);
 	}
 
-	let totalTimeTaken = results.map(endpoint => endpoint?._result?.timing?.total || 0).reduce((a, c) => a + c, 0)
+	let totalTimeTaken = results.map(endpoint => endpoint && endpoint._result && endpoint._result.timing && endpoint._result.timing.total || 0).reduce((a, c) => a + c, 0)
 
 	endpoint._result = results.map(endpoint => endpoint._result)
 	endpoint._status = results.every(endpoint => !!endpoint._status)

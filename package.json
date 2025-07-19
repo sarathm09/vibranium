@@ -1,13 +1,13 @@
 {
 	"name": "vibranium-cli",
-	"version": "0.0.3-7",
+	"version": "0.1.0",
 	"description": "API testing and data generation made easy",
 	"author": "sarathm09",
 	"main": "src/index.js",
 	"licence": "ISC",
 	"homepage": "https://sarathm09.github.io/vibranium/",
 	"engines": {
-		"node": ">=12.16.3"
+		"node": ">=14.0"
 	},
 	"keywords": [
 		"vibranium",
@@ -19,7 +19,7 @@
 		"schema"
 	],
 	"bin": {
-		"vib-cli": "src/app/cli.js",
+		"vibranium": "src/app/cli.js",
 		"vc": "src/app/cli.js"
 	},
 	"scripts": {

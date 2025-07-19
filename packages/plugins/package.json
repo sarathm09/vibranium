@@ -1,0 +1,49 @@
+{
+  "name": "@vibraniumjs/plugins",
+  "version": "0.1.0",
+  "description": "Plugin system for Vibranium CLI",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "vibranium",
+    "plugins",
+    "api",
+    "extensibility"
+  ],
+  "author": "sarathm09",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sarathm09/vibranium.git",
+    "directory": "packages/plugins"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@vibraniumjs/types": "^0.1.0",
+    "@vibraniumjs/core": "^0.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.15",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}

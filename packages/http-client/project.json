@@ -1,0 +1,38 @@
+{
+  "name": "http-client",
+  "projectType": "library",
+  "sourceRoot": "packages/http-client/src",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "packages/http-client/dist"
+      },
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/packages/http-client"],
+      "options": {
+        "jestConfig": "packages/http-client/jest.config.js",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/http-client/**/*.ts"]
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit",
+        "cwd": "packages/http-client"
+      }
+    }
+  },
+  "tags": ["type:library", "scope:shared"]
+}

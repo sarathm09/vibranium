@@ -1,0 +1,38 @@
+{
+  "name": "utils",
+  "projectType": "library",
+  "sourceRoot": "packages/utils/src",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "packages/utils/dist"
+      },
+      "dependsOn": ["^build"]
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/packages/utils"],
+      "options": {
+        "jestConfig": "packages/utils/jest.config.js",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/utils/**/*.ts"]
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit",
+        "cwd": "packages/utils"
+      }
+    }
+  },
+  "tags": ["type:library", "scope:shared"]
+}

@@ -1,0 +1,55 @@
+{
+  "name": "@vibraniumjs/core",
+  "version": "0.1.0",
+  "description": "Execution engine for Vibranium CLI",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "vibranium",
+    "core",
+    "execution",
+    "engine",
+    "parser"
+  ],
+  "author": "sarathm09",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sarathm09/vibranium.git",
+    "directory": "packages/core"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@vibraniumjs/types": "^0.1.0",
+    "@vibraniumjs/utils": "^0.1.0",
+    "@vibraniumjs/http-client": "^0.1.0",
+    "ajv": "^8.19.0",
+    "jsonpath-plus": "^10.2.0",
+    "xpath": "^0.0.34"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.15",
+    "@types/xpath": "^0.0.36",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}

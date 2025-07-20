@@ -31,17 +31,6 @@
 ## 💻 Phase 4: CLI Implementation (Priority 1)
 
 ### In Progress
-- [ ] **Individual Step Execution System** - Granular control over scenario execution at step level:
-  - [ ] Core step execution engine with single step execution capability
-  - [ ] Interactive UI step controls (run this step, run from this step, run up to this step)
-  - [ ] Step-level execution state management and progress tracking
-  - [ ] Individual step debugging and inspection interface
-  - [ ] Step execution history and logging system
-  - [ ] Step retry functionality with individual step controls
-  - [ ] Keyboard shortcuts for step navigation and execution (S for single step, Shift+S for step from here)
-  - [ ] Step-specific request/response data display
-  - [ ] Variable state inspection at each step
-  - [ ] Integration with existing execution orchestrator
 
 ### Planned
 
@@ -94,3 +83,4 @@
 - [x] **Documentation Site (apps/docs)** - VitePress setup with navigation, getting started guide, complete scenario syntax reference, variable system documentation, plugin development guide, HTTP client swapping guide
 - [x] **Documentation** - Comprehensive README with getting started guide, complete scenario syntax reference, variable system documentation, CLI command reference, usage guides
 - [x] **Enhanced Details Pane** - Comprehensive scenario information display with multiple view modes (Overview, Steps, Raw, Execution), detailed metadata display (name, description, version, environments, variables, configuration), step-by-step visualization with status indicators, enhanced current step details with API/UI specifics, basic syntax highlighting for YAML/JSON, global variables and configuration display, proper handling of both YAML and JSON scenario files
+- [x] **Individual Step Execution System** - Comprehensive step selection functionality with granular control over scenario execution at step level: Enhanced state management with selectedStepId tracking, keyboard navigation (J/K for step navigation, 1-5 for view mode switching), detailed step inspection pane with full request/response/validation data display, step-specific controls (S to run single step, Ctrl+C to copy data, B to bookmark), visual highlighting and selection indicators with step status icons, step execution history and individual step result tracking, integration with existing execution orchestrator

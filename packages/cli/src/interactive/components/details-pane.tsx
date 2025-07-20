@@ -2,7 +2,7 @@
  * Details pane component with YAML/JSON editor and scenario information
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Box, Text } from 'ink';
 import { useAppContext } from '../state/app-context';
 import chalk from 'chalk';
@@ -11,15 +11,13 @@ export const DetailsPane: React.FC = () => {
   const { state, actions } = useAppContext();
   // Use scrollOffset from context instead of local state
   const scrollOffset = state.ui.detailsScrollOffset;
-  const [stepScrollOffset, setStepScrollOffset] = useState(0);
   
   // Use the view mode from state instead of local state
   const viewMode = state.ui.detailsViewMode;
   
   // Reset scroll when scenario changes
   useEffect(() => {
-    setScrollOffset(0);
-    setStepScrollOffset(0);
+    actions.resetDetailsScroll();
   }, [state.currentScenario]);
   
 
@@ -149,8 +147,18 @@ export const DetailsPane: React.FC = () => {
           </Box>
         )}
         
+        {/* Real-time execution status */}
+        {state.isRunning && state.executionProgress && (
+          <Box flexDirection="column" marginBottom={2}>
+            <Text color="yellow" bold>
+              ⚡ Live Execution Status
+            </Text>
+            {renderLiveExecutionStatus()}
+          </Box>
+        )}
+        
         {/* Execution summary */}
-        {state.lastResult && (
+        {state.lastResult && !state.isRunning && (
           <Box flexDirection="column" marginBottom={1}>
             <Text color="magenta" bold>
               📊 Last Execution Summary
@@ -1036,6 +1044,50 @@ export const DetailsPane: React.FC = () => {
     return result;
   };
 
+  const renderLiveExecutionStatus = () => {
+    if (!state.executionProgress) return null;
+    
+    const { currentStepIndex, totalSteps, completedSteps, passedSteps, failedSteps } = state.executionProgress;
+    const currentStep = state.currentScenario?.steps?.[currentStepIndex];
+    const currentRealTimeResult = state.realTimeStepResults.find(r => r.stepIndex === currentStepIndex);
+    
+    return (
+      <Box flexDirection="column" paddingLeft={2}>
+        <Text>
+          <Text color="yellow">⚡ Status:</Text> Running step {currentStepIndex + 1} of {totalSteps}
+        </Text>
+        <Text>
+          <Text color="cyan">🎯 Current:</Text> {currentStep?.name || 'Unknown step'}
+        </Text>
+        <Text>
+          <Text color="green">✅ Completed:</Text> {completedSteps} • 
+          <Text color="green">Passed:</Text> {passedSteps} • 
+          <Text color="red">Failed:</Text> {failedSteps}
+        </Text>
+        
+        {/* Current step details */}
+        {currentRealTimeResult?.request && (
+          <Box marginTop={1}>
+            <Text color="blue">🌐 Current Request:</Text>
+            <Text color="gray" paddingLeft={2}>
+              {currentRealTimeResult.request.method} {currentRealTimeResult.request.url}
+            </Text>
+          </Box>
+        )}
+        
+        {/* Real-time timing */}
+        {currentRealTimeResult?.startTime && (
+          <Text color="gray">
+            ⏱️ Started: {currentRealTimeResult.startTime.toLocaleTimeString()}
+            {currentRealTimeResult.status === 'running' && (
+              <Text> (running for {Math.round((Date.now() - currentRealTimeResult.startTime.getTime()) / 1000)}s)</Text>
+            )}
+          </Text>
+        )}
+      </Box>
+    );
+  };
+
   const renderRealTimeExecution = () => {
     if (!state.isRunning && state.realTimeStepResults.length === 0) {
       return (
@@ -1283,13 +1335,8 @@ export const DetailsPane: React.FC = () => {
       <Box paddingX={1} height={2}>
         <Text color="gray" dimColor>
           {state.ui.activePane === 'details' ? 
-            (viewMode === 'realtime' ? 
-              '⚡ Live • A Auto-scroll • R Run • 1-5 Views' :
-              viewMode === 'step-detail' ? 
-                '🎯 J/K Navigate • S Run • B Bookmark • Ctrl+C Copy • 1-6 Views' :
-                '🎯 1-6 Views • ↑↓ Scroll • Tab Switch • R Run'
-            ) : 
-            'Tab Focus • R Run • 1-6 Views'
+            '🎯 ACTIVE: ↑↓ Scroll • ←→ Views • 1-5 Quick Views • Enter Run • Tab Switch' : 
+            'Tab: Activate • 1-5: Quick Views • R: Run'
           }
         </Text>
       </Box>

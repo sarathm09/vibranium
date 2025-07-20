@@ -8,8 +8,9 @@
 - [x] How do I do npm link to run vibranium command locally - Fixed: Added npm link section with step-by-step instructions and alternative approaches
 - [x] I get an infinite loop of `> vibranium-cli@0.1.0 build > nx build` - Fixed: Created .nxignore to exclude root package.json, fixed circular dependency, added convenience scripts
 - [x] Way too many issues when I run the cli using npm run dev - Fixed: Resolved all TypeScript errors, added missing types, fixed parameter types, updated dependencies, switched to tsx for better ES module support
-- [x] Directory detection issue in interactive mode - Fixed: Updated ConfigResolver to use workspaceRoot instead of process.cwd() in fallback logic, ensuring interactive mode loads scenarios from user's actual current directory
+- [x] Directory detection issue in interactive mode - Fixed: Updated all CLI commands to use process.cwd() consistently for user's actual working directory, fixed ConfigResolver to properly resolve relative directory arguments, updated interactive mode app context to use config.workspaceRoot instead of hardcoded process.cwd()
 - [x] Interactive mode responsive layout issues - Fixed: Implemented comprehensive responsive layout system with terminal size detection, dynamic width calculations, compact headers/footers, smart three-pane fallback, and automatic resize handling
+- [x] Navigation pane text cropping in interactive mode - Fixed: Increased minimum navigation width from 18 to 25 characters (39% improvement), enhanced responsive calculations for better proportions across terminal sizes, navigation now accommodates file names and controls without truncation
 
 
 ## 🚀 Phase 1: Foundation & Monorepo Setup (Priority 1)

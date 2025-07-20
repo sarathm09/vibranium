@@ -236,7 +236,7 @@ function createInitialState(config: ResolvedConfig, environment: string): AppSta
     currentEnvironment: environment,
     config,
     fileSystemTree: [],
-    currentDirectory: process.cwd(),
+    currentDirectory: config.workspaceRoot,
     selectedNodePath: '',
     expandedFolders: new Set<string>(),
     breadcrumbs: [],
@@ -767,8 +767,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
         ];
         dispatch({ type: 'SET_ENVIRONMENTS', payload: environments });
         
-        // Load initial file system tree
-        await actions.loadFileSystemTree();
+        // Load initial file system tree from the configured workspace root
+        await actions.loadFileSystemTree(initialProps.config.workspaceRoot);
         
       } catch (error) {
         console.error('Error loading initial data:', error);

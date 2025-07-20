@@ -3,6 +3,7 @@
  */
 
 import { join, resolve } from 'path';
+import { parse as parseYaml } from 'yaml';
 import { CliConfig } from '@vibraniumjs/types';
 
 // Simplified configuration interface for now
@@ -45,8 +46,9 @@ export class ConfigResolver {
     workingDir?: string;
     environment?: string;
   }): Promise<ResolvedConfig> {
+    // Use provided working directory, default to process.cwd() if not provided
     const workingDir = options.workingDir || process.cwd();
-    console.log('Config resolver workingDir:', workingDir);
+    console.log('Config resolver - resolving config for workingDir:', workingDir);
     
     // For now, use default configuration
     const config: VibraniumConfig = {
@@ -271,14 +273,14 @@ export class ConfigResolver {
         if (ext === '.json') {
           parsed = JSON.parse(content);
         } else if (ext === '.yaml' || ext === '.yml') {
-          // Basic YAML parsing with simple regex patterns
-          parsed = this.parseBasicYaml(content);
+          // Use proper YAML parsing
+          parsed = parseYaml(content);
         } else {
           // Try JSON first, then YAML
           try {
             parsed = JSON.parse(content);
           } catch {
-            parsed = this.parseBasicYaml(content);
+            parsed = parseYaml(content);
           }
         }
         
@@ -297,63 +299,6 @@ export class ConfigResolver {
     }
   }
 
-  /**
-   * Basic YAML parsing for validation (simplified)
-   */
-  private parseBasicYaml(content: string): any {
-    const lines = content.split('\n');
-    const result: any = {};
-    let currentKey = '';
-    let isInSteps = false;
-    const steps: any[] = [];
-    let currentStep: any = {};
-    
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed || trimmed.startsWith('#')) continue;
-      
-      // Simple key-value parsing
-      const match = trimmed.match(/^([^:]+):\s*(.*)$/);
-      if (match) {
-        const key = match[1].trim();
-        const value = match[2].trim();
-        
-        if (key === 'steps') {
-          isInSteps = true;
-          continue;
-        }
-        
-        if (isInSteps && trimmed.startsWith('- ')) {
-          // New step
-          if (Object.keys(currentStep).length > 0) {
-            steps.push(currentStep);
-          }
-          currentStep = {};
-          const stepMatch = trimmed.match(/^-\s*(.+?):\s*(.*)$/);
-          if (stepMatch) {
-            currentStep[stepMatch[1].trim()] = stepMatch[2].trim();
-          }
-        } else if (isInSteps && trimmed.startsWith('  ') && !trimmed.startsWith('- ')) {
-          // Step property
-          currentStep[key] = value;
-        } else if (!isInSteps) {
-          // Top-level property
-          result[key] = value;
-        }
-      }
-    }
-    
-    // Add the last step
-    if (Object.keys(currentStep).length > 0) {
-      steps.push(currentStep);
-    }
-    
-    if (steps.length > 0) {
-      result.steps = steps;
-    }
-    
-    return result;
-  }
 
   async validateWorkspace(config: ResolvedConfig): Promise<{
     valid: boolean;

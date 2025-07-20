@@ -48,7 +48,7 @@ program
       const helper = new CliHelper(cliOptions);
       
       // Resolve configuration using user's actual working directory
-      const userWorkingDir = process.env.PWD || process.cwd();
+      const userWorkingDir = process.cwd();
       const configResolver = new ConfigResolver();
       const config = await configResolver.resolveConfig({
         configPath: cliOptions.config,
@@ -116,13 +116,17 @@ program
       const helper = new CliHelper(cliOptions);
       
       // Resolve configuration using user's actual working directory
-      const userWorkingDir = process.env.PWD || process.cwd();
+      const userWorkingDir = process.cwd();
       const configResolver = new ConfigResolver();
       const config = await configResolver.resolveConfig({
         configPath: cliOptions.config,
         workingDir: userWorkingDir,
         environment: options.env
       });
+      
+      // Resolve directory path relative to user's working directory
+      const { resolve } = await import('path');
+      const resolvedDirectory = resolve(userWorkingDir, directory);
       
       // Import and execute batch command
       const { BatchCommand } = await import('../commands/batch');
@@ -131,7 +135,7 @@ program
       // Use format option over deprecated reporter
       const format = options.format || options.reporter;
       
-      await batchCommand.execute(directory, {
+      await batchCommand.execute(resolvedDirectory, {
         ...cliOptions,
         environment: options.env,
         format,
@@ -189,15 +193,19 @@ program
       const helper = new CliHelper(cliOptions);
       
       // Resolve configuration using user's actual working directory
-      const userWorkingDir = process.env.PWD || process.cwd();
+      const userWorkingDir = process.cwd();
       const configResolver = new ConfigResolver();
       const config = await configResolver.resolveConfig({
         configPath: cliOptions.config,
         workingDir: userWorkingDir
       });
       
+      // Resolve path relative to user's working directory
+      const { resolve } = await import('path');
+      const resolvedPath = resolve(userWorkingDir, path);
+      
       // Validate command (temporarily simplified)
-      helper.log(`Would validate: ${path}`);
+      helper.log(`Would validate: ${resolvedPath}`);
       helper.log('Validate command is not fully implemented yet.');
       
     } catch (error) {
@@ -241,11 +249,12 @@ program
       // Use specified directory or current working directory
       const { resolve } = await import('path');
       
-      // Use PWD environment variable if available (more reliable for user's actual directory)
-      const userCurrentDir = process.env.PWD || process.cwd();
-      console.log('Using directory:', directory ? resolve(userCurrentDir, directory) : userCurrentDir);
+      // Get the actual user's current working directory where command was run
+      const userCurrentDir = process.cwd();
+      console.log('User current directory:', userCurrentDir);
       
       const workingDir = directory ? resolve(userCurrentDir, directory) : userCurrentDir;
+      console.log('Working directory for interactive mode:', workingDir);
       
       // Resolve configuration for interactive mode
       const configResolver = new ConfigResolver();
@@ -294,9 +303,9 @@ program
       const cliOptions = parseCommonOptions(options);
       const helper = new CliHelper(cliOptions);
       
-      // Use PWD environment variable if available (more reliable for user's actual directory)
-      const userCurrentDir = process.env.PWD || process.cwd();
-      console.log('Using directory:', userCurrentDir);
+      // Get the actual user's current working directory where command was run
+      const userCurrentDir = process.cwd();
+      console.log('User current directory for default action:', userCurrentDir);
       
       // Resolve configuration for interactive mode
       const configResolver = new ConfigResolver();

@@ -1,10 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { GlassPanel, GlassButton } from '../../components/Glass';
 import { DocumentTextIcon, PlusIcon } from '@heroicons/react/24/outline';
 
-const ScenariosListPage: React.FC = () => (
+const ScenariosListPage: React.FC = () => {
+  const navigate = useNavigate();
+  
+  return (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -18,14 +21,27 @@ const ScenariosListPage: React.FC = () => (
     <GlassPanel className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-white">All Scenarios</h2>
-        <GlassButton variant="primary" leftIcon={<PlusIcon className="w-4 h-4" />}>
+        <GlassButton 
+          variant="primary" 
+          leftIcon={<PlusIcon className="w-4 h-4" />}
+          onClick={() => navigate('/scenarios/create')}
+        >
           Create New Scenario
         </GlassButton>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <GlassPanel key={i} variant="primary" className="p-4 hover:scale-105 transition-transform cursor-pointer">
+          <GlassPanel 
+            key={i} 
+            variant="primary" 
+            className="p-4 hover:scale-105 transition-transform cursor-pointer"
+            onClick={() => {
+              // Navigate to scenario details page (for future implementation)
+              console.log(`Opening scenario ${i} details`);
+              // Could navigate to a details page like: navigate(`/scenarios/${i}`)
+            }}
+          >
             <div className="flex items-start gap-3">
               <DocumentTextIcon className="w-6 h-6 text-blue-400 mt-1" />
               <div className="flex-1">
@@ -44,9 +60,13 @@ const ScenariosListPage: React.FC = () => (
       </div>
     </GlassPanel>
   </motion.div>
-);
+  );
+};
 
-const CreateScenarioPage: React.FC = () => (
+const CreateScenarioPage: React.FC = () => {
+  const navigate = useNavigate();
+  
+  return (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -62,13 +82,27 @@ const CreateScenarioPage: React.FC = () => (
         <DocumentTextIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-white mb-2">Scenario Builder</h3>
         <p className="text-gray-400 mb-6">Coming soon - Visual scenario builder with drag-and-drop interface</p>
-        <GlassButton variant="primary">Start Building</GlassButton>
+        <GlassButton 
+          variant="primary"
+          onClick={() => {
+            // For now, navigate back to scenarios list
+            // In the future, this could open a scenario builder
+            console.log('Starting scenario builder...');
+            navigate('/scenarios');
+          }}
+        >
+          Start Building
+        </GlassButton>
       </div>
     </GlassPanel>
   </motion.div>
-);
+  );
+};
 
-const TemplatesPage: React.FC = () => (
+const TemplatesPage: React.FC = () => {
+  const navigate = useNavigate();
+  
+  return (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -84,11 +118,22 @@ const TemplatesPage: React.FC = () => (
         <DocumentTextIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-white mb-2">Template Library</h3>
         <p className="text-gray-400 mb-6">Browse and use community-contributed scenario templates</p>
-        <GlassButton variant="secondary">Browse Templates</GlassButton>
+        <GlassButton 
+          variant="secondary"
+          onClick={() => {
+            // For now, show a message
+            // In the future, this could open a template browser
+            console.log('Browsing templates...');
+            alert('Template browser coming soon!');
+          }}
+        >
+          Browse Templates
+        </GlassButton>
       </div>
     </GlassPanel>
   </motion.div>
-);
+  );
+};
 
 export const ScenariosPage: React.FC = () => {
   return (

@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { GlassPanel, GlassButton } from '../../components/Glass';
 import { 
   PlayIcon, 
@@ -13,6 +14,7 @@ import {
 import './DashboardPage.scss';
 
 export const DashboardPage: React.FC = () => {
+  const navigate = useNavigate();
   const stats = [
     {
       title: 'Total Scenarios',
@@ -20,6 +22,7 @@ export const DashboardPage: React.FC = () => {
       change: '+3 this week',
       icon: <DocumentTextIcon className="w-6 h-6" />,
       color: 'primary',
+      onClick: () => navigate('/scenarios'),
     },
     {
       title: 'Successful Runs',
@@ -27,6 +30,7 @@ export const DashboardPage: React.FC = () => {
       change: '+12% from last month',
       icon: <CheckCircleIcon className="w-6 h-6" />,
       color: 'success',
+      onClick: () => navigate('/execution/history'),
     },
     {
       title: 'Failed Tests',
@@ -34,6 +38,7 @@ export const DashboardPage: React.FC = () => {
       change: '-5% from last month',
       icon: <ExclamationTriangleIcon className="w-6 h-6" />,
       color: 'warning',
+      onClick: () => navigate('/execution/history'),
     },
     {
       title: 'Avg Response Time',
@@ -41,6 +46,7 @@ export const DashboardPage: React.FC = () => {
       change: '+2ms from yesterday',
       icon: <ClockIcon className="w-6 h-6" />,
       color: 'info',
+      onClick: () => navigate('/analytics/performance'),
     },
   ];
 
@@ -84,28 +90,28 @@ export const DashboardPage: React.FC = () => {
       title: 'Run All Scenarios',
       description: 'Execute complete test suite',
       icon: <PlayIcon className="w-5 h-5" />,
-      action: () => console.log('Run all scenarios'),
+      action: () => navigate('/execution/live'),
       variant: 'primary' as const,
     },
     {
       title: 'Create Scenario',
       description: 'Build new test scenario',
       icon: <DocumentTextIcon className="w-5 h-5" />,
-      action: () => console.log('Create scenario'),
+      action: () => navigate('/scenarios/create'),
       variant: 'secondary' as const,
     },
     {
       title: 'View Reports',
       description: 'Check execution reports',
       icon: <ChartBarIcon className="w-5 h-5" />,
-      action: () => console.log('View reports'),
+      action: () => navigate('/execution/reports'),
       variant: 'default' as const,
     },
     {
       title: 'Manage Plugins',
       description: 'Configure integrations',
       icon: <BoltIcon className="w-5 h-5" />,
-      action: () => console.log('Manage plugins'),
+      action: () => navigate('/plugins'),
       variant: 'default' as const,
     },
   ];
@@ -135,8 +141,9 @@ export const DashboardPage: React.FC = () => {
           >
             <GlassPanel 
               variant={stat.color as any} 
-              className="dashboard-stat-card"
+              className="dashboard-stat-card cursor-pointer"
               hover
+              onClick={stat.onClick}
             >
               <div className="dashboard-stat-card__icon">
                 {stat.icon}
@@ -216,7 +223,11 @@ export const DashboardPage: React.FC = () => {
             </div>
             
             <div className="dashboard-recent-activity__footer">
-              <GlassButton variant="ghost" size="sm">
+              <GlassButton 
+                variant="ghost" 
+                size="sm"
+                onClick={() => navigate('/execution/history')}
+              >
                 View All Activity
               </GlassButton>
             </div>

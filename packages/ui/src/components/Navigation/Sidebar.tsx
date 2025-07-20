@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate, useLocation } from 'react-router-dom';
 import clsx from 'clsx';
 import { GlassButton } from '../Glass';
 import './Sidebar.scss';
@@ -37,6 +38,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   footer,
   className,
 }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const sidebarClasses = clsx(
     'sidebar',
     {
@@ -61,7 +64,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
     const handleClick = () => {
       if (item.disabled) return;
+      
+      // Navigate to the item's path if it exists
+      if (item.path) {
+        navigate(item.path);
+      }
+      
+      // Call the item's custom onClick handler
       item.onClick?.();
+      
+      // Call the parent's onItemClick handler
       onItemClick?.(item);
     };
 

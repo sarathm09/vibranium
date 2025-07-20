@@ -34,11 +34,19 @@ export default defineConfig({
         main: resolve(__dirname, 'index.html'),
       },
       output: {
-        // Code splitting
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          utils: ['clsx', 'framer-motion'],
-          icons: ['@heroicons/react'],
+        // Code splitting - simplified for better compatibility
+        manualChunks: (id) => {
+          if (id.includes('node_modules')) {
+            if (id.includes('react') || id.includes('router')) {
+              return 'vendor';
+            }
+            if (id.includes('framer-motion') || id.includes('clsx')) {
+              return 'utils';
+            }
+            if (id.includes('@heroicons')) {
+              return 'icons';
+            }
+          }
         },
       },
     },

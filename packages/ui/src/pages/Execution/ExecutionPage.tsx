@@ -1,10 +1,13 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { GlassPanel, GlassButton } from '../../components/Glass';
 import { PlayIcon, ClockIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 
-const LiveMonitoringPage: React.FC = () => (
+const LiveMonitoringPage: React.FC = () => {
+  const navigate = useNavigate();
+  
+  return (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -20,13 +23,27 @@ const LiveMonitoringPage: React.FC = () => (
         <PlayIcon className="w-16 h-16 text-green-400 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-white mb-2">Real-time Monitoring</h3>
         <p className="text-gray-400 mb-6">Monitor scenario executions in real-time with live updates</p>
-        <GlassButton variant="success">Start Monitoring</GlassButton>
+        <GlassButton 
+          variant="success"
+          onClick={() => {
+            // For now, show an alert
+            // In the future, this could start live monitoring
+            console.log('Starting live monitoring...');
+            alert('Live monitoring feature coming soon!');
+          }}
+        >
+          Start Monitoring
+        </GlassButton>
       </div>
     </GlassPanel>
   </motion.div>
-);
+  );
+};
 
-const HistoryPage: React.FC = () => (
+const HistoryPage: React.FC = () => {
+  const navigate = useNavigate();
+  
+  return (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -42,13 +59,27 @@ const HistoryPage: React.FC = () => (
         <ClockIcon className="w-16 h-16 text-blue-400 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-white mb-2">Execution History</h3>
         <p className="text-gray-400 mb-6">View detailed history of all scenario executions</p>
-        <GlassButton variant="primary">View History</GlassButton>
+        <GlassButton 
+          variant="primary"
+          onClick={() => {
+            // For now, show an alert
+            // In the future, this could show execution history
+            console.log('Viewing execution history...');
+            alert('Execution history viewer coming soon!');
+          }}
+        >
+          View History
+        </GlassButton>
       </div>
     </GlassPanel>
   </motion.div>
-);
+  );
+};
 
-const ReportsPage: React.FC = () => (
+const ReportsPage: React.FC = () => {
+  const navigate = useNavigate();
+  
+  return (
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
@@ -64,11 +95,22 @@ const ReportsPage: React.FC = () => (
         <ChartBarIcon className="w-16 h-16 text-purple-400 mx-auto mb-4" />
         <h3 className="text-xl font-semibold text-white mb-2">Advanced Reports</h3>
         <p className="text-gray-400 mb-6">Generate comprehensive reports with charts and insights</p>
-        <GlassButton variant="secondary">Generate Report</GlassButton>
+        <GlassButton 
+          variant="secondary"
+          onClick={() => {
+            // For now, show an alert
+            // In the future, this could generate reports
+            console.log('Generating report...');
+            alert('Report generation coming soon!');
+          }}
+        >
+          Generate Report
+        </GlassButton>
       </div>
     </GlassPanel>
   </motion.div>
-);
+  );
+};
 
 export const ExecutionPage: React.FC = () => {
   return (

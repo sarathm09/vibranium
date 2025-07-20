@@ -162,7 +162,7 @@ const RouterContent: React.FC<VibraniumRouterProps> = ({ children }) => {
           onItemClick={handleSidebarItemClick}
         />
       }
-      rightPanel={!rightPanelCollapsed ? <RightPanel /> : undefined}
+      rightPanel={!rightPanelCollapsed ? <RightPanelWrapper /> : undefined}
       sidebarCollapsed={sidebarCollapsed}
       rightPanelCollapsed={rightPanelCollapsed}
       onSidebarToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -171,9 +171,10 @@ const RouterContent: React.FC<VibraniumRouterProps> = ({ children }) => {
       <AnimatePresence mode="wait">
         <Routes>
           {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/scenarios" replace />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           
           {/* Main routes */}
+          <Route path="/dashboard" element={<ScenariosPage />} />
           <Route path="/scenarios/*" element={<ScenariosPage />} />
           <Route path="/execution/*" element={<ExecutionPage />} />
           <Route path="/environments" element={<EnvironmentsPage />} />

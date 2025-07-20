@@ -36,7 +36,11 @@
 ### In Progress
 
 ### Recently Completed
+- [x] **Fixed huge lightning icon blocking UI interface** - Resolved critical UI blocking issue in the web interface: identified oversized BoltIcon in Router.tsx header that was blocking user interaction; created tailwind-utility.scss with proper icon sizing utilities (w-8 h-8 = 2rem); fixed all SCSS files to use @use syntax with vars. namespace prefix instead of bare variables; migrated from @import to modern Sass module system; lightning icon now properly sized and positioned in header without interfering with navigation or content; all glassmorphism components compile correctly; builds successfully with no errors.
+
+### Recently Completed
 - [x] **Overview page simplification** - Completely redesigned the overview-dashboard.tsx component to be terminal-friendly: removed complex cards, visual clutter, and over-engineered interface; implemented clean text-based layout with essential information (scenario name, step counts, environment info, execution status); uses simple borders, good spacing, and fast rendering patterns for better terminal UX.
+- [x] **Sass migration to modern syntax** - Migrated all SCSS files from deprecated @import to modern @use/@forward syntax: converted 8 SCSS files to use namespaced variables (vars.$variable), eliminated all Sass deprecation warnings, maintained full functionality and styling, updated variables.scss, globals.scss, and all component SCSS files with proper module imports, tested build and dev server to confirm no warnings.
 
 ### Planned
 

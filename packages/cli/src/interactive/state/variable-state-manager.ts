@@ -64,6 +64,49 @@ export class VariableStateManager implements IVariableStateManager {
   }
 
   /**
+   * Get global variables (variables in the global category)
+   */
+  getGlobalVariables(): Record<string, any> {
+    const globalVars: Record<string, any> = {};
+    for (const [path, entry] of this.variables.entries()) {
+      if (entry.metadata.category === 'global' || path.startsWith('$.global') || path.startsWith('$.variables')) {
+        // Extract the variable name from the path
+        const varName = path.split('.').pop() || path;
+        globalVars[varName] = entry.value;
+      }
+    }
+    return globalVars;
+  }
+
+  /**
+   * Get environment variables
+   */
+  getEnvironmentVariables(): Record<string, any> {
+    const envVars: Record<string, any> = {};
+    for (const [path, entry] of this.variables.entries()) {
+      if (entry.metadata.category === 'environment' || path.startsWith('$.env')) {
+        const varName = path.split('.').pop() || path;
+        envVars[varName] = entry.value;
+      }
+    }
+    return envVars;
+  }
+
+  /**
+   * Get scenario variables
+   */
+  getScenarioVariables(): Record<string, any> {
+    const scenarioVars: Record<string, any> = {};
+    for (const [path, entry] of this.variables.entries()) {
+      if (entry.metadata.category === 'scenario' || path.startsWith('$.scenario')) {
+        const varName = path.split('.').pop() || path;
+        scenarioVars[varName] = entry.value;
+      }
+    }
+    return scenarioVars;
+  }
+
+  /**
    * Get variable by path
    */
   getVariable(path: string): VariableStateEntry | undefined {

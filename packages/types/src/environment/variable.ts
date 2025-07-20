@@ -164,7 +164,7 @@ export interface VariableResolver {
   clear(scope?: VariableScope): void;
   
   /** Validate variable */
-  validate(name: string, value: any): ValidationResult;
+  validate(name: string, value: any): VariableValidationResult;
 }
 
 /**
@@ -210,7 +210,7 @@ export interface SecretProvider {
 /**
  * Validation result
  */
-export interface ValidationResult {
+export interface VariableValidationResult {
   valid: boolean;
   errors: string[];
   warnings: string[];

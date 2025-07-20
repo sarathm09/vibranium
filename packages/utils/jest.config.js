@@ -1,12 +1,12 @@
 module.exports = {
-  displayName: 'types',
+  displayName: 'utils',
   preset: '../../jest.preset.js',
   testEnvironment: 'node',
   transform: {
     '^.+\\.[tj]s$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }]
   },
-  moduleFileExtensions: ['ts', 'js', 'html'],
-  coverageDirectory: '../../coverage/packages/types',
+  moduleFileExtensions: ['ts', 'js'],
+  coverageDirectory: '../../coverage/packages/utils',
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.spec.ts',

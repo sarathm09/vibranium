@@ -4,8 +4,31 @@
  * structured logging, and global configuration management
  */
 
-export * from './file-system';
+// Filesystem utilities
+export * from './filesystem';
+
+// Environment management
 export * from './environment';
-export * from './random';
-export * from './logger';
+
+// Random data generation
+export * from './data';
+
+// Structured logging
+export * from './logging';
+
+// Configuration management
 export * from './config';
+
+// Template processing
+export * from './template';
+
+// Performance utilities
+export * from './performance';
+
+// Legacy exports for backward compatibility
+export { FileSystemHelper } from './file-system';
+export type { FileSystemUtils } from './file-system';
+export { RandomHelper } from './random';
+export type { RandomDataGenerator } from './random';
+export { VibraniumLogger as LegacyVibraniumLogger, vibraniumLogger } from './logger';
+export type { Logger as LegacyLogger, LogLevel as LegacyLogLevel } from './logger';

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import type { Scenario } from '@vibraniumjs/types';
+import type { Scenario } from './types';
 import './App.css';
 
 function App() {

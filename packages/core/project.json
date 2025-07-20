@@ -9,7 +9,7 @@
       "options": {
         "outputPath": "packages/core/dist"
       },
-      "dependsOn": ["^build"]
+      "dependsOn": ["utils:build", "types:build", "http-client:build"]
     },
     "test": {
       "executor": "@nx/jest:jest",

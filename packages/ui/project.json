@@ -8,7 +8,16 @@
       "outputs": ["{options.outputPath}"],
       "options": {
         "outputPath": "packages/ui/dist"
-      }
+      },
+      "configurations": {
+        "production": {
+          "mode": "production"
+        },
+        "development": {
+          "mode": "development"
+        }
+      },
+      "defaultConfiguration": "production"
     },
     "test": {
       "executor": "@nx/jest:jest",
@@ -16,13 +25,26 @@
       "options": {
         "jestConfig": "packages/ui/jest.config.cjs",
         "passWithNoTests": true
+      },
+      "configurations": {
+        "watch": {
+          "watch": true
+        },
+        "coverage": {
+          "codeCoverage": true
+        }
       }
     },
     "lint": {
       "executor": "@nx/eslint:lint",
       "outputs": ["{options.outputFile}"],
       "options": {
-        "lintFilePatterns": ["packages/ui/**/*.{ts,tsx}"]
+        "lintFilePatterns": ["packages/ui/**/*.{ts,tsx,js,jsx}"]
+      },
+      "configurations": {
+        "fix": {
+          "fix": true
+        }
       }
     },
     "typecheck": {
@@ -35,15 +57,35 @@
     "serve": {
       "executor": "@nx/vite:dev-server",
       "options": {
-        "buildTarget": "ui:build"
-      }
+        "buildTarget": "ui:build",
+        "port": 3000,
+        "host": "localhost"
+      },
+      "configurations": {
+        "production": {
+          "buildTarget": "ui:build:production",
+          "hmr": false
+        },
+        "development": {
+          "buildTarget": "ui:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
     },
     "preview": {
       "executor": "@nx/vite:preview-server",
       "options": {
-        "buildTarget": "ui:build"
+        "buildTarget": "ui:build",
+        "port": 3001
+      }
+    },
+    "storybook": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "echo 'Storybook not configured yet. Run: nx g @nx/storybook:configuration ui'"
       }
     }
   },
-  "tags": ["type:application", "scope:ui"]
+  "tags": ["type:application", "scope:ui"],
+  "implicitDependencies": ["types"]
 }

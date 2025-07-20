@@ -4,6 +4,7 @@
 
 import type { DependsOn } from './dependency';
 import type { ExpectBlock } from '../validation/expect';
+import type { HttpMethod } from '../http';
 
 /**
  * Base step interface - all step types extend this
@@ -88,14 +89,7 @@ export type StepType = 'api' | 'ui' | string;
 /**
  * HTTP methods for API steps
  */
-export type HttpMethod = 
-  | 'GET'
-  | 'POST'
-  | 'PUT'
-  | 'PATCH'
-  | 'DELETE'
-  | 'HEAD'
-  | 'OPTIONS';
+// HttpMethod is defined in http.ts to avoid duplication
 
 /**
  * Authentication configuration for API steps

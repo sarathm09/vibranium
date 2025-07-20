@@ -2,22 +2,22 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
+    "rootDir": "./src",
     "declaration": true,
     "declarationMap": true,
     "composite": true,
-    "rootDir": "./src"
+    "skipLibCheck": true,
+    "noEmit": false,
+    "baseUrl": "."
   },
   "include": ["src/**/*"],
-  "exclude": ["dist", "**/*.spec.ts", "**/*.test.ts"],
+  "exclude": ["dist", "**/*.spec.ts", "**/*.test.ts", "src/__tests__/**/*"],
   "references": [
-    {
-      "path": "../types"
-    },
     {
       "path": "../utils"
     },
     {
-      "path": "../http-client"
+      "path": "../types"
     }
   ]
 }

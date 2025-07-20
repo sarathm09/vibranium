@@ -4,10 +4,11 @@
   "sourceRoot": "packages/types/src",
   "targets": {
     "build": {
-      "executor": "@nx/vite:build",
-      "outputs": ["{options.outputPath}"],
+      "executor": "nx:run-commands",
+      "outputs": ["{projectRoot}/dist"],
       "options": {
-        "outputPath": "packages/types/dist"
+        "command": "tsc",
+        "cwd": "packages/types"
       }
     },
     "test": {

@@ -10,7 +10,22 @@ export default defineConfig({
       fileName: (format) => `index.${format === 'es' ? 'mjs' : 'js'}`
     },
     rollupOptions: {
-      external: ['@vibraniumjs/types', 'yaml', 'chalk', 'uuid', 'fs', 'path'],
+      external: [
+        '@vibraniumjs/types', 
+        'yaml', 
+        'chalk', 
+        'uuid', 
+        'fs', 
+        'path', 
+        'os',
+        'stream',
+        'fs/promises',
+        'node:fs/promises',
+        'node:stream',
+        'node:path',
+        'chokidar',
+        'glob'
+      ],
       output: {
         globals: {
           '@vibraniumjs/types': 'VibraniumTypes',

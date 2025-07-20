@@ -7,10 +7,16 @@ Refer to the comprehensive design document `./apps/docs/Design and Requirements.
 1. **Task Organization System**: Maintain organized task tracking in `tasks/todo.md`. List down all tasks planned, in progress and completed ones. In progress ones should be at the top, planned/pending next and completed ones should be at the bottom.  **CRITICAL**: update task tracking as work progresses, adding short (max 2 line) summary and marking the task status in the todo file. 
 2. **Session Start Process**: **CRITICAL** At the start of each session, go through the todo file, pick the list of bugs and tasks. First think through the problem, read the codebase for relevant files, and prepare a plan that groups then changes into isolated sub tasks so that things can be parallelized and done effectively without conflicts.
 3. **Validation**: Before beginning work, check in with user to verify the plan
-4. **Implementation**: **CRITICAL** Always use parallel Task agents for implementation work. Launch multiple Task tools concurrently for maximum efficiency. NEVER work sequentially when tasks can be parallelized. Each task handles ONLY specified files or file types
+4. **Implementation**: 
+    - **CRITICAL** Always use parallel Task agents for implementation work. Launch multiple Task tools concurrently for maximum efficiency. 
+    - **NEVER** work sequentially when tasks can be parallelized. Each task handles ONLY specified files or file types. 
+    - **CRITICAL** Never use `git reset` or anyway reset the code, it might affect other parallel tasks
+    - **CRITICAL** Never use `rm` or any command to delete any files. If you want to delete anything, just move it to a `to_be_deleted` directory in the root folder of the project.
 5. **Simplicity**: **CRITICAL** Make MINIMAL CHANGES to existing patterns and structures. Diligently follow the task organization system every session
 6. **UX Standards**: Research standard UX best practices from FAANG/SaaS companies and grade implementation. Ensure app conforms to style guide across all screens
-6. **Code Best Practices**: Research standard coding best practices from FAANG/SaaS companies and grade implementation. Have linting and static checks enabled on build.  **CRITICAL** Follow design patterns extensively and have extensible coding practices with interface/protocol based approach wherever possible.
+6. **Code Best Practices**: 
+    - Research standard coding best practices from FAANG/SaaS companies and grade implementation. Have linting and static checks enabled on build. 
+    - **CRITICAL** Follow design patterns extensively and have extensible coding practices with interface/protocol based approach wherever possible.
 8. **Technical Support**: Use context7 mcp for latest Typescript/Nx/Node/other library docs
 9. **Quality & Security**: 
     -  **CRITICAL**: Check all code follows security best practices. Ensure no sensitive information exposure or exploitable vulnerabilities

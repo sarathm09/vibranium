@@ -2,7 +2,10 @@
  * Variable system types for Vibranium CLI
  */
 
-export interface VariableMap {
+// Simple variable map for backward compatibility  
+export type VariableMap = Record<string, any>;
+
+export interface VibraniumVariableMap {
   env: Record<string, any>;
   global: Record<string, any>;
   context: Record<string, any>;
@@ -14,14 +17,14 @@ export interface VariableMap {
 }
 
 export interface DotNotationResolver {
-  resolve(expression: string, variables: VariableMap): any;
-  set(path: string, value: any, variables: VariableMap): void;
-  has(path: string, variables: VariableMap): boolean;
-  interpolate(template: string, variables: VariableMap): string;
+  resolve(expression: string, variables: VibraniumVariableMap): any;
+  set(path: string, value: any, variables: VibraniumVariableMap): void;
+  has(path: string, variables: VibraniumVariableMap): boolean;
+  interpolate(template: string, variables: VibraniumVariableMap): string;
 }
 
 export interface VariableContext {
-  variables: VariableMap;
+  variables: VibraniumVariableMap;
   resolver: DotNotationResolver;
   
   get(path: string): any;

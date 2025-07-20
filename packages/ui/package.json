@@ -8,8 +8,12 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "jest",
-    "lint": "eslint src --ext .ts,.tsx",
-    "typecheck": "tsc --noEmit"
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src --ext .ts,.tsx,.js,.jsx",
+    "lint:fix": "eslint src --ext .ts,.tsx,.js,.jsx --fix",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
   },
   "keywords": [
     "vibranium",
@@ -29,7 +33,6 @@
     "access": "public"
   },
   "dependencies": {
-    "@vibraniumjs/types": "^0.1.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
@@ -41,6 +44,13 @@
     "typescript": "^5.8.3",
     "vite": "^6.3.5",
     "eslint-plugin-react": "^7.37.8",
-    "eslint-plugin-react-hooks": "^5.1.0"
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "sass": "^1.82.0",
+    "@types/jest": "^29.5.14",
+    "jsdom": "^25.0.1",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/user-event": "^14.5.2"
   }
 }

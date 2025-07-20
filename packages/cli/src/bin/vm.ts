@@ -6,7 +6,7 @@
 import program from './vibranium';
 
 if (require.main === module) {
-  program.parse();
+  program.parse(process.argv);
 }
 
 export default program;

@@ -7,6 +7,9 @@ import type { Environment } from '../environment/environment';
 import type { VariableContext } from '../variable/context';
 import type { StepResult } from '../scenario/step';
 import type { DependencyResult } from '../scenario/dependency';
+import type { ExecutionError, ReportFormat } from './result';
+import type { RetryConfig } from '../http';
+import type { PluginRegistry } from '../plugin';
 
 /**
  * Core execution context
@@ -138,25 +141,7 @@ export interface ExecutionConfig {
   performance?: PerformanceConfig;
 }
 
-/**
- * Retry configuration
- */
-export interface RetryConfig {
-  /** Maximum retry attempts */
-  maxAttempts: number;
-  
-  /** Delay between retries (ms) */
-  delay: number;
-  
-  /** Exponential backoff factor */
-  backoffFactor?: number;
-  
-  /** Maximum delay (ms) */
-  maxDelay?: number;
-  
-  /** Retry condition */
-  condition?: (error: Error) => boolean;
-}
+// RetryConfig is defined in http.ts to avoid duplication
 
 /**
  * Parallel execution configuration
@@ -195,10 +180,7 @@ export interface ReportingConfig {
   includeData?: boolean;
 }
 
-/**
- * Report formats
- */
-export type ReportFormat = 'html' | 'json' | 'junit' | 'markdown' | 'csv';
+// ReportFormat is defined in result.ts to avoid duplication
 
 /**
  * Debug configuration
@@ -266,28 +248,7 @@ export interface ResourceUsage {
   };
 }
 
-/**
- * Execution error
- */
-export interface ExecutionError {
-  /** Error message */
-  message: string;
-  
-  /** Error code */
-  code: string;
-  
-  /** Error stack trace */
-  stack?: string;
-  
-  /** Step that caused the error */
-  step?: string;
-  
-  /** Error context */
-  context?: Record<string, any>;
-  
-  /** Original error */
-  originalError?: Error;
-}
+// ExecutionError is defined in result.ts to avoid duplication
 
 /**
  * Logger interface
@@ -303,12 +264,7 @@ export interface Logger {
 /**
  * Plugin registry interface
  */
-export interface PluginRegistry {
-  get(stepType: string): Plugin | undefined;
-  list(): Plugin[];
-  register(plugin: Plugin): void;
-  unregister(name: string): void;
-}
+// PluginRegistry is defined in plugin.ts to avoid duplication
 
 /**
  * Plugin interface (simplified)

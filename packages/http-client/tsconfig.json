@@ -5,7 +5,12 @@
     "declaration": true,
     "declarationMap": true,
     "composite": true,
-    "rootDir": "./src"
+    "rootDir": "./src",
+    "noEmit": false,
+    "emitDeclarationOnly": false,
+    "module": "ESNext",
+    "target": "ES2022",
+    "moduleResolution": "node"
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "src/**/*.test.ts", "src/__tests__/**/*"]

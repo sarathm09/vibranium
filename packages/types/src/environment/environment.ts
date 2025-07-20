@@ -193,7 +193,7 @@ export interface EnvironmentManager {
   setCurrent(name: string): Promise<void>;
   
   /** Validate environment configuration */
-  validate(environment: Environment): ValidationResult[];
+  validate(environment: Environment): EnvironmentValidationResult[];
   
   /** Merge environments */
   merge(base: Environment, override: Partial<Environment>): Environment;
@@ -202,7 +202,7 @@ export interface EnvironmentManager {
 /**
  * Environment validation result
  */
-export interface ValidationResult {
+export interface EnvironmentValidationResult {
   /** Validation passed */
   valid: boolean;
   

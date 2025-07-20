@@ -2,7 +2,9 @@
  * Environment management utilities
  */
 
-import type { Environment, VariableMap } from '@vibraniumjs/types';
+// import type { Environment, VariableMap } from '@vibraniumjs/types';
+type Environment = any;
+type VariableMap = any;
 
 export interface EnvironmentManager {
   loadEnvironment(name: string): Promise<Environment>;

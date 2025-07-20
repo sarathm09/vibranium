@@ -1,0 +1,2 @@
+# Ignore root package.json to prevent it from being treated as a project
+package.json

@@ -5,7 +5,8 @@
     "declaration": true,
     "declarationMap": true,
     "composite": true,
-    "rootDir": "./src"
+    "skipLibCheck": true,
+    "noEmit": false
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "**/*.spec.ts", "**/*.test.ts"],

@@ -39,17 +39,20 @@
     "access": "public"
   },
   "dependencies": {
-    "@vibraniumjs/types": "^0.1.0",
     "@vibraniumjs/utils": "^0.1.0",
-    "@vibraniumjs/http-client": "^0.1.0",
     "ajv": "^8.19.0",
+    "ajv-formats": "^3.0.1",
     "jsonpath-plus": "^10.2.0",
-    "xpath": "^0.0.34"
+    "xpath": "^0.0.34",
+    "@xmldom/xmldom": "^0.9.6",
+    "yaml": "^2.6.1"
   },
   "devDependencies": {
     "@types/node": "^24.0.15",
-    "@types/xpath": "^0.0.36",
+    "@types/glob": "^8.1.0",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "@vibraniumjs/plugins": "^0.1.0",
+    "msw": "^1.3.2"
   }
 }

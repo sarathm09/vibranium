@@ -9,6 +9,8 @@ import { NavigationTree } from './components/navigation-tree';
 import { DetailsPane } from './components/details-pane';
 import { StatusBar } from './components/status-bar';
 import { VariablePreview } from './components/variable-preview';
+import EnvironmentViewer from './components/environment-viewer';
+import EnvironmentSwitcher from './components/environment-switcher';
 import { ExitCodes } from '../utils/exit-codes';
 
 export interface VibraniumAppProps {
@@ -44,7 +46,11 @@ const VibraniumAppInner: React.FC = () => {
       selectScenario,
       scrollDetailsPane,
       changeDetailsViewMode,
-      toggleAutoScroll
+      toggleAutoScroll,
+      showEnvironmentViewer,
+      showEnvironmentSwitcher,
+      reloadEnvironments,
+      dispatch
     } 
   } = useAppContext();
   
@@ -177,7 +183,7 @@ const VibraniumAppInner: React.FC = () => {
             }
             break;
           case 'e':
-            togglePane('next'); // Cycle through environments
+            showEnvironmentViewer();
             break;
           case 'v':
             togglePane('variables');
@@ -193,6 +199,18 @@ const VibraniumAppInner: React.FC = () => {
       // Handle mode toggle
       if (input.toLowerCase() === 'm' && !key.ctrl) {
         toggleNavigationMode();
+        return;
+      }
+      
+      // Handle environment switcher (E key without Ctrl)
+      if (input.toLowerCase() === 'e' && !key.ctrl) {
+        showEnvironmentSwitcher();
+        return;
+      }
+      
+      // Handle environment reload (Shift+E)
+      if (input.toLowerCase() === 'e' && key.shift) {
+        reloadEnvironments();
         return;
       }
       
@@ -465,7 +483,9 @@ const VibraniumAppInner: React.FC = () => {
             console.log('- I: Toggle step inspection mode');
             console.log('- 1-5: Switch details view modes (when in details pane)');
             console.log('- J/K: Navigate steps (when in details pane)');
-            console.log('- Ctrl+E: Switch environment');
+            console.log('- E: Environment switcher');
+            console.log('- Ctrl+E: Environment viewer');
+            console.log('- Shift+E: Reload environments');
             console.log('- Ctrl+V: Toggle variables');
             console.log('- Ctrl+C: Command mode');
             console.log('- Ctrl+Q: Quit');
@@ -537,20 +557,30 @@ const VibraniumAppInner: React.FC = () => {
           <DetailsPane />
         </Box>
 
-        {/* Right panel - Variable Preview (toggleable) */}
+        {/* Right panel - Enhanced Variable Preview (toggleable) */}
         {state.ui.showVariablePreview && (
           <Box 
             width={varWidth}
             borderStyle={state.ui.activePane === 'variables' ? 'double' : 'single'}
             borderColor={state.ui.activePane === 'variables' ? 'blue' : 'gray'}
           >
-            <VariablePreview />
+            <EnhancedVariablePreview />
           </Box>
         )}
       </Box>
 
       {/* Compact bottom status bar */}
       <StatusBar />
+      
+      {/* Environment overlays */}
+      <EnvironmentViewer 
+        isVisible={state.ui.showEnvironmentViewer}
+        onClose={() => dispatch({ type: 'SHOW_ENVIRONMENT_VIEWER', payload: false })}
+      />
+      <EnvironmentSwitcher 
+        isVisible={state.ui.showEnvironmentSwitcher}
+        onClose={() => dispatch({ type: 'SHOW_ENVIRONMENT_SWITCHER', payload: false })}
+      />
     </Box>
   );
 };

@@ -6,6 +6,8 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { parse as parseYaml } from 'yaml';
 import { Scenario, ScenarioResult, Environment } from '../types';
 import { ResolvedConfig } from '../../utils/config-resolver';
+import { VariableStateManager } from './variable-state-manager';
+import { VariableChangeEvent } from '../types/variable-state';
 // Temporarily commented out for testing until build issues are resolved
 // import { ScenarioOrchestrator, ExecutionProgress } from '@vibraniumjs/core';
 // import { CoreApiPlugin } from '@vibraniumjs/plugins';
@@ -77,6 +79,9 @@ export interface AppState {
   environments: Environment[];
   currentEnvironment: string;
   config: ResolvedConfig;
+  
+  // Variable state management
+  variableManager: VariableStateManager;
 
   // File system navigation
   fileSystemTree: FileSystemNode[];
@@ -105,9 +110,14 @@ export interface AppState {
     editorContent: string;
     editorChanged: boolean;
     navigationMode: 'scenarios' | 'folders'; // Toggle between scenarios and file navigation
-    detailsViewMode: 'overview' | 'steps' | 'step-detail' | 'raw' | 'execution' | 'realtime'; // Enhanced view modes
+    detailsViewMode: 'overview' | 'steps' | 'step-detail' | 'raw' | 'execution' | 'realtime' | 'results-summary' | 'results-timeline' | 'results-details' | 'results-errors'; // Enhanced view modes
     stepInspectionMode: boolean; // Whether we're in step inspection mode
     detailsScrollOffset: number; // Scroll position in details pane
+    // Environment UI state
+    showEnvironmentViewer: boolean;
+    showEnvironmentSwitcher: boolean;
+    environmentComparisonMode: boolean;
+    selectedEnvironmentForComparison?: string;
   };
 
   // Status
@@ -131,6 +141,11 @@ export interface AppActions {
   // Environment management
   switchEnvironment: (environment?: string) => Promise<void>;
   loadEnvironments: () => Promise<void>;
+  showEnvironmentViewer: () => void;
+  showEnvironmentSwitcher: () => void;
+  compareEnvironments: (env1: string, env2: string) => void;
+  getEnvironmentVariables: (environmentName: string) => Record<string, any>;
+  reloadEnvironments: () => Promise<void>;
 
   // Execution
   runCurrentScenario: () => Promise<void>;
@@ -171,6 +186,10 @@ export interface AppActions {
   navigateScenarios: (direction: 'up' | 'down') => void;
   navigateSteps: (direction: 'up' | 'down') => void;
   navigateFileSystem: (direction: 'up' | 'down') => Promise<void>;
+  
+  // Variable management
+  updateVariableState: () => void;
+  trackVariableUsage: (path: string, stepIndex: number, stepName: string, usageType: 'read' | 'write' | 'reference', field: string) => void;
 }
 
 export interface AppContextValue {
@@ -212,7 +231,10 @@ type Action =
   | { type: 'COLLAPSE_FOLDER'; payload: string }
   | { type: 'SET_BREADCRUMBS'; payload: string[] }
   | { type: 'TOGGLE_NAVIGATION_MODE' }
-  | { type: 'SCROLL_DETAILS_PANE'; payload: number };
+  | { type: 'SCROLL_DETAILS_PANE'; payload: number }
+  | { type: 'SHOW_ENVIRONMENT_VIEWER'; payload: boolean }
+  | { type: 'SHOW_ENVIRONMENT_SWITCHER'; payload: boolean }
+  | { type: 'SET_ENVIRONMENT_COMPARISON'; payload: { enabled: boolean; environment?: string } };
 
 // Reducer
 function appReducer(state: AppState, action: Action): AppState {
@@ -385,6 +407,36 @@ function appReducer(state: AppState, action: Action): AppState {
         ui: { ...state.ui, detailsScrollOffset: Math.max(0, action.payload) }
       };
     
+    case 'SHOW_ENVIRONMENT_VIEWER':
+      return {
+        ...state,
+        ui: { 
+          ...state.ui, 
+          showEnvironmentViewer: action.payload,
+          showEnvironmentSwitcher: false // Close switcher if viewer is opened
+        }
+      };
+    
+    case 'SHOW_ENVIRONMENT_SWITCHER':
+      return {
+        ...state,
+        ui: { 
+          ...state.ui, 
+          showEnvironmentSwitcher: action.payload,
+          showEnvironmentViewer: false // Close viewer if switcher is opened
+        }
+      };
+    
+    case 'SET_ENVIRONMENT_COMPARISON':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          environmentComparisonMode: action.payload.enabled,
+          selectedEnvironmentForComparison: action.payload.environment
+        }
+      };
+    
     default:
       return state;
   }
@@ -399,6 +451,7 @@ function createInitialState(config: ResolvedConfig, environment: string): AppSta
     environments: [],
     currentEnvironment: environment,
     config,
+    variableManager: new VariableStateManager(),
     fileSystemTree: [],
     currentDirectory: config.workspaceRoot,
     selectedNodePath: '',
@@ -423,7 +476,12 @@ function createInitialState(config: ResolvedConfig, environment: string): AppSta
       navigationMode: 'folders',
       detailsViewMode: 'overview',
       stepInspectionMode: false,
-      detailsScrollOffset: 0
+      detailsScrollOffset: 0,
+      // Environment UI state
+      showEnvironmentViewer: false,
+      showEnvironmentSwitcher: false,
+      environmentComparisonMode: false,
+      selectedEnvironmentForComparison: undefined
     },
     status: {
       message: 'Welcome to Vibranium CLI',
@@ -741,17 +799,108 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
 
     async loadEnvironments() {
       try {
-        // Simplified environment loading for now
+        // Enhanced environment loading with more realistic data
         const environments = [
-          { name: 'local', variables: {}, secrets: {} },
-          { name: 'staging', variables: {}, secrets: {} },
-          { name: 'production', variables: {}, secrets: {} }
+          { 
+            name: 'local', 
+            description: 'Local development environment',
+            baseUrl: 'http://localhost:3000',
+            timeout: 5000,
+            variables: {
+              API_KEY: 'dev-key-123',
+              DEBUG_MODE: 'true',
+              DB_HOST: 'localhost',
+              CACHE_ENABLED: 'false'
+            }, 
+            secrets: {
+              JWT_SECRET: 'local-secret',
+              DB_PASSWORD: 'dev-password'
+            },
+            metadata: {
+              type: 'development' as const,
+              owner: 'dev-team',
+              version: '1.0.0'
+            }
+          },
+          { 
+            name: 'staging', 
+            description: 'Staging environment for testing',
+            baseUrl: 'https://api-staging.example.com',
+            timeout: 10000,
+            variables: {
+              API_KEY: 'staging-key-456',
+              DEBUG_MODE: 'false',
+              DB_HOST: 'staging-db.example.com',
+              CACHE_ENABLED: 'true',
+              RATE_LIMIT: '1000'
+            }, 
+            secrets: {
+              JWT_SECRET: 'staging-secret',
+              DB_PASSWORD: 'staging-password'
+            },
+            metadata: {
+              type: 'testing' as const,
+              owner: 'qa-team',
+              version: '1.0.0'
+            }
+          },
+          { 
+            name: 'production', 
+            description: 'Production environment',
+            baseUrl: 'https://api.example.com',
+            timeout: 15000,
+            variables: {
+              API_KEY: 'prod-key-789',
+              DEBUG_MODE: 'false',
+              DB_HOST: 'prod-db.example.com',
+              CACHE_ENABLED: 'true',
+              RATE_LIMIT: '10000',
+              CDN_URL: 'https://cdn.example.com'
+            }, 
+            secrets: {
+              JWT_SECRET: 'prod-secret',
+              DB_PASSWORD: 'prod-password'
+            },
+            metadata: {
+              type: 'production' as const,
+              owner: 'ops-team',
+              version: '1.0.0'
+            }
+          }
         ];
         dispatch({ type: 'SET_ENVIRONMENTS', payload: environments });
-        actions.setStatus('Environments loaded', 'success');
+        actions.setStatus(`Loaded ${environments.length} environments`, 'success');
       } catch (error) {
         actions.setStatus(`Failed to load environments: ${error instanceof Error ? error.message : error}`, 'error');
       }
+    },
+
+    showEnvironmentViewer() {
+      dispatch({ type: 'SHOW_ENVIRONMENT_VIEWER', payload: true });
+      actions.setStatus('Environment viewer opened', 'info');
+    },
+
+    showEnvironmentSwitcher() {
+      dispatch({ type: 'SHOW_ENVIRONMENT_SWITCHER', payload: true });
+      actions.setStatus('Environment switcher opened', 'info');
+    },
+
+    compareEnvironments(env1: string, env2: string) {
+      dispatch({ 
+        type: 'SET_ENVIRONMENT_COMPARISON', 
+        payload: { enabled: true, environment: env2 } 
+      });
+      actions.setStatus(`Comparing environments: ${env1} vs ${env2}`, 'info');
+    },
+
+    getEnvironmentVariables(environmentName: string): Record<string, any> {
+      const environment = state.environments.find(env => env.name === environmentName);
+      return environment?.variables || {};
+    },
+
+    async reloadEnvironments() {
+      actions.setStatus('Reloading environments...', 'info');
+      await actions.loadEnvironments();
     },
 
     async runCurrentScenario() {
@@ -1088,6 +1237,17 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
         // Show real-time status update
         actions.setStatus(`⏳ Running step ${i + 1}/${scenario.steps.length}: ${runningResult.stepName}`, 'info');
         
+        // Track variable usage for this step
+        if (step.type === 'api') {
+          if (step.url) actions.trackVariableUsage('$.request.url', i, runningResult.stepName, 'read', 'url');
+          if (step.method) actions.trackVariableUsage('$.request.method', i, runningResult.stepName, 'read', 'method');
+          if (step.headers) {
+            Object.keys(step.headers).forEach(header => {
+              actions.trackVariableUsage(`$.request.headers.${header}`, i, runningResult.stepName, 'read', `headers.${header}`);
+            });
+          }
+        }
+        
         // Simulate step execution time based on step type
         const baseDelay = step.type === 'api' ? 800 : 300;
         const randomDelay = Math.random() * 1200;
@@ -1151,6 +1311,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
         
         // Update real-time result
         dispatch({ type: 'UPDATE_REAL_TIME_STEP', payload: realTimeResult });
+        
+        // Track response variable writes
+        if (stepResult.status === 'passed' && realTimeResult.response) {
+          actions.trackVariableUsage('$.response.status', i, runningResult.stepName, 'write', 'status');
+          actions.trackVariableUsage('$.response.body', i, runningResult.stepName, 'write', 'body');
+          actions.trackVariableUsage('$.response.headers', i, runningResult.stepName, 'write', 'headers');
+          actions.trackVariableUsage('$.response.duration', i, runningResult.stepName, 'write', 'duration');
+        }
         
         stepResults.push(stepResult);
         
@@ -1649,6 +1817,91 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
         await actions.selectFileSystemNode(selectedNode.path);
         actions.setStatus(`Selected: ${selectedNode.name}`, 'info');
       }
+    },
+
+    // Variable management methods
+    updateVariableState() {
+      try {
+        const manager = state.variableManager;
+        
+        // Environment variables
+        manager.setVariable('$.env.API_URL', process.env.API_URL || 'https://api.example.com', 'environment');
+        manager.setVariable('$.env.TIMEOUT', parseInt(process.env.TIMEOUT || '10000'), 'environment');
+        manager.setVariable('$.env.DEBUG', process.env.DEBUG === 'true', 'environment');
+        manager.setVariable('$.env.NODE_ENV', process.env.NODE_ENV || 'development', 'environment');
+        
+        // Global context variables
+        manager.setVariable('$.global.version', '1.0.0', 'system');
+        manager.setVariable('$.global.timestamp', new Date().toISOString(), 'system');
+        manager.setVariable('$.global.platform', process.platform, 'system');
+        
+        // Execution context
+        manager.setVariable('$.context.executionId', 'exec_' + Date.now(), 'runtime');
+        manager.setVariable('$.context.startTime', new Date().toISOString(), 'runtime');
+        manager.setVariable('$.context.environment', state.currentEnvironment, 'runtime');
+        manager.setVariable('$.context.scenarioCount', state.scenarios.length, 'runtime');
+        
+        // Current scenario variables
+        if (state.currentScenario) {
+          manager.setVariable('$.scenario.name', state.currentScenario.name, 'scenario');
+          manager.setVariable('$.scenario.stepCount', state.currentScenario.steps?.length || 0, 'scenario');
+          manager.setVariable('$.scenario.currentStep', state.ui.selectedStepIndex + 1, 'scenario');
+        }
+
+        // Current step variables
+        if (state.currentScenario?.steps && state.ui.selectedStepIndex >= 0) {
+          const currentStep = state.currentScenario.steps[state.ui.selectedStepIndex];
+          manager.setVariable('$.api.name', currentStep.name || `Step ${state.ui.selectedStepIndex + 1}`, 'runtime');
+          manager.setVariable('$.api.type', currentStep.type || 'unknown', 'runtime');
+          manager.setVariable('$.api.index', state.ui.selectedStepIndex, 'runtime');
+          
+          if (currentStep.type === 'api') {
+            manager.setVariable('$.request.method', (currentStep as any).method || 'GET', 'runtime');
+            manager.setVariable('$.request.url', (currentStep as any).url || '', 'runtime');
+            manager.setVariable('$.request.timeout', (currentStep as any).timeout || 30000, 'runtime');
+            
+            if ((currentStep as any).headers) {
+              Object.entries((currentStep as any).headers).forEach(([key, value]) => {
+                manager.setVariable(`$.request.headers.${key}`, value, 'runtime');
+              });
+            }
+          }
+        }
+
+        // Response variables from last execution
+        if (state.lastResult?.stepResults && state.ui.selectedStepIndex < state.lastResult.stepResults.length) {
+          const stepResult = state.lastResult.stepResults[state.ui.selectedStepIndex];
+          if (stepResult) {
+            manager.setVariable('$.response.success', stepResult.success, 'response');
+            manager.setVariable('$.response.duration', stepResult.duration, 'response');
+            manager.setVariable('$.response.error', stepResult.error || null, 'response');
+            
+            if (stepResult.response) {
+              manager.setVariable('$.response.status', stepResult.response.status, 'response');
+              manager.setVariable('$.response.statusText', stepResult.response.statusText || '', 'response');
+              manager.setVariable('$.response.body', stepResult.response.body, 'response');
+              manager.setVariable('$.response.headers', stepResult.response.headers || {}, 'response');
+            }
+          }
+        }
+        
+        // Execution history variables
+        if (state.executionHistory.length > 0) {
+          manager.setVariable('$.history.count', state.executionHistory.length, 'runtime');
+          manager.setVariable('$.history.lastSuccess', state.executionHistory.find(r => r.success)?.scenarioName || null, 'runtime');
+          manager.setVariable('$.history.successRate', Math.round((state.executionHistory.filter(r => r.success).length / state.executionHistory.length) * 100), 'runtime');
+        }
+      } catch (error) {
+        console.error('Failed to update variable state:', error);
+      }
+    },
+
+    trackVariableUsage(path: string, stepIndex: number, stepName: string, usageType: 'read' | 'write' | 'reference', field: string) {
+      try {
+        state.variableManager.trackUsage(path, stepIndex, stepName, usageType, field);
+      } catch (error) {
+        console.error('Failed to track variable usage:', error);
+      }
     }
   };
 
@@ -1665,16 +1918,14 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
         const scenarios = await resolver.findScenarios(initialProps.config);
         dispatch({ type: 'SET_SCENARIOS', payload: scenarios });
         
-        // Load environments
-        const environments = [
-          { name: 'local', variables: {}, secrets: {} },
-          { name: 'staging', variables: {}, secrets: {} },
-          { name: 'production', variables: {}, secrets: {} }
-        ];
-        dispatch({ type: 'SET_ENVIRONMENTS', payload: environments });
+        // Load environments using the enhanced loader
+        await actions.loadEnvironments();
         
         // Load initial file system tree from the configured workspace root
         await actions.loadFileSystemTree(initialProps.config.workspaceRoot);
+        
+        // Initialize variable state
+        actions.updateVariableState();
         
       } catch (error) {
         console.error('Error loading initial data:', error);
@@ -1684,6 +1935,11 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
     
     loadInitialData();
   }, []);
+
+  // Update variable state when relevant state changes
+  useEffect(() => {
+    actions.updateVariableState();
+  }, [state.currentScenario, state.currentEnvironment, state.ui.selectedStepIndex, state.lastResult]);
 
   const contextValue: AppContextValue = {
     state,

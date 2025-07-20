@@ -11,6 +11,7 @@
 - [x] Directory detection issue in interactive mode - Fixed: Updated all CLI commands to use process.cwd() consistently for user's actual working directory, fixed ConfigResolver to properly resolve relative directory arguments, updated interactive mode app context to use config.workspaceRoot instead of hardcoded process.cwd()
 - [x] Interactive mode responsive layout issues - Fixed: Implemented comprehensive responsive layout system with terminal size detection, dynamic width calculations, compact headers/footers, smart three-pane fallback, and automatic resize handling
 - [x] Navigation pane text cropping in interactive mode - Fixed: Increased minimum navigation width from 18 to 25 characters (39% improvement), enhanced responsive calculations for better proportions across terminal sizes, navigation now accommodates file names and controls without truncation
+- [x] Scenario detection during navigation issue - Fixed: Added scenario re-discovery when navigating to directories via navigateToDirectory action, enhanced selectFileSystemNode to preview scenario count for directories, made navigation functions async to properly support scenario detection, updated key handlers to handle async navigation. Now scenarios are properly detected when browsing to directories via the left navigator, matching the behavior when passing directories as command arguments.
 
 
 ## 🚀 Phase 1: Foundation & Monorepo Setup (Priority 1)

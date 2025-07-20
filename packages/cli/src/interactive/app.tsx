@@ -8,7 +8,7 @@ import { AppProvider, useAppContext } from './state/app-context';
 import { NavigationTree } from './components/navigation-tree';
 import { DetailsPane } from './components/details-pane';
 import { StatusBar } from './components/status-bar';
-import { VariablePreview } from './components/variable-preview';
+import { EnhancedVariablePreview } from './components/enhanced-variable-preview';
 import EnvironmentViewer from './components/environment-viewer';
 import EnvironmentSwitcher from './components/environment-switcher';
 import { ExitCodes } from '../utils/exit-codes';
@@ -212,8 +212,16 @@ const VibraniumAppInner: React.FC = () => {
         return;
       }
       
-      // Handle environment switcher (E key without Ctrl)
-      if (input.toLowerCase() === 'e' && !key.ctrl) {
+      // Handle environment switching (E key without Ctrl)
+      if (input.toLowerCase() === 'e' && !key.ctrl && !key.shift) {
+        // E: Direct environment cycling (simple and fast)
+        switchEnvironment();
+        return;
+      }
+      
+      // Handle environment switcher overlay (Alt+E or 0 key)
+      if ((input.toLowerCase() === 'e' && key.meta) || input === '0') {
+        // Alt+E or 0: Show environment switcher overlay for selection
         showEnvironmentSwitcher();
         return;
       }
@@ -619,8 +627,9 @@ const VibraniumAppInner: React.FC = () => {
             console.log('- 1-5: Switch details view modes (when in details pane)');
             console.log('- J/K: Navigate steps (when in details pane)');
             console.log('- ↑↓: Navigate steps in steps view, otherwise scroll');
-            console.log('- E: Environment switcher');
-            console.log('- Ctrl+E: Environment viewer');
+            console.log('- E: Cycle through environments (quick switching)');
+            console.log('- 0 or Alt+E: Environment switcher (selection overlay)');
+            console.log('- Ctrl+E: Environment viewer (detailed view)');
             console.log('- Shift+E: Reload environments');
             console.log('- Ctrl+V: Toggle variables');
             console.log('- Ctrl+C: Command mode');

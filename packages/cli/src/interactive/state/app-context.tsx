@@ -911,13 +911,38 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
 
     async switchEnvironment(environment?: string) {
       if (!environment) {
-        // Show environment selector
-        actions.setStatus('Environment switching not implemented yet', 'warning');
+        // Cycle through available environments if no specific environment provided
+        const currentIndex = state.environments.findIndex(env => env.name === state.currentEnvironment);
+        const nextIndex = (currentIndex + 1) % state.environments.length;
+        environment = state.environments[nextIndex]?.name;
+        
+        if (!environment) {
+          actions.setStatus('No environments available to switch to', 'warning');
+          return;
+        }
+      }
+      
+      // Check if the environment exists
+      const targetEnv = state.environments.find(env => env.name === environment);
+      if (!targetEnv) {
+        actions.setStatus(`Environment '${environment}' not found`, 'error');
         return;
       }
       
+      // Update the current environment
       dispatch({ type: 'SET_CURRENT_ENVIRONMENT', payload: environment });
-      actions.setStatus(`Switched to environment: ${environment}`, 'info');
+      
+      // Update variable state to reflect the new environment
+      actions.updateVariableState();
+      
+      // Reload scenarios in case environment affects discovery
+      try {
+        await actions.loadScenarios();
+      } catch (error) {
+        console.warn('Failed to reload scenarios after environment switch:', error);
+      }
+      
+      actions.setStatus(`🌍 Environment switched to: ${environment}`, 'success');
     },
 
     async loadEnvironments() {
@@ -2115,11 +2140,24 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
       try {
         const manager = state.variableManager;
         
-        // Environment variables
-        manager.setVariable('$.env.API_URL', process.env.API_URL || 'https://api.example.com', 'environment');
-        manager.setVariable('$.env.TIMEOUT', parseInt(process.env.TIMEOUT || '10000'), 'environment');
-        manager.setVariable('$.env.DEBUG', process.env.DEBUG === 'true', 'environment');
-        manager.setVariable('$.env.NODE_ENV', process.env.NODE_ENV || 'development', 'environment');
+        // Environment-specific variables from current environment
+        const currentEnv = state.environments.find(env => env.name === state.currentEnvironment);
+        if (currentEnv) {
+          // Set environment-specific variables
+          Object.entries(currentEnv.variables || {}).forEach(([key, value]) => {
+            manager.setVariable(`$.env.${key}`, value, 'environment');
+          });
+          
+          // Set common environment properties
+          manager.setVariable('$.env.name', currentEnv.name, 'environment');
+          manager.setVariable('$.env.description', currentEnv.description || '', 'environment');
+          manager.setVariable('$.env.baseUrl', currentEnv.baseUrl || '', 'environment');
+          manager.setVariable('$.env.timeout', currentEnv.timeout || 30000, 'environment');
+        }
+        
+        // System environment variables (Node.js process env)
+        manager.setVariable('$.env.NODE_ENV', process.env.NODE_ENV || 'development', 'system');
+        manager.setVariable('$.env.PWD', process.cwd(), 'system');
         
         // Global context variables
         manager.setVariable('$.global.version', '1.0.0', 'system');

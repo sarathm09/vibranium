@@ -23,16 +23,25 @@ program
   .option('-c, --config <path>', 'Configuration file path')
   .option('-o, --output <path>', 'Output directory');
 
-// Run command
+// Run command - supports single files, patterns, and all scenarios
 program
-  .command('run')
-  .description('Run a scenario')
-  .argument('<scenario>', 'Scenario file path')
+  .command('run [pattern]')
+  .description('Run scenario(s) - file path, glob pattern, or all scenarios in current directory')
   .option('-e, --env <environment>', 'Environment to use')
-  .option('--headless', 'Run in headless mode')
-  .option('--reporter <format>', 'Report format (html, json, junit)', 'console')
-  .option('--watch', 'Watch for file changes')
-  .action(async (scenario: string, options: any, command: Command) => {
+  .option('-f, --format <format>', 'Output format (console, json, junit, html)', 'console')
+  .option('-o, --output <path>', 'Output file path (for non-console formats)')
+  .option('--output-dir <path>', 'Output directory for reports (default: ./reports)')
+  .option('--include-artifacts', 'Include artifacts (screenshots, logs) in reports')
+  .option('--include-metadata', 'Include detailed metadata in reports')
+  .option('--console-level <level>', 'Console output level (minimal, normal, verbose)', 'normal')
+  .option('--no-color', 'Disable colored output in console reports')
+  .option('-p, --parallel', 'Run scenarios in parallel')
+  .option('--max-concurrency <number>', 'Maximum parallel executions', '4')
+  .option('--continue-on-failure', 'Continue execution even if scenarios fail')
+  .option('--headless', 'Force headless mode (auto-detected if no TTY)')
+  .option('--watch', 'Watch for file changes and re-run')
+  .option('--reporter <format>', 'Alias for --format (deprecated)', 'console')
+  .action(async (pattern: string | undefined, options: any, command: Command) => {
     try {
       const globalOptions = command.parent?.opts() || {};
       const cliOptions = parseCommonOptions({ ...globalOptions, ...options });
@@ -54,10 +63,29 @@ program
         process.exit(1);
       }
       
-      // Execute run command (temporarily simplified)
-      helper.log(`Would run scenario: ${scenario}`);
-      helper.log(`Environment: ${options.env || 'default'}`);
-      helper.log('Run command is not fully implemented yet.');
+      // Import and execute run command
+      const { RunCommand } = await import('../commands/run');
+      const runCommand = new RunCommand(config, cliOptions);
+      
+      // Use format option over deprecated reporter
+      const format = options.format || options.reporter;
+      
+      await runCommand.execute(pattern, {
+        ...cliOptions,
+        environment: options.env,
+        format,
+        output: options.output,
+        outputDir: options.outputDir,
+        includeArtifacts: options.includeArtifacts,
+        includeMetadata: options.includeMetadata,
+        consoleLevel: options.consoleLevel,
+        color: !options.noColor,
+        parallel: options.parallel,
+        maxConcurrency: parseInt(options.maxConcurrency, 10),
+        continueOnFailure: options.continueOnFailure,
+        headless: options.headless,
+        watch: options.watch
+      });
       
     } catch (error) {
       const helper = new CliHelper(parseCommonOptions(command.parent?.opts() || {}));
@@ -65,16 +93,22 @@ program
     }
   });
 
-// Batch command
+// Batch command (legacy - use 'run' command instead)
 program
-  .command('batch')
-  .description('Run multiple scenarios')
-  .argument('<directory>', 'Directory containing scenarios')
+  .command('batch <directory>')
+  .description('Run multiple scenarios in a directory (legacy - use "run" command instead)')
   .option('-e, --env <environment>', 'Environment to use')
-  .option('--parallel', 'Run scenarios in parallel')
+  .option('-f, --format <format>', 'Output format (console, json, junit, html)', 'console')
+  .option('-o, --output <path>', 'Output file path (for non-console formats)')
+  .option('--output-dir <path>', 'Output directory for reports (default: ./reports)')
+  .option('--include-artifacts', 'Include artifacts (screenshots, logs) in reports')
+  .option('--include-metadata', 'Include detailed metadata in reports')
+  .option('--console-level <level>', 'Console output level (minimal, normal, verbose)', 'normal')
+  .option('--no-color', 'Disable colored output in console reports')
+  .option('-p, --parallel', 'Run scenarios in parallel')
   .option('--max-concurrency <number>', 'Maximum parallel executions', '4')
   .option('--continue-on-failure', 'Continue execution even if scenarios fail')
-  .option('--reporter <format>', 'Report format (html, json, junit)', 'console')
+  .option('--reporter <format>', 'Alias for --format (deprecated)', 'console')
   .action(async (directory: string, options: any, command: Command) => {
     try {
       const globalOptions = command.parent?.opts() || {};
@@ -90,10 +124,27 @@ program
         environment: options.env
       });
       
-      // Execute batch command (temporarily simplified)
-      helper.log(`Would run batch in directory: ${directory}`);
-      helper.log(`Max concurrency: ${options.maxConcurrency}`);
-      helper.log('Batch command is not fully implemented yet.');
+      // Import and execute batch command
+      const { BatchCommand } = await import('../commands/batch');
+      const batchCommand = new BatchCommand(config, cliOptions);
+      
+      // Use format option over deprecated reporter
+      const format = options.format || options.reporter;
+      
+      await batchCommand.execute(directory, {
+        ...cliOptions,
+        environment: options.env,
+        format,
+        output: options.output,
+        outputDir: options.outputDir,
+        includeArtifacts: options.includeArtifacts,
+        includeMetadata: options.includeMetadata,
+        consoleLevel: options.consoleLevel,
+        color: !options.noColor,
+        parallel: options.parallel,
+        maxConcurrency: parseInt(options.maxConcurrency, 10),
+        continueOnFailure: options.continueOnFailure
+      });
       
     } catch (error) {
       const helper = new CliHelper(parseCommonOptions(command.parent?.opts() || {}));

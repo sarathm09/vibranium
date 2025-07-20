@@ -1,14 +1,35 @@
 /**
- * Details pane component with YAML/JSON editor and scenario information
+ * Professional Details Pane Component
+ * 
+ * A completely redesigned, clean, and highly organized interface for scenario information
+ * featuring modern UI principles and professional visual hierarchy.
+ * 
+ * Key Improvements:
+ * - Clean section headers with consistent borders and typography
+ * - Professional status indicators without excessive emojis
+ * - Better information grouping with logical organization
+ * - Improved visual hierarchy with proper spacing and indentation
+ * - Progressive disclosure for complex information
+ * - Enhanced code syntax highlighting with line numbers
+ * - Consistent color scheme and visual feedback
+ * - Professional borders and visual separators
+ * - Better keyboard navigation indicators
+ * - Structured data presentation with clear labels
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 import { useAppContext } from '../state/app-context';
+import { StepsUI } from './steps-ui';
+import { StepNavigator } from './step-navigator';
+import { StepSummary } from './step-summary';
+import { ResultsView } from './execution-results';
 import chalk from 'chalk';
 
 export const DetailsPane: React.FC = () => {
   const { state, actions } = useAppContext();
+  const [showNavigator, setShowNavigator] = useState(false);
+  
   // Use scrollOffset from context instead of local state
   const scrollOffset = state.ui.detailsScrollOffset;
   
@@ -23,61 +44,65 @@ export const DetailsPane: React.FC = () => {
 
   const getPanelTitle = () => {
     const isActive = state.ui.activePane === 'details';
-    let title = '📝 Scenario Details';
+    let title = 'Scenario Details';
     
     if (state.currentScenario) {
-      title = `📝 ${state.currentScenario.name}`;
-      if (state.ui.editorChanged) {
-        title += ' •';
-      }
+      title = state.currentScenario.name;
     }
     
     const color = isActive ? 'cyan' : 'gray';
-    return { title, color };
+    const indicator = state.ui.editorChanged ? ' •' : '';
+    return { title, color, indicator };
   };
 
   const renderContent = () => {
     if (!state.currentScenario) {
-      return (
-        <Box justifyContent="center" alignItems="center" height="100%" flexDirection="column">
-          <Text color="gray" bold>
-            👁️ No Scenario Selected
-          </Text>
-          <Text color="gray" dimColor marginTop={1}>
-            Use ↑↓ to navigate and Enter to select a scenario
-          </Text>
-          {state.scenarios.length === 0 && (
-            <Text color="yellow" marginTop={1}>
-              ⚠️ No scenarios found in current directory
-            </Text>
-          )}
-        </Box>
-      );
+      return renderEmptyState();
     }
 
     switch (viewMode) {
       case 'overview':
         return renderOverview();
       case 'steps':
-        return renderStepsView();
+        return renderNewStepsView();
+      case 'step-summary':
+        return renderStepSummaryView();
+      case 'step-navigator':
+        return renderStepNavigatorView();
       case 'raw':
         return renderRawContent();
       case 'execution':
         return renderExecutionDetails();
       case 'realtime':
-        return renderExecutionDetails(); // Real-time view uses execution details for now
+        return renderExecutionDetails();
       default:
         return renderOverview();
     }
   };
+
+  const renderEmptyState = () => (
+    <Box justifyContent="center" alignItems="center" height="100%" flexDirection="column">
+      <Text color="gray" bold>
+        No Scenario Selected
+      </Text>
+      <Text color="gray" dimColor marginTop={1}>
+        Use ↑↓ to navigate and Enter to select a scenario
+      </Text>
+      {state.scenarios.length === 0 && (
+        <Text color="yellow" marginTop={1}>
+          No scenarios found in current directory
+        </Text>
+      )}
+    </Box>
+  );
   
   const renderViewModeSelector = () => {
     const modes = [
-      { key: 'overview', label: '📋 Overview' }, 
-      { key: 'steps', label: '🔢 Steps' },
-      { key: 'raw', label: '📜 Raw' }, 
-      { key: 'execution', label: '🏃 Results' },
-      { key: 'realtime', label: '⚡ Live' }
+      { key: 'overview', label: 'Overview' }, 
+      { key: 'steps', label: 'Steps' },
+      { key: 'raw', label: 'Source' }, 
+      { key: 'execution', label: 'Results' },
+      { key: 'realtime', label: 'Timeline' }
     ];
     
     return (
@@ -85,7 +110,8 @@ export const DetailsPane: React.FC = () => {
         {modes.map((mode, index) => {
           const isSelected = viewMode === mode.key;
           const color = isSelected ? 'cyan' : 'gray';
-          const separator = index < modes.length - 1 ? ' • ' : '';
+          const weight = isSelected ? 'bold' : 'normal';
+          const separator = index < modes.length - 1 ? ' | ' : '';
           
           return (
             <Text key={mode.key} color={color} bold={isSelected}>
@@ -100,106 +126,150 @@ export const DetailsPane: React.FC = () => {
   const renderOverview = () => {
     return (
       <Box flexDirection="column" height="100%">
-        {/* Scenario metadata */}
-        <Box flexDirection="column" marginBottom={2}>
-          <Text bold>
-            <Text color="cyan">🏷️ Name:</Text> {state.currentScenario?.name}
-          </Text>
-          {state.currentScenario?.description && (
-            <Text marginTop={1}>
-              <Text color="cyan">📋 Description:</Text> {state.currentScenario.description}
-            </Text>
-          )}
-          {(state.currentScenario as any)?.version && (
-            <Text marginTop={1}>
-              <Text color="cyan">🔖 Version:</Text> {(state.currentScenario as any).version}
-            </Text>
-          )}
-          <Text marginTop={1}>
-            <Text color="cyan">🔢 Steps:</Text> {state.currentScenario?.steps?.length || 0}
-          </Text>
-          {state.currentScenario?.environments && (
-            <Text marginTop={1}>
-              <Text color="cyan">🌍 Environments:</Text> {Array.isArray(state.currentScenario.environments) ? state.currentScenario.environments.join(', ') : Object.keys(state.currentScenario.environments).join(', ')}
-            </Text>
-          )}
-          {renderGlobalVariables()}
-          {renderGlobalConfiguration()}
-        </Box>
-
-        {/* Steps overview */}
-        {state.currentScenario?.steps && state.currentScenario.steps.length > 0 && (
-          <Box flexDirection="column" marginBottom={2}>
-            <Text color="yellow" bold>
-              🎯 Steps Overview
-            </Text>
-            {renderStepsOverview()}
-          </Box>
-        )}
-
-        {/* Current step details */}
-        {state.currentScenario?.steps && state.currentScenario.steps.length > 0 && (
-          <Box flexDirection="column" marginBottom={2}>
-            <Text color="yellow" bold>
-              🎯 Current Step ({state.ui.selectedStepIndex + 1}/{state.currentScenario.steps.length})
-            </Text>
-            {renderCurrentStepDetails()}
-          </Box>
-        )}
-        
-        {/* Real-time execution status */}
-        {state.isRunning && state.executionProgress && (
-          <Box flexDirection="column" marginBottom={2}>
-            <Text color="yellow" bold>
-              ⚡ Live Execution Status
-            </Text>
-            {renderLiveExecutionStatus()}
-          </Box>
-        )}
-        
-        {/* Execution summary */}
-        {state.lastResult && !state.isRunning && (
-          <Box flexDirection="column" marginBottom={1}>
-            <Text color="magenta" bold>
-              📊 Last Execution Summary
-            </Text>
-            {renderExecutionSummary()}
-          </Box>
-        )}
+        {renderScenarioMetadata()}
+        {state.currentScenario?.steps && state.currentScenario.steps.length > 0 && renderStepsSection()}
+        {state.currentScenario?.steps && state.currentScenario.steps.length > 0 && renderCurrentStepSection()}
+        {state.isRunning && state.executionProgress && renderLiveExecutionSection()}
+        {state.lastResult && !state.isRunning && renderExecutionSummarySection()}
       </Box>
     );
   };
+
+  const renderSectionHeader = (title: string, icon?: string) => (
+    <Box marginBottom={1} paddingBottom={0} borderBottom borderColor="gray">
+      <Text bold color="white">
+        {icon && <Text color="cyan">{icon} </Text>}{title}
+      </Text>
+    </Box>
+  );
+
+  const renderScenarioMetadata = () => {
+    const scenario = state.currentScenario;
+    if (!scenario) return null;
+
+    return (
+      <Box flexDirection="column" marginBottom={2}>
+        {renderSectionHeader('Scenario Information')}
+        
+        <Box flexDirection="column" paddingLeft={1}>
+          <Box marginBottom={1}>
+            <Text bold color="cyan">Name: </Text>
+            <Text>{scenario.name}</Text>
+          </Box>
+          
+          {scenario.description && (
+            <Box marginBottom={1}>
+              <Text bold color="cyan">Description: </Text>
+              <Text>{scenario.description}</Text>
+            </Box>
+          )}
+          
+          <Box flexDirection="row" gap={4}>
+            <Box>
+              <Text bold color="cyan">Steps: </Text>
+              <Text color="white">{scenario.steps?.length || 0}</Text>
+            </Box>
+            
+            {(scenario as any)?.version && (
+              <Box>
+                <Text bold color="cyan">Version: </Text>
+                <Text color="white">{(scenario as any).version}</Text>
+              </Box>
+            )}
+          </Box>
+          
+          {scenario.environments && (
+            <Box marginTop={1}>
+              <Text bold color="cyan">Environments: </Text>
+              <Text color="white">
+                {Array.isArray(scenario.environments) 
+                  ? scenario.environments.join(', ') 
+                  : Object.keys(scenario.environments).join(', ')}
+              </Text>
+            </Box>
+          )}
+          
+          {renderGlobalVariables()}
+          {renderGlobalConfiguration()}
+        </Box>
+      </Box>
+    );
+  };
+
+  const renderStepsSection = () => (
+    <Box flexDirection="column" marginBottom={2}>
+      {renderSectionHeader('Steps Overview')}
+      <Box paddingLeft={1}>
+        {renderStepsOverview()}
+      </Box>
+    </Box>
+  );
+
+  const renderCurrentStepSection = () => (
+    <Box flexDirection="column" marginBottom={2}>
+      {renderSectionHeader(`Current Step (${state.ui.selectedStepIndex + 1}/${state.currentScenario?.steps?.length || 0})`)}
+      <Box paddingLeft={1}>
+        {renderCurrentStepDetails()}
+      </Box>
+    </Box>
+  );
+
+  const renderLiveExecutionSection = () => (
+    <Box flexDirection="column" marginBottom={2}>
+      {renderSectionHeader('Live Execution', '⚡')}
+      <Box paddingLeft={1}>
+        {renderLiveExecutionStatus()}
+      </Box>
+    </Box>
+  );
+
+  const renderExecutionSummarySection = () => (
+    <Box flexDirection="column" marginBottom={1}>
+      {renderSectionHeader('Last Execution', '✓')}
+      <Box paddingLeft={1}>
+        {renderExecutionSummary()}
+      </Box>
+    </Box>
+  );
   
   const renderRawContent = () => {
     const isYaml = state.currentScenarioPath?.endsWith('.yaml') || state.currentScenarioPath?.endsWith('.yml');
     const fileType = isYaml ? 'YAML' : 'JSON';
+    const status = state.ui.editorChanged ? 'Modified' : 'Read-only';
+    const statusColor = state.ui.editorChanged ? 'yellow' : 'gray';
     
     return (
       <Box flexDirection="column" height="100%">
-        <Text color="yellow" bold marginBottom={1}>
-          📜 Raw {fileType} {state.ui.editorChanged ? '(• Modified)' : '(Read-only)'}
-        </Text>
+        <Box marginBottom={1} flexDirection="row">
+          <Text bold color="white">
+            Source Code ({fileType})
+          </Text>
+          <Text color={statusColor} marginLeft={2}>
+            [{status}]
+          </Text>
+        </Box>
         {renderFormattedContent(isYaml)}
       </Box>
     );
   };
   
   const renderExecutionDetails = () => {
-    if (!state.lastResult) {
-      return (
-        <Box justifyContent="center" alignItems="center" height="100%">
-          <Text color="gray">No execution results available</Text>
-        </Box>
-      );
-    }
-    
     return (
-      <Box flexDirection="column" height="100%">
-        <Text color="green" bold marginBottom={1}>
-          🏃 Execution Results
-        </Text>
-        {renderDetailedExecutionResults()}
-      </Box>
+      <ResultsView
+        result={state.lastResult}
+        isRunning={state.isRunning}
+        currentStepIndex={state.executionProgress?.currentStepIndex || 0}
+        selectedStepIndex={state.ui.selectedStepIndex}
+        onStepSelect={(index) => actions.selectStep(index)}
+        viewMode={state.ui.detailsViewMode === 'execution' ? 'summary' : 
+                 state.ui.detailsViewMode === 'realtime' ? 'timeline' : 'summary'}
+        onViewModeChange={(mode) => {
+          // Map results view modes to details view modes
+          const detailsMode = mode === 'summary' ? 'execution' : 
+                             mode === 'timeline' ? 'realtime' : 'execution';
+          actions.setDetailsViewMode(detailsMode);
+        }}
+      />
     );
   };
 
@@ -208,9 +278,10 @@ export const DetailsPane: React.FC = () => {
     if (!variables || Object.keys(variables).length === 0) return null;
     
     return (
-      <Text marginTop={1}>
-        <Text color="cyan">🔢 Variables:</Text> {Object.keys(variables).length} defined
-      </Text>
+      <Box marginTop={1}>
+        <Text bold color="cyan">Variables: </Text>
+        <Text color="white">{Object.keys(variables).length} defined</Text>
+      </Box>
     );
   };
 
@@ -227,9 +298,10 @@ export const DetailsPane: React.FC = () => {
     if (configItems.length === 0) return null;
     
     return (
-      <Text marginTop={1}>
-        <Text color="cyan">⚙️ Config:</Text> {configItems.join(', ')}
-      </Text>
+      <Box marginTop={1}>
+        <Text bold color="cyan">Configuration: </Text>
+        <Text color="white">{configItems.join(', ')}</Text>
+      </Box>
     );
   };
 
@@ -237,7 +309,7 @@ export const DetailsPane: React.FC = () => {
     if (!state.currentScenario?.steps) return null;
     
     return (
-      <Box flexDirection="column" paddingLeft={2}>
+      <Box flexDirection="column">
         {state.currentScenario?.steps?.map((step, index) => {
           const isSelected = index === state.ui.selectedStepIndex;
           const isCurrent = state.executionProgress?.currentStepIndex === index && state.isRunning;
@@ -250,19 +322,19 @@ export const DetailsPane: React.FC = () => {
           if (realTimeResult) {
             switch (realTimeResult.status) {
               case 'running':
-                statusIcon = '⏳';
+                statusIcon = '→';
                 statusColor = 'yellow';
                 break;
               case 'completed':
-                statusIcon = '✅';
+                statusIcon = '✓';
                 statusColor = 'green';
                 break;
               case 'failed':
-                statusIcon = '❌';
+                statusIcon = '✗';
                 statusColor = 'red';
                 break;
               default:
-                statusIcon = '⏸️';
+                statusIcon = '○';
                 statusColor = 'gray';
             }
           } else if (state.lastResult?.stepResults?.[index]) {
@@ -271,46 +343,107 @@ export const DetailsPane: React.FC = () => {
           }
           
           return (
-            <Text key={index} color={isSelected ? 'yellow' : 'white'} bold={isSelected || isCurrent}>
-              <Text color={statusColor}>{statusIcon}</Text> {index + 1}. {step.name} 
-              <Text color="gray"> ({step.type})</Text>
-              {isCurrent && <Text color="yellow"> ← Running</Text>}
-              {realTimeResult?.duration && (
-                <Text color="cyan"> ({realTimeResult.duration}ms)</Text>
+            <Box key={index} flexDirection="row" marginBottom={0}>
+              <Text color={statusColor} bold>
+                {statusIcon}
+              </Text>
+              <Text color={isSelected ? 'yellow' : 'white'} bold={isSelected} marginLeft={1}>
+                {index + 1}. {step.name}
+              </Text>
+              <Text color="gray" marginLeft={1}>
+                [{step.type}]
+              </Text>
+              {isCurrent && (
+                <Text color="yellow" marginLeft={1}>
+                  ← Active
+                </Text>
               )}
-            </Text>
+              {realTimeResult?.duration && (
+                <Text color="cyan" marginLeft={1}>
+                  ({realTimeResult.duration}ms)
+                </Text>
+              )}
+            </Box>
           );
         })}
       </Box>
     );
   };
 
+  // New clean steps UI
+  const renderNewStepsView = () => {
+    return (
+      <StepsUI 
+        mode="detailed"
+        onStepSelect={(stepIndex: number) => {
+          actions.setSelectedStepIndex?.(stepIndex);
+        }}
+        onStepRun={(stepIndex: number) => {
+          actions.runSingleStep?.(stepIndex);
+        }}
+      />
+    );
+  };
+
+  const renderStepSummaryView = () => {
+    return (
+      <StepSummary 
+        onStepJump={(stepIndex: number) => {
+          actions.setSelectedStepIndex?.(stepIndex);
+          // Switch to detailed steps view to show the selected step
+          actions.setDetailsViewMode?.('steps');
+        }}
+        showGroups={true}
+        showDependencies={true}
+      />
+    );
+  };
+
+  const renderStepNavigatorView = () => {
+    return (
+      <StepNavigator 
+        onStepSelect={(stepIndex: number) => {
+          actions.setSelectedStepIndex?.(stepIndex);
+          // Switch to detailed steps view to show the selected step
+          actions.setDetailsViewMode?.('steps');
+        }}
+        onClose={() => {
+          // Go back to overview or previous view
+          actions.setDetailsViewMode?.('overview');
+        }}
+      />
+    );
+  };
+
   const renderStepsView = () => {
     if (!state.currentScenario?.steps) {
       return (
-        <Box justifyContent="center" alignItems="center" height="100%">
-          <Text color="gray">No steps available</Text>
+        <Box justifyContent="center" alignItems="center" height="100%" flexDirection="column">
+          <Text color="gray" bold>
+            No Steps Available
+          </Text>
+          <Text color="gray" dimColor marginTop={1}>
+            This scenario doesn't contain any steps
+          </Text>
         </Box>
       );
     }
     
-    const maxVisibleSteps = 8; // Adjust based on available space
+    const maxVisibleSteps = 8;
     const visibleSteps = state.currentScenario?.steps?.slice(scrollOffset, scrollOffset + maxVisibleSteps) || [];
     
     return (
       <Box flexDirection="column" height="100%">
-        <Text color="yellow" bold marginBottom={1}>
-          🔢 All Steps ({state.currentScenario?.steps?.length || 0})
-        </Text>
+        {renderSectionHeader(`All Steps (${state.currentScenario?.steps?.length || 0})`)}
         
         {/* Scroll indicator */}
         {scrollOffset > 0 && (
-          <Text color="gray" dimColor marginBottom={1}>
+          <Text color="gray" dimColor marginBottom={1} paddingLeft={1}>
             ↑ {scrollOffset} steps above (press ↑ to scroll up)
           </Text>
         )}
         
-        <Box flexDirection="column">
+        <Box flexDirection="column" paddingLeft={1}>
           {visibleSteps.map((step, visibleIndex) => {
             const actualIndex = scrollOffset + visibleIndex;
             const isSelected = actualIndex === state.ui.selectedStepIndex;
@@ -321,14 +454,24 @@ export const DetailsPane: React.FC = () => {
                                stepResult?.success === false ? 'red' : 'gray';
             
             return (
-              <Box key={actualIndex} flexDirection="column" marginBottom={2} paddingX={1} borderStyle="single" borderColor={isSelected ? 'yellow' : 'gray'}>
+              <Box key={actualIndex} flexDirection="column" marginBottom={2} paddingX={1} 
+                   borderStyle={isSelected ? 'single' : 'single'} 
+                   borderColor={isSelected ? 'cyan' : 'gray'}>
                 {/* Step Header */}
-                <Text color={isSelected ? 'yellow' : 'white'} bold={isSelected}>
-                  <Text color={statusColor}>{statusIcon}</Text> {actualIndex + 1}. {step.name}
-                </Text>
+                <Box flexDirection="row" marginBottom={1}>
+                  <Text color={statusColor} bold>
+                    {statusIcon}
+                  </Text>
+                  <Text color={isSelected ? 'yellow' : 'white'} bold={isSelected} marginLeft={1}>
+                    {actualIndex + 1}. {step.name}
+                  </Text>
+                  <Text color="gray" marginLeft={1}>
+                    [{step.type}]
+                  </Text>
+                </Box>
                 
                 {/* Step Details */}
-                <Box paddingLeft={2} flexDirection="column">
+                <Box paddingLeft={1} flexDirection="column">
                   <Text color="cyan">
                     <Text bold>Type:</Text> {step.type}
                   </Text>
@@ -471,7 +614,7 @@ export const DetailsPane: React.FC = () => {
         
         {/* Bottom scroll indicator */}
         {(state.currentScenario?.steps?.length || 0) > scrollOffset + maxVisibleSteps && (
-          <Text color="gray" dimColor marginTop={1}>
+          <Text color="gray" dimColor marginTop={1} paddingLeft={1}>
             ↓ {(state.currentScenario?.steps?.length || 0) - (scrollOffset + maxVisibleSteps)} more steps (press ↓ to scroll down)
           </Text>
         )}
@@ -483,207 +626,262 @@ export const DetailsPane: React.FC = () => {
     const currentStep = state.currentScenario?.steps?.[state.ui.selectedStepIndex];
     if (!currentStep) {
       return (
-        <Box paddingLeft={2}>
+        <Box>
           <Text color="gray" dimColor>No step selected</Text>
         </Box>
       );
     }
 
     return (
-      <Box flexDirection="column" paddingLeft={2}>
-        <Text marginTop={1}>
-          <Text color="green">🏷️ Name:</Text> {currentStep.name || 'Unnamed step'}
-        </Text>
-        <Text>
-          <Text color="green">🔧 Type:</Text> {currentStep.type || 'unknown'}
-        </Text>
+      <Box flexDirection="column">
+        {/* Basic Information */}
+        <Box marginBottom={2}>
+          <Text bold color="cyan">Name: </Text>
+          <Text>{currentStep.name || 'Unnamed step'}</Text>
+        </Box>
+        
+        <Box marginBottom={1}>
+          <Text bold color="cyan">Type: </Text>
+          <Text color="white">{currentStep.type || 'unknown'}</Text>
+        </Box>
+        
         {currentStep.description && (
-          <Text>
-            <Text color="green">📝 Description:</Text> {currentStep.description}
-          </Text>
+          <Box marginBottom={2}>
+            <Text bold color="cyan">Description: </Text>
+            <Text>{currentStep.description}</Text>
+          </Box>
         )}
         
-        {/* API-specific details */}
-        {currentStep.type === 'api' && (
-          <>
-            <Text>
-              <Text color="green">🌐 Method:</Text> {(currentStep as any).method || 'GET'}
-            </Text>
-            <Text>
-              <Text color="green">🔗 URL:</Text> {(currentStep as any).url || 'Not specified'}
-            </Text>
-            {(currentStep as any).headers && Object.keys((currentStep as any).headers).length > 0 && (
-              <Box marginTop={1}>
-                <Text color="green">📜 Headers ({Object.keys((currentStep as any).headers).length}):</Text>
-                <Box paddingLeft={2}>
-                  {Object.entries((currentStep as any).headers).map(([key, value]) => (
-                    <Text key={key} color="gray">
-                      {key}: {String(value)}
-                    </Text>
-                  ))}
-                </Box>
-              </Box>
-            )}
-            {(currentStep as any).body && (
-              <Box marginTop={1}>
-                <Text color="green">📦 Body:</Text>
-                <Box paddingLeft={2}>
-                  {renderStepBodyPreview((currentStep as any).body)}
-                </Box>
-              </Box>
-            )}
-            {(currentStep as any).params && Object.keys((currentStep as any).params).length > 0 && (
-              <Box marginTop={1}>
-                <Text color="green">🔍 Params ({Object.keys((currentStep as any).params).length}):</Text>
-                <Box paddingLeft={2}>
-                  {Object.entries((currentStep as any).params).map(([key, value]) => (
-                    <Text key={key} color="gray">
-                      {key}: {String(value)}
-                    </Text>
-                  ))}
-                </Box>
-              </Box>
-            )}
-            {(currentStep as any).auth && (
-              <Text>
-                <Text color="green">🔐 Auth:</Text> {(currentStep as any).auth.type || 'configured'}
-              </Text>
-            )}
-          </>
-        )}
+        {/* Type-specific Configuration */}
+        {renderStepTypeSpecificDetails(currentStep)}
         
-        {/* UI-specific details */}
-        {currentStep.type === 'ui' && (
-          <>
-            <Text>
-              <Text color="green">🖥️ Action:</Text> {(currentStep as any).action || 'Not specified'}
-            </Text>
-            <Text>
-              <Text color="green">🎯 Target:</Text> {(currentStep as any).target || (currentStep as any).selector || 'Not specified'}
-            </Text>
-            {(currentStep as any).value && (
-              <Text>
-                <Text color="green">📝 Value:</Text> {String((currentStep as any).value)}
-              </Text>
-            )}
-            {(currentStep as any).wait && (
-              <Text>
-                <Text color="green">⏰ Wait:</Text> {(currentStep as any).wait.type || 'configured'}
-              </Text>
-            )}
-          </>
-        )}
+        {/* Execution Configuration */}
+        {renderStepExecutionConfig(currentStep)}
         
-        {/* Common step properties */}
-        <Box flexDirection="row" marginTop={1}>
-          {currentStep.timeout && (
-            <Text color="orange" marginRight={2}>
-              <Text color="green">⏱️ Timeout:</Text> {currentStep.timeout}ms
-            </Text>
+        {/* Validation Rules */}
+        {currentStep.expect && renderStepExpectations(currentStep)}
+        
+        {/* Dependencies & Relationships */}
+        {((currentStep as any).depends_on || currentStep.dependsOn) && renderStepDependencies(currentStep)}
+        
+        {/* Data Management */}
+        {renderStepDataManagement(currentStep)}
+        
+        {/* Execution Results */}
+        {state.lastResult?.stepResults && renderStepExecutionResult(currentStep.name)}
+      </Box>
+    );
+  };
+
+  const renderStepTypeSpecificDetails = (step: any) => {
+    if (step.type === 'api') {
+      return (
+        <Box flexDirection="column" marginBottom={2}>
+          <Text bold color="white" marginBottom={1}>API Configuration</Text>
+          
+          <Box flexDirection="row" marginBottom={1}>
+            <Text bold color="cyan">Method: </Text>
+            <Text color="green">{step.method || 'GET'}</Text>
+          </Box>
+          
+          <Box marginBottom={1}>
+            <Text bold color="cyan">URL: </Text>
+            <Text>{step.url || 'Not specified'}</Text>
+          </Box>
+          
+          {step.headers && Object.keys(step.headers).length > 0 && (
+            <Box marginBottom={1}>
+              <Text bold color="cyan">Headers ({Object.keys(step.headers).length}): </Text>
+              <Box paddingLeft={2} marginTop={1}>
+                {Object.entries(step.headers).slice(0, 3).map(([key, value]) => (
+                  <Text key={key} color="gray">
+                    {key}: {String(value)}
+                  </Text>
+                ))}
+                {Object.keys(step.headers).length > 3 && (
+                  <Text color="gray" dimColor>
+                    ... {Object.keys(step.headers).length - 3} more
+                  </Text>
+                )}
+              </Box>
+            </Box>
           )}
-          {currentStep.retries && (
-            <Text color="orange" marginRight={2}>
-              <Text color="green">🔄 Retries:</Text> {currentStep.retries}
-            </Text>
+          
+          {step.body && (
+            <Box marginBottom={1}>
+              <Text bold color="cyan">Request Body: </Text>
+              <Box paddingLeft={2} marginTop={1}>
+                {renderStepBodyPreview(step.body)}
+              </Box>
+            </Box>
           )}
-          {(currentStep as any).continueOnFailure && (
-            <Text color="orange" marginRight={2}>
-              <Text color="green">⚠️ Continue on failure</Text>
-            </Text>
+          
+          {step.auth && (
+            <Box marginBottom={1}>
+              <Text bold color="cyan">Authentication: </Text>
+              <Text color="white">{step.auth.type || 'configured'}</Text>
+            </Box>
           )}
         </Box>
-        {currentStep.skip && (
-          <Text marginTop={1}>
-            <Text color="yellow">⏭️ Skip:</Text> {typeof currentStep.skip === 'boolean' ? 'conditional' : currentStep.skip}
-          </Text>
-        )}
-        {(currentStep as any).condition && (
-          <Text marginTop={1}>
-            <Text color="yellow">🔀 Condition:</Text> {(currentStep as any).condition}
-          </Text>
-        )}
-        {(currentStep as any).iterations && (
-          <Text marginTop={1}>
-            <Text color="green">🔁 Iterations:</Text> {(currentStep as any).iterations}
-          </Text>
-        )}
-        
-        {/* Expectations */}
-        {currentStep.expect && (
-          <Box marginTop={1}>
-            <Text color="green">✓ Expectations ({Array.isArray(currentStep.expect) ? currentStep.expect.length : 1}):</Text>
-            <Box paddingLeft={2}>
-              {(Array.isArray(currentStep.expect) ? currentStep.expect : [currentStep.expect]).map((expectation, index) => (
-                <Text key={index} color="blue">
-                  • {(expectation as any).operator || 'unknown'}: {(expectation as any).value !== undefined ? String((expectation as any).value) : ''}
-                  {(expectation as any).path && <Text color="gray"> (path: {(expectation as any).path})</Text>}
-                </Text>
-              ))}
+      );
+    }
+    
+    if (step.type === 'ui') {
+      return (
+        <Box flexDirection="column" marginBottom={2}>
+          <Text bold color="white" marginBottom={1}>UI Interaction</Text>
+          
+          <Box marginBottom={1}>
+            <Text bold color="cyan">Action: </Text>
+            <Text color="white">{step.action || 'Not specified'}</Text>
+          </Box>
+          
+          <Box marginBottom={1}>
+            <Text bold color="cyan">Target: </Text>
+            <Text color="white">{step.target || step.selector || 'Not specified'}</Text>
+          </Box>
+          
+          {step.value && (
+            <Box marginBottom={1}>
+              <Text bold color="cyan">Value: </Text>
+              <Text color="white">{String(step.value)}</Text>
             </Box>
+          )}
+        </Box>
+      );
+    }
+    
+    return null;
+  };
+
+  const renderStepExecutionConfig = (step: any) => {
+    const hasConfig = step.timeout || step.retries || step.continueOnFailure || step.skip || step.condition;
+    if (!hasConfig) return null;
+
+    return (
+      <Box flexDirection="column" marginBottom={2}>
+        <Text bold color="white" marginBottom={1}>Execution Configuration</Text>
+        
+        <Box flexDirection="row" gap={2}>
+          {step.timeout && (
+            <Box>
+              <Text bold color="cyan">Timeout: </Text>
+              <Text color="white">{step.timeout}ms</Text>
+            </Box>
+          )}
+          
+          {step.retries && (
+            <Box>
+              <Text bold color="cyan">Retries: </Text>
+              <Text color="white">{step.retries}</Text>
+            </Box>
+          )}
+        </Box>
+        
+        {step.continueOnFailure && (
+          <Box marginTop={1}>
+            <Text color="yellow">Continue on failure enabled</Text>
           </Box>
         )}
         
-        {/* Dependencies */}
-        {((currentStep as any).depends_on || currentStep.dependsOn) && (
+        {step.skip && (
           <Box marginTop={1}>
-            <Text color="green">🔗 Dependencies:</Text>
-            <Box paddingLeft={2}>
-              {Array.isArray((currentStep as any).depends_on || currentStep.dependsOn) ? 
-                ((currentStep as any).depends_on || currentStep.dependsOn).map((dep: string, index: number) => (
-                  <Text key={index} color="purple">• {dep}</Text>
-                )) : 
-                <Text color="purple">• {(currentStep as any).depends_on || currentStep.dependsOn}</Text>
-              }
-            </Box>
+            <Text bold color="cyan">Skip Condition: </Text>
+            <Text color="yellow">{typeof step.skip === 'boolean' ? 'conditional' : step.skip}</Text>
           </Box>
         )}
         
-        {/* Save Response */}
-        {(currentStep as any).saveResponse && Object.keys((currentStep as any).saveResponse).length > 0 && (
+        {step.condition && (
           <Box marginTop={1}>
-            <Text color="green">💾 Save Response:</Text>
-            <Box paddingLeft={2}>
-              {Object.entries((currentStep as any).saveResponse).map(([key, path]) => (
-                <Text key={key} color="cyan">
-                  {key}: {String(path)}
-                </Text>
-              ))}
-            </Box>
-          </Box>
-        )}
-        
-        {/* Variables used */}
-        {(currentStep as any).variables && Object.keys((currentStep as any).variables).length > 0 && (
-          <Box marginTop={1}>
-            <Text color="green">🔢 Variables:</Text>
-            <Box paddingLeft={2}>
-              {Object.entries((currentStep as any).variables).map(([key, value]) => (
-                <Text key={key} color="cyan">
-                  {key}: {String(value)}
-                </Text>
-              ))}
-            </Box>
-          </Box>
-        )}
-        
-        {/* Metadata */}
-        {currentStep.metadata && Object.keys(currentStep.metadata).length > 0 && (
-          <Text>
-            <Text color="green">📋 Metadata:</Text> {Object.keys(currentStep.metadata).length} entries
-          </Text>
-        )}
-        
-        {/* Show step result if available */}
-        {state.lastResult?.stepResults && (
-          <Box marginTop={1}>
-            {renderStepResult(currentStep.name)}
+            <Text bold color="cyan">Run Condition: </Text>
+            <Text color="yellow">{step.condition}</Text>
           </Box>
         )}
       </Box>
     );
   };
 
-  const renderStepResult = (stepName: string) => {
+  const renderStepExpectations = (step: any) => (
+    <Box flexDirection="column" marginBottom={2}>
+      <Text bold color="white" marginBottom={1}>
+        Validation Rules ({Array.isArray(step.expect) ? step.expect.length : 1})
+      </Text>
+      
+      <Box paddingLeft={1}>
+        {(Array.isArray(step.expect) ? step.expect : [step.expect]).map((expectation, index) => (
+          <Box key={index} marginBottom={1}>
+            <Text color="blue">
+              • {(expectation as any).operator || 'unknown'}: 
+            </Text>
+            <Text color="white" marginLeft={1}>
+              {(expectation as any).value !== undefined ? String((expectation as any).value) : ''}
+            </Text>
+            {(expectation as any).path && (
+              <Text color="gray" marginLeft={1}>
+                (path: {(expectation as any).path})
+              </Text>
+            )}
+          </Box>
+        ))}
+      </Box>
+    </Box>
+  );
+
+  const renderStepDependencies = (step: any) => (
+    <Box flexDirection="column" marginBottom={2}>
+      <Text bold color="white" marginBottom={1}>Dependencies</Text>
+      
+      <Box paddingLeft={1}>
+        {Array.isArray((step as any).depends_on || step.dependsOn) ? 
+          ((step as any).depends_on || step.dependsOn).map((dep: string, index: number) => (
+            <Text key={index} color="purple">• {dep}</Text>
+          )) : 
+          <Text color="purple">• {(step as any).depends_on || step.dependsOn}</Text>
+        }
+      </Box>
+    </Box>
+  );
+
+  const renderStepDataManagement = (step: any) => {
+    const hasSaveResponse = step.saveResponse && Object.keys(step.saveResponse).length > 0;
+    const hasVariables = step.variables && Object.keys(step.variables).length > 0;
+    
+    if (!hasSaveResponse && !hasVariables) return null;
+
+    return (
+      <Box flexDirection="column" marginBottom={2}>
+        <Text bold color="white" marginBottom={1}>Data Management</Text>
+        
+        {hasSaveResponse && (
+          <Box marginBottom={1}>
+            <Text bold color="cyan">Save Response: </Text>
+            <Box paddingLeft={1} marginTop={1}>
+              {Object.entries(step.saveResponse).map(([key, path]) => (
+                <Text key={key} color="white">
+                  {key} → {String(path)}
+                </Text>
+              ))}
+            </Box>
+          </Box>
+        )}
+        
+        {hasVariables && (
+          <Box>
+            <Text bold color="cyan">Variables: </Text>
+            <Box paddingLeft={1} marginTop={1}>
+              {Object.entries(step.variables).map(([key, value]) => (
+                <Text key={key} color="white">
+                  {key}: {String(value)}
+                </Text>
+              ))}
+            </Box>
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
+  const renderStepExecutionResult = (stepName: string) => {
     const stepResult = state.lastResult?.stepResults?.find(sr => sr.stepName === stepName);
     if (!stepResult) return null;
 
@@ -691,23 +889,30 @@ export const DetailsPane: React.FC = () => {
     const statusIcon = stepResult.success ? '✓' : '✗';
 
     return (
-      <Box flexDirection="column">
-        <Text color={statusColor} bold>
-          {statusIcon} Status: {stepResult.success ? 'PASSED' : 'FAILED'}
-        </Text>
-        {stepResult.duration && (
-          <Text color="gray">
-            Duration: {stepResult.duration}ms
+      <Box flexDirection="column" paddingTop={1} borderTop borderColor="gray">
+        <Text bold color="white" marginBottom={1}>Execution Result</Text>
+        
+        <Box flexDirection="row" marginBottom={1}>
+          <Text color={statusColor} bold>
+            {statusIcon} {stepResult.success ? 'PASSED' : 'FAILED'}
           </Text>
-        )}
+          <Text color="gray" marginLeft={2}>
+            ({stepResult.duration || 0}ms)
+          </Text>
+        </Box>
+        
         {stepResult.error && (
-          <Text color="red">
-            Error: {stepResult.error}
-          </Text>
+          <Box>
+            <Text bold color="red">Error: </Text>
+            <Text color="red">{stepResult.error}</Text>
+          </Box>
         )}
       </Box>
     );
   };
+
+  // Consolidated into renderStepExecutionResult above
+  const renderStepResult = renderStepExecutionResult;
 
   const renderExecutionSummary = () => {
     if (!state.lastResult) return null;
@@ -1312,31 +1517,34 @@ export const DetailsPane: React.FC = () => {
     );
   };
 
-  const { title, color } = getPanelTitle();
+  const { title, color, indicator } = getPanelTitle();
   
   return (
     <Box flexDirection="column" height="100%">
-      {/* Compact Header with view mode selector */}
-      <Box paddingX={1} paddingY={0} height={state.currentScenario ? 3 : 2}>
-        <Text color={color} bold>{title}</Text>
-        {state.currentScenario && (
-          <Box>
-            {renderViewModeSelector()}
-          </Box>
-        )}
+      {/* Professional Header */}
+      <Box paddingX={1} paddingY={0} height={state.currentScenario ? 3 : 2} 
+           borderBottom borderColor={state.ui.activePane === 'details' ? 'cyan' : 'gray'}>
+        <Box flexDirection="row">
+          <Text color={color} bold>{title}</Text>
+          {indicator && <Text color="yellow">{indicator}</Text>}
+          {state.ui.activePane === 'details' && (
+            <Text color="cyan" marginLeft={2}>[ACTIVE]</Text>
+          )}
+        </Box>
+        {state.currentScenario && renderViewModeSelector()}
       </Box>
 
-      {/* Content */}
+      {/* Content Area */}
       <Box flexGrow={1} paddingX={1} overflow="hidden">
         {renderContent()}
       </Box>
 
-      {/* Compact footer */}
-      <Box paddingX={1} height={2}>
+      {/* Professional Footer */}
+      <Box paddingX={1} height={2} borderTop borderColor="gray">
         <Text color="gray" dimColor>
           {state.ui.activePane === 'details' ? 
-            '🎯 ACTIVE: ↑↓ Scroll • ←→ Views • 1-5 Quick Views • Enter Run • Tab Switch' : 
-            'Tab: Activate • 1-5: Quick Views • R: Run'
+            'ACTIVE: ↑↓ Scroll | ←→ Views | 1-5 Quick Switch | Enter Run | Tab Switch Pane' : 
+            'Tab Activate | 1-5 Quick Views | R Run | Enter Select'
           }
         </Text>
       </Box>

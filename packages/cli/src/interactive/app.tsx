@@ -284,7 +284,7 @@ const VibraniumAppInner: React.FC = () => {
       }
       
       // Enhanced Source View Mode Keyboard Shortcuts
-      if (state.ui.activePane === 'details' && (state.ui.detailsViewMode === 'raw' || state.ui.detailsViewMode === 'source')) {
+      if (state.ui.activePane === 'details' && state.ui.detailsViewMode === 'source') {
         // Page Up/Down for fast scrolling
         if (key.pageUp) {
           scrollSourcePageUp();
@@ -351,7 +351,7 @@ const VibraniumAppInner: React.FC = () => {
       
       // Handle copy step data (C key) - works in non-source views
       if (input.toLowerCase() === 'c' && !key.ctrl && state.ui.activePane === 'details' && 
-          state.ui.detailsViewMode !== 'raw' && state.ui.detailsViewMode !== 'source') {
+          state.ui.detailsViewMode !== 'source') {
         if (state.ui.detailsViewMode === 'overview') {
           copyStepData(state.ui.overviewSelectedStepIndex, 'full');
         } else {
@@ -361,8 +361,7 @@ const VibraniumAppInner: React.FC = () => {
       }
       
       // Handle step navigation with J/K keys (when in details pane, but not in source view)
-      if (state.ui.activePane === 'details' && 
-          state.ui.detailsViewMode !== 'raw' && state.ui.detailsViewMode !== 'source') {
+      if (state.ui.activePane === 'details' && state.ui.detailsViewMode !== 'source') {
         if (input.toLowerCase() === 'j' && !key.ctrl) {
           // Navigate to next step
           if (state.currentScenario?.steps && state.ui.selectedStepIndex < state.currentScenario.steps.length - 1) {

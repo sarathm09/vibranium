@@ -35,6 +35,9 @@
 
 ### In Progress
 
+### Recently Completed
+- [x] **Overview page simplification** - Completely redesigned the overview-dashboard.tsx component to be terminal-friendly: removed complex cards, visual clutter, and over-engineered interface; implemented clean text-based layout with essential information (scenario name, step counts, environment info, execution status); uses simple borders, good spacing, and fast rendering patterns for better terminal UX.
+
 ### Planned
 
 ## 🔌 Phase 5: Plugin System (Priority 2)

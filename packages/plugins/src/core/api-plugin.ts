@@ -73,6 +73,13 @@ export interface ApiStepData {
 }
 
 export class CoreApiPlugin extends BasePlugin {
+  canExecute(step: Step): boolean {
+    return this.stepTypes.includes(step.type);
+  }
+
+  async execute(step: Step, context: any): Promise<StepResult> {
+    return this.executeStep(step, context);
+  }
   readonly metadata = {
     name: 'core-api',
     version: '1.0.0',
@@ -115,7 +122,14 @@ export class CoreApiPlugin extends BasePlugin {
   }
 
   /**
-   * Initialize plugin
+   * Initialize plugin (public method)
+   */
+  async initialize(): Promise<void> {
+    await this.onInit();
+  }
+
+  /**
+   * Initialize plugin (internal)
    */
   protected async doInit(): Promise<void> {
     await this.httpExecutor.initialize();
@@ -147,7 +161,9 @@ export class CoreApiPlugin extends BasePlugin {
       // Validate response
       let validationResults: ValidationResult[] = [];
       if (stepConfig.expect) {
-        validationResults = await this.validateResponse(processedResponse, stepConfig.expect);
+        // Convert expect block to validation format
+        const expectations = this.convertExpectBlockToValidations(stepConfig.expect);
+        validationResults = await this.validateResponse(processedResponse, expectations);
       }
       
       // Create step data
@@ -330,6 +346,24 @@ export class CoreApiPlugin extends BasePlugin {
         return PluginUtils.getNestedValue(response.body, path) !== undefined;
       }
     };
+  }
+
+  /**
+   * Convert expect block to validation format
+   */
+  private convertExpectBlockToValidations(expectBlock: any): any[] {
+    const validations: any[] = [];
+    
+    for (const [identifier, expected] of Object.entries(expectBlock)) {
+      validations.push({
+        identifier,
+        operator: 'equals',
+        expected,
+        message: `Expected ${identifier} to equal ${expected}`
+      });
+    }
+    
+    return validations;
   }
 
   /**

@@ -2,45 +2,7 @@
  * Got HTTP client adapter (default implementation)
  */
 
-// import got, { type Got, type Response as GotResponse, type Options as GotOptions } from 'got';
-
-// Temporary mock for Got types and instance until package is available
-type GotOptions = {
-  method?: string;
-  headers?: Record<string, string>;
-  body?: any;
-  json?: any;
-  timeout?: any;
-  followRedirect?: boolean;
-  maxRedirects?: number;
-  throwHttpErrors?: boolean;
-  allowGetBody?: boolean;
-  decompress?: boolean;
-  dnsCache?: boolean;
-  http2?: boolean;
-  responseType?: string;
-  isStream?: boolean;
-  agent?: any;
-  https?: any;
-};
-
-type GotResponse = {
-  statusCode: number;
-  statusMessage: string;
-  headers: Record<string, string | string[]>;
-  body: any;
-};
-
-type Got = {
-  (url: string, options?: GotOptions): Promise<GotResponse>;
-  extend: (options: GotOptions) => Got;
-};
-
-// Mock got instance for now
-const got: Got = (() => {
-  throw new Error('Got adapter requires "got" package to be installed');
-}) as any;
-got.extend = () => got;
+import got, { type Got, type Response as GotResponse, type Options as GotOptions } from 'got';
 import type { HttpRequest, HttpResponse, HttpClientConfig, TimeoutConfig } from '../types';
 import { BaseHttpAdapter } from './base-adapter';
 import { HttpErrorHandler, RequestBuilder, ResponseParser } from '../utils';

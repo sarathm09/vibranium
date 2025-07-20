@@ -3,7 +3,7 @@
  */
 
 import type { ContentParser } from '@vibraniumjs/types';
-import { ContentDetector, JsonParser, XmlParser, TextParser } from '@vibraniumjs/core';
+import { ContentDetector, JsonContentParser, XmlContentParser, TextContentParser } from '@vibraniumjs/core';
 
 export interface ProcessedResponse {
   status: number;
@@ -32,9 +32,9 @@ export class ResponseProcessor {
     this.parsers = new Map();
     
     // Register default parsers
-    this.parsers.set('json', new JsonParser());
-    this.parsers.set('xml', new XmlParser());
-    this.parsers.set('text', new TextParser());
+    this.parsers.set('json', new JsonContentParser());
+    this.parsers.set('xml', new XmlContentParser());
+    this.parsers.set('text', new TextContentParser());
   }
 
   /**
@@ -42,14 +42,27 @@ export class ResponseProcessor {
    */
   async processResponse(response: any): Promise<ProcessedResponse> {
     const contentType = this.extractContentType(response.headers);
-    const detectedType = this.contentDetector.detectContentType(response.body, contentType);
+    
+    // Convert response body to string/buffer for content detection
+    let bodyForDetection = response.body;
+    if (response.body && typeof response.body === 'object' && !(response.body instanceof Buffer)) {
+      bodyForDetection = JSON.stringify(response.body);
+    }
+    
+    const detection = this.contentDetector.detect(bodyForDetection || '', { contentTypeHeader: contentType });
+    const detectedType = detection.detectedType;
     
     // Parse response body
     let parsedBody = response.body;
     const parser = this.parsers.get(detectedType);
     if (parser && response.body) {
       try {
-        parsedBody = await parser.parse(response.body);
+        // If body is already parsed object and we detected JSON, keep it as is
+        if (detectedType === 'json' && typeof response.body === 'object') {
+          parsedBody = response.body;
+        } else {
+          parsedBody = await parser.parse(bodyForDetection);
+        }
       } catch (error) {
         // Fall back to raw body if parsing fails
         parsedBody = response.body;

@@ -1,0 +1,32 @@
+{
+  "name": "local",
+  "description": "Local development environment configuration",
+  "variables": {
+    "API_BASE_URL": "https://jsonplaceholder.typicode.com",
+    "API_VERSION": "v1",
+    "TIMEOUT": 5000,
+    "RETRY_COUNT": 3,
+    "DEBUG_MODE": true,
+    "LOG_LEVEL": "debug"
+  },
+  "secrets": {
+    "API_KEY": "dev-api-key-12345",
+    "CLIENT_SECRET": "local-client-secret",
+    "DATABASE_URL": "postgresql://localhost:5432/vibranium_dev"
+  },
+  "httpClient": {
+    "adapter": "got",
+    "timeout": 5000,
+    "retries": 3,
+    "headers": {
+      "User-Agent": "Vibranium-CLI/1.0.0 (local)",
+      "Accept": "application/json"
+    }
+  },
+  "reporting": {
+    "format": ["json", "html"],
+    "output": "./reports",
+    "includeTimings": true,
+    "includeHeaders": true
+  }
+}

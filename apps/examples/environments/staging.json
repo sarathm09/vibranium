@@ -1,0 +1,41 @@
+{
+  "name": "staging",
+  "description": "Staging environment configuration",
+  "variables": {
+    "API_BASE_URL": "https://staging-api.example.com",
+    "API_VERSION": "v2",
+    "TIMEOUT": 10000,
+    "RETRY_COUNT": 5,
+    "DEBUG_MODE": false,
+    "LOG_LEVEL": "info"
+  },
+  "secrets": {
+    "API_KEY": "${STAGING_API_KEY}",
+    "CLIENT_SECRET": "${STAGING_CLIENT_SECRET}",
+    "DATABASE_URL": "${STAGING_DATABASE_URL}"
+  },
+  "httpClient": {
+    "adapter": "axios",
+    "timeout": 10000,
+    "retries": 5,
+    "headers": {
+      "User-Agent": "Vibranium-CLI/1.0.0 (staging)",
+      "Accept": "application/json",
+      "X-Environment": "staging"
+    },
+    "auth": {
+      "type": "bearer",
+      "token": "${STAGING_AUTH_TOKEN}"
+    }
+  },
+  "reporting": {
+    "format": ["json", "junit"],
+    "output": "./staging-reports",
+    "includeTimings": true,
+    "includeHeaders": false
+  },
+  "validation": {
+    "strict": true,
+    "failFast": false
+  }
+}

@@ -1,0 +1,145 @@
+name: "CRUD Operations with Dependencies"
+description: "Demonstrates step dependencies and variable passing between requests"
+version: "1.0.0"
+
+environments:
+  - local
+
+variables:
+  baseUrl: "https://jsonplaceholder.typicode.com"
+  userEmail: "${$.random.email}"
+  userName: "${$.random.firstName} ${$.random.lastName}"
+
+steps:
+  - name: "Create User"
+    type: "api"
+    method: "POST"
+    url: "${$.variables.baseUrl}/users"
+    headers:
+      Content-Type: "application/json"
+    body:
+      name: "${$.variables.userName}"
+      username: "${$.random.username}"
+      email: "${$.variables.userEmail}"
+      address:
+        street: "${$.random.streetAddress}"
+        suite: "Apt. ${$.random.number(1, 999)}"
+        city: "${$.random.city}"
+        zipcode: "${$.random.zipCode}"
+      phone: "${$.random.phoneNumber}"
+      website: "${$.random.domainName}"
+      company:
+        name: "${$.random.company}"
+        catchPhrase: "${$.random.sentence}"
+        bs: "${$.random.words(3)}"
+    expect:
+      - operator: "statusCode"
+        value: 201
+      - operator: "equals"
+        path: "$.name"
+        value: "${$.variables.userName}"
+      - operator: "equals"
+        path: "$.email"
+        value: "${$.variables.userEmail}"
+      - operator: "exists"
+        path: "$.id"
+    saveResponse:
+      userId: "$.id"
+
+  - name: "Get Created User"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/users/${$.response.Create User.userId}"
+    depends_on:
+      - "Create User"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "equals"
+        path: "$.id"
+        value: "${$.response.Create User.userId}"
+      - operator: "equals"
+        path: "$.email"
+        value: "${$.variables.userEmail}"
+
+  - name: "Create Post for User"
+    type: "api"
+    method: "POST"
+    url: "${$.variables.baseUrl}/posts"
+    headers:
+      Content-Type: "application/json"
+    body:
+      title: "My First Post"
+      body: "This is my first post created via the API!"
+      userId: "${$.response.Create User.userId}"
+    depends_on:
+      - "Create User"
+    expect:
+      - operator: "statusCode"
+        value: 201
+      - operator: "equals"
+        path: "$.userId"
+        value: "${$.response.Create User.userId}"
+      - operator: "exists"
+        path: "$.id"
+    saveResponse:
+      postId: "$.id"
+
+  - name: "Get User's Posts"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts?userId=${$.response.Create User.userId}"
+    depends_on:
+      - "Create Post for User"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "arrayMinLength"
+        path: "$"
+        value: 1
+      - operator: "contains"
+        path: "$[0].userId"
+        value: "${$.response.Create User.userId}"
+
+  - name: "Update User Post"
+    type: "api"
+    method: "PUT"
+    url: "${$.variables.baseUrl}/posts/${$.response.Create Post for User.postId}"
+    headers:
+      Content-Type: "application/json"
+    body:
+      id: "${$.response.Create Post for User.postId}"
+      title: "My Updated Post Title"
+      body: "This post has been updated with new content!"
+      userId: "${$.response.Create User.userId}"
+    depends_on:
+      - "Create Post for User"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "equals"
+        path: "$.title"
+        value: "My Updated Post Title"
+      - operator: "equals"
+        path: "$.userId"
+        value: "${$.response.Create User.userId}"
+
+  - name: "Delete User Post"
+    type: "api"
+    method: "DELETE"
+    url: "${$.variables.baseUrl}/posts/${$.response.Create Post for User.postId}"
+    depends_on:
+      - "Update User Post"
+    expect:
+      - operator: "statusCode"
+        value: 200
+
+  - name: "Verify Post Deleted"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts/${$.response.Create Post for User.postId}"
+    depends_on:
+      - "Delete User Post"
+    expect:
+      - operator: "statusCode"
+        value: 404

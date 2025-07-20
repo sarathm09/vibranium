@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Post",
+  "description": "A blog post object from JSONPlaceholder API",
+  "type": "object",
+  "required": ["id", "title", "body", "userId"],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Unique identifier for the post"
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 255,
+      "description": "Title of the blog post"
+    },
+    "body": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Content body of the blog post"
+    },
+    "userId": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "ID of the user who created the post"
+    }
+  },
+  "additionalProperties": false
+}

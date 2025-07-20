@@ -1,0 +1,269 @@
+name: "Advanced Workflow Demonstration"
+description: "Complex workflow showcasing advanced features: file uploads, error handling, data transformation"
+version: "1.0.0"
+
+environments:
+  - local
+  - staging
+
+variables:
+  baseUrl: "https://jsonplaceholder.typicode.com"
+  testUserId: "${$.random.number(1, 10)}"
+  batchSize: 5
+  retryCount: 3
+
+steps:
+  - name: "Setup Test Data"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/users/${$.variables.testUserId}"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "exists"
+        path: "$.id"
+      - operator: "exists"
+        path: "$.name"
+      - operator: "exists"
+        path: "$.email"
+    saveResponse:
+      testUser: "$"
+      userId: "$.id"
+      userName: "$.name"
+      userEmail: "$.email"
+
+  - name: "Fetch User's Posts"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts?userId=${$.response.Setup Test Data.userId}"
+    depends_on:
+      - "Setup Test Data"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "arrayMinLength"
+        path: "$"
+        value: 1
+    saveResponse:
+      userPosts: "$"
+      firstPostId: "$[0].id"
+      postsCount: "$"
+    transformResponse:
+      postsCount: "length($)"
+
+  - name: "Create Comment on First Post"
+    type: "api"
+    method: "POST"
+    url: "${$.variables.baseUrl}/comments"
+    headers:
+      Content-Type: "application/json"
+      X-Test-Context: "advanced-workflow"
+    body:
+      postId: "${$.response.Fetch User's Posts.firstPostId}"
+      name: "Automated Test Comment"
+      email: "test@vibranium-cli.com"
+      body: "This comment was created by the Vibranium CLI advanced workflow test."
+    depends_on:
+      - "Fetch User's Posts"
+    expect:
+      - operator: "statusCode"
+        value: 201
+      - operator: "equals"
+        path: "$.postId"
+        value: "${$.response.Fetch User's Posts.firstPostId}"
+      - operator: "contains"
+        path: "$.body"
+        value: "Vibranium CLI"
+    saveResponse:
+      commentId: "$.id"
+      commentBody: "$.body"
+
+  - name: "Verify Comment Creation"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/comments/${$.response.Create Comment on First Post.commentId}"
+    depends_on:
+      - "Create Comment on First Post"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "equals"
+        path: "$.id"
+        value: "${$.response.Create Comment on First Post.commentId}"
+      - operator: "equals"
+        path: "$.email"
+        value: "test@vibranium-cli.com"
+
+  - name: "Update User Information"
+    type: "api"
+    method: "PUT"
+    url: "${$.variables.baseUrl}/users/${$.response.Setup Test Data.userId}"
+    headers:
+      Content-Type: "application/json"
+      X-Updated-By: "vibranium-cli"
+    body:
+      id: "${$.response.Setup Test Data.userId}"
+      name: "${$.response.Setup Test Data.userName} (Updated)"
+      username: "${$.response.Setup Test Data.testUser.username}"
+      email: "${$.response.Setup Test Data.userEmail}"
+      address: "${$.response.Setup Test Data.testUser.address}"
+      phone: "${$.response.Setup Test Data.testUser.phone}"
+      website: "https://updated.example.com"
+      company: "${$.response.Setup Test Data.testUser.company}"
+    depends_on:
+      - "Setup Test Data"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "contains"
+        path: "$.name"
+        value: "(Updated)"
+      - operator: "equals"
+        path: "$.website"
+        value: "https://updated.example.com"
+    saveResponse:
+      updatedUser: "$"
+
+  - name: "Batch Create Multiple Posts"
+    type: "api"
+    method: "POST"
+    url: "${$.variables.baseUrl}/posts"
+    headers:
+      Content-Type: "application/json"
+      X-Batch-Operation: "true"
+    body:
+      title: "Batch Post ${$.iteration} of ${$.variables.batchSize}"
+      body: "This is batch post number ${$.iteration} created during advanced workflow testing. User: ${$.response.Setup Test Data.userName}"
+      userId: "${$.response.Setup Test Data.userId}"
+    depends_on:
+      - "Setup Test Data"
+    iterations: "${$.variables.batchSize}"
+    expect:
+      - operator: "statusCode"
+        value: 201
+      - operator: "contains"
+        path: "$.title"
+        value: "Batch Post"
+      - operator: "equals"
+        path: "$.userId"
+        value: "${$.response.Setup Test Data.userId}"
+    saveResponse:
+      batchPostIds: "$.id"
+
+  - name: "Validate Batch Creation Results"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts?userId=${$.response.Setup Test Data.userId}"
+    depends_on:
+      - "Batch Create Multiple Posts"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "arrayMinLength"
+        path: "$"
+        value: "${$.variables.batchSize}"
+      - operator: "arrayContains"
+        path: "$[*].title"
+        value: "Batch Post"
+
+  - name: "Error Handling Test - Invalid User"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/users/99999"
+    continueOnFailure: true
+    expect:
+      - operator: "statusCode"
+        value: 404
+      - operator: "equals"
+        path: "$"
+        value: {}
+
+  - name: "Conditional Step - Only if Previous Failed"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/users/1"
+    condition: "${$.response.Error Handling Test - Invalid User.statusCode} === 404"
+    depends_on:
+      - "Error Handling Test - Invalid User"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "exists"
+        path: "$.id"
+
+  - name: "Performance Test - Large Dataset"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts"
+    timeout: 3000
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "arrayLength"
+        path: "$"
+        value: 100
+      - operator: "responseTime"
+        value: 3000
+    performance:
+      maxResponseTime: 2000
+      expectedThroughput: "1000 requests/minute"
+
+  - name: "Data Transformation Test"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/albums"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "arrayLength"
+        path: "$"
+        value: 100
+    saveResponse:
+      allAlbums: "$"
+      firstAlbumTitle: "$[0].title"
+      albumUserIds: "$[*].userId"
+    transformResponse:
+      uniqueUserIds: "unique($.albumUserIds)"
+      albumCount: "length($.allAlbums)"
+      titleLengths: "map($.allAlbums, 'length(title)')"
+
+  - name: "Cleanup Test Data"
+    type: "api"
+    method: "DELETE"
+    url: "${$.variables.baseUrl}/comments/${$.response.Create Comment on First Post.commentId}"
+    depends_on:
+      - "Create Comment on First Post"
+      - "Verify Comment Creation"
+    continueOnFailure: true
+    expect:
+      - operator: "statusCode"
+        value: 200
+
+  - name: "Final Validation Summary"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/users/${$.response.Setup Test Data.userId}"
+    depends_on:
+      - "Update User Information"
+      - "Cleanup Test Data"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "exists"
+        path: "$.id"
+    summary:
+      totalSteps: 13
+      userTested: "${$.response.Setup Test Data.userName}"
+      postsCreated: "${$.variables.batchSize}"
+      commentsCreated: 1
+      performanceValidated: true
+      errorHandlingTested: true
+
+cleanup:
+  - name: "Reset Test State"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/users"
+    expect:
+      - operator: "statusCode"
+        value: 200

@@ -35,29 +35,29 @@ $error-color: #ef4444;
 $info-color: #06b6d4;
 
 // === GLASS NEUTRAL SYSTEM ===
-// Light theme glass colors
-$glass-white: rgba(255, 255, 255, 0.1);
-$glass-white-strong: rgba(255, 255, 255, 0.2);
-$glass-white-border: rgba(255, 255, 255, 0.15);
-$glass-white-hover: rgba(255, 255, 255, 0.15);
+// Light theme glass colors - Enhanced for readability
+$glass-white: rgba(255, 255, 255, 0.15);
+$glass-white-strong: rgba(255, 255, 255, 0.25);
+$glass-white-border: rgba(255, 255, 255, 0.2);
+$glass-white-hover: rgba(255, 255, 255, 0.2);
 
-// Dark theme glass colors
-$glass-dark: rgba(0, 0, 0, 0.1);
-$glass-dark-strong: rgba(0, 0, 0, 0.2);
-$glass-dark-border: rgba(0, 0, 0, 0.15);
-$glass-dark-hover: rgba(0, 0, 0, 0.15);
+// Dark theme glass colors - Enhanced for readability
+$glass-dark: rgba(0, 0, 0, 0.2);
+$glass-dark-strong: rgba(0, 0, 0, 0.3);
+$glass-dark-border: rgba(0, 0, 0, 0.25);
+$glass-dark-hover: rgba(0, 0, 0, 0.25);
 
-// Neutral Glass Grays
-$glass-gray-50: rgba(249, 250, 251, 0.8);
-$glass-gray-100: rgba(243, 244, 246, 0.7);
-$glass-gray-200: rgba(229, 231, 235, 0.6);
-$glass-gray-300: rgba(209, 213, 219, 0.5);
-$glass-gray-400: rgba(156, 163, 175, 0.4);
-$glass-gray-500: rgba(107, 114, 128, 0.3);
-$glass-gray-600: rgba(75, 85, 99, 0.25);
-$glass-gray-700: rgba(55, 65, 81, 0.2);
-$glass-gray-800: rgba(31, 41, 55, 0.15);
-$glass-gray-900: rgba(17, 24, 39, 0.1);
+// Neutral Glass Grays - Enhanced for readability
+$glass-gray-50: rgba(249, 250, 251, 0.9);
+$glass-gray-100: rgba(243, 244, 246, 0.8);
+$glass-gray-200: rgba(229, 231, 235, 0.7);
+$glass-gray-300: rgba(209, 213, 219, 0.6);
+$glass-gray-400: rgba(156, 163, 175, 0.5);
+$glass-gray-500: rgba(107, 114, 128, 0.4);
+$glass-gray-600: rgba(75, 85, 99, 0.35);
+$glass-gray-700: rgba(55, 65, 81, 0.3);
+$glass-gray-800: rgba(31, 41, 55, 0.25);
+$glass-gray-900: rgba(17, 24, 39, 0.2);
 
 // Solid Neutral Colors
 $gray-50: #f9fafb;
@@ -71,6 +71,14 @@ $gray-700: #374151;
 $gray-800: #1f2937;
 $gray-900: #111827;
 
+// Enhanced Readability Colors
+$text-primary: #ffffff;           // Pure white for highest contrast
+$text-secondary: #f1f5f9;        // Very light blue-gray for secondary text
+$text-muted: #cbd5e1;            // Light blue-gray for muted text
+$text-glass-primary: #f8fafc;    // Slightly off-white for glass backgrounds
+$text-glass-secondary: #e2e8f0;  // Light gray with blue tint for secondary glass text
+$text-glass-muted: #94a3b8;      // Medium gray-blue for muted glass text
+
 // Spacing Scale
 $spacing-xs: 0.25rem; // 4px
 $spacing-sm: 0.5rem;  // 8px
@@ -79,7 +87,7 @@ $spacing-lg: 1.5rem;  // 24px
 $spacing-xl: 2rem;    // 32px
 $spacing-2xl: 3rem;   // 48px
 
-// Typography
+// Typography - Enhanced for readability
 $font-family-base: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
 $font-family-mono: 'Fira Code', 'Monaco', 'Cascadia Code', 'Segoe UI Mono', 'Roboto Mono', 'Oxygen Mono', 'Ubuntu Monospace', 'Source Code Pro', 'Fira Mono', 'Droid Sans Mono', 'Courier New', monospace;
 
@@ -90,6 +98,20 @@ $font-size-lg: 1.125rem;  // 18px
 $font-size-xl: 1.25rem;   // 20px
 $font-size-2xl: 1.5rem;   // 24px
 $font-size-3xl: 1.875rem; // 30px
+
+// Line Heights for better readability
+$line-height-tight: 1.25;
+$line-height-snug: 1.375;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.625;
+$line-height-loose: 2;
+
+// Font Weights
+$font-weight-light: 300;
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
 
 // Border Radius
 $border-radius-sm: 0.25rem; // 4px
@@ -162,6 +184,83 @@ $glass-transition-slow: all $transition-slow $ease-glass;
 // Backdrop Blur Transitions
 $blur-transition: backdrop-filter $transition-normal $ease-glass;
 $blur-transition-fast: backdrop-filter $transition-fast $ease-glass;
+
+// === THEME SYSTEM ===
+// CSS Custom Properties for Theme Switching
+:root {
+  // Light theme (default)
+  --theme-background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --theme-background-pattern: 
+    radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+  
+  // Text colors
+  --theme-text-primary: #{$gray-900};
+  --theme-text-secondary: #{$gray-700};
+  --theme-text-muted: #{$gray-500};
+  --theme-text-inverse: #{$gray-100};
+  
+  // Glass colors - light theme
+  --theme-glass-primary: #{$glass-white};
+  --theme-glass-strong: #{$glass-white-strong};
+  --theme-glass-border: #{$glass-white-border};
+  --theme-glass-hover: #{$glass-white-hover};
+  
+  // Gradients - light theme
+  --theme-glass-gradient: #{$glass-gradient-light};
+  --theme-glass-border-color: #{$glass-border-light};
+  
+  // Scrollbar
+  --theme-scrollbar-track: rgba(255, 255, 255, 0.05);
+  --theme-scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --theme-scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="dark"] {
+  // Dark theme
+  --theme-background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  --theme-background-pattern: 
+    radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(147, 51, 234, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(34, 197, 94, 0.15) 0%, transparent 50%);
+  
+  // Text colors - dark theme
+  --theme-text-primary: #{$gray-100};
+  --theme-text-secondary: #{$gray-300};
+  --theme-text-muted: #{$gray-400};
+  --theme-text-inverse: #{$gray-900};
+  
+  // Glass colors - dark theme
+  --theme-glass-primary: #{$glass-dark};
+  --theme-glass-strong: #{$glass-dark-strong};
+  --theme-glass-border: #{$glass-dark-border};
+  --theme-glass-hover: #{$glass-dark-hover};
+  
+  // Gradients - dark theme
+  --theme-glass-gradient: #{$glass-gradient-dark};
+  --theme-glass-border-color: #{$glass-border-dark};
+  
+  // Scrollbar - dark theme
+  --theme-scrollbar-track: rgba(0, 0, 0, 0.2);
+  --theme-scrollbar-thumb: rgba(255, 255, 255, 0.1);
+  --theme-scrollbar-thumb-hover: rgba(255, 255, 255, 0.2);
+}
+
+// Dark theme specific glass colors
+$glass-dark-surface: rgba(15, 23, 42, 0.3); // Dark slate with transparency
+$glass-dark-surface-strong: rgba(15, 23, 42, 0.5);
+$glass-dark-surface-border: rgba(100, 116, 139, 0.2); // Slate border
+
+// Dark theme glassmorphism gradients
+$glass-gradient-dark-surface: linear-gradient(135deg, rgba(15, 23, 42, 0.4) 0%, rgba(15, 23, 42, 0.2) 100%);
+$glass-gradient-dark-panel: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.4) 100%);
+
+// Enhanced dark theme colors for better contrast
+$glass-dark-primary: rgba(59, 130, 246, 0.15); // Blue glass for dark theme
+$glass-dark-primary-border: rgba(59, 130, 246, 0.25);
+$glass-dark-secondary: rgba(147, 51, 234, 0.15); // Purple glass for dark theme
+$glass-dark-secondary-border: rgba(147, 51, 234, 0.25);
 
 // Z-index Scale
 $z-background: -1;

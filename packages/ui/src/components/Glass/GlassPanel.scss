@@ -2,10 +2,11 @@
 
 .glass-panel {
   position: relative;
-  background: vars.$glass-gradient-light;
+  background: var(--theme-glass-gradient);
   backdrop-filter: vars.$blur-lg;
   -webkit-backdrop-filter: vars.$blur-lg;
-  border: vars.$glass-border-light;
+  border: 1px solid var(--theme-glass-border);
+  color: var(--theme-text-primary);
   transition: vars.$glass-transition;
   display: block;
   
@@ -109,17 +110,18 @@
   &.glass-panel--dark {
     background: vars.$glass-gradient-dark;
     border: vars.$glass-border-dark;
-    color: vars.$gray-100;
+    color: vars.$text-glass-primary;
     
     &:hover {
       background: linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.08) 100%);
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.25);
     }
   }
   
   // Interactive states
   &.glass-panel--hoverable:hover {
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-glass-hover);
+    border-color: var(--theme-glass-border);
     box-shadow: vars.$glass-shadow-lg, vars.$glass-inner-shadow-strong;
   }
   
@@ -132,7 +134,7 @@
     }
   }
   
-  // Pseudo elements for enhanced glass effect
+  // Pseudo elements for enhanced glass effect - theme aware
   &::before {
     content: '';
     position: absolute;
@@ -140,8 +142,9 @@
     left: 0;
     right: 0;
     height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    background: linear-gradient(90deg, transparent, var(--theme-glass-border), transparent);
     border-radius: inherit;
+    opacity: 0.6;
   }
   
   &::after {
@@ -151,22 +154,40 @@
     left: 1px;
     right: 1px;
     bottom: 1px;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+    background: linear-gradient(135deg, var(--theme-glass-primary) 0%, transparent 50%);
     border-radius: inherit;
     pointer-events: none;
-    opacity: 0.8;
+    opacity: 0.4;
+  }
+}
+
+// High contrast mode for better accessibility
+@media (prefers-contrast: high) {
+  .glass-panel {
+    border-width: 2px;
+    color: #ffffff;
+    
+    &::before {
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    }
+    
+    &::after {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+    }
   }
 }
 
 // Dark theme adjustments
 @media (prefers-color-scheme: dark) {
   .glass-panel {
+    color: vars.$text-primary;
+    
     &::before {
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
     }
     
     &::after {
-      background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
     }
   }
 }

@@ -2,6 +2,16 @@
 @use './variables' as vars;
 @use './tailwind-utility';
 
+// === CSS CUSTOM PROPERTIES FOR READABILITY ===
+:root {
+  --text-primary: #ffffff;
+  --text-secondary: #f1f5f9;
+  --text-muted: #cbd5e1;
+  --text-glass-primary: #f8fafc;
+  --text-glass-secondary: #e2e8f0;
+  --text-glass-muted: #94a3b8;
+}
+
 // === GLOBAL RESET & BASE STYLES ===
 * {
   box-sizing: border-box;
@@ -11,19 +21,22 @@
 
 html {
   font-size: 16px;
-  line-height: 1.5;
+  line-height: vars.$line-height-normal;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  font-feature-settings: 'kern' 1, 'liga' 1;
 }
 
 body {
   font-family: vars.$font-family-base;
   font-size: vars.$font-size-base;
-  color: vars.$gray-900;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: var(--theme-text-primary);
+  background: var(--theme-background);
   min-height: 100vh;
   overflow-x: hidden;
+  transition: background vars.$transition-slow vars.$ease-glass, 
+              color vars.$transition-normal vars.$ease-glass;
   
   // Frosted glass background pattern
   &::before {
@@ -33,12 +46,10 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-      radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
-      radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+    background: var(--theme-background-pattern);
     z-index: vars.$z-background;
     pointer-events: none;
+    transition: background vars.$transition-slow vars.$ease-glass;
   }
 }
 
@@ -50,17 +61,18 @@ body {
 
 // === GLASSMORPHISM BASE CLASSES ===
 .glass-panel {
-  background: vars.$glass-gradient-light;
+  background: var(--theme-glass-gradient);
   backdrop-filter: vars.$blur-lg;
   -webkit-backdrop-filter: vars.$blur-lg;
-  border: vars.$glass-border-light;
+  border: 1px solid var(--theme-glass-border);
   border-radius: vars.$border-radius-xl;
   box-shadow: vars.$glass-shadow-md, vars.$glass-inner-shadow;
   transition: vars.$glass-transition;
+  color: var(--theme-text-primary);
   
   &:hover {
-    background: vars.$glass-gradient-light;
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--theme-glass-hover);
+    border-color: var(--theme-glass-border);
     box-shadow: vars.$glass-shadow-lg, vars.$glass-inner-shadow-strong;
     transform: translateY(-2px);
   }
@@ -125,14 +137,16 @@ body {
 
 // === GLASS BUTTON BASE ===
 .glass-button {
-  background: vars.$glass-gradient-light;
+  background: var(--theme-glass-gradient);
   backdrop-filter: vars.$blur-md;
   -webkit-backdrop-filter: vars.$blur-md;
-  border: vars.$glass-border-light;
+  border: 1px solid var(--theme-glass-border);
   border-radius: vars.$border-radius-lg;
   padding: vars.$spacing-sm vars.$spacing-md;
-  color: vars.$gray-800;
-  font-weight: 500;
+  color: var(--theme-text-primary);
+  font-weight: vars.$font-weight-medium;
+  font-size: vars.$font-size-base;
+  line-height: vars.$line-height-snug;
   cursor: pointer;
   transition: vars.$glass-transition-fast;
   display: inline-flex;
@@ -165,25 +179,29 @@ body {
 
 // === GLASS INPUT BASE ===
 .glass-input {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--theme-glass-primary);
   backdrop-filter: vars.$blur-sm;
   -webkit-backdrop-filter: vars.$blur-sm;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid var(--theme-glass-border);
   border-radius: vars.$border-radius-md;
   padding: vars.$spacing-sm vars.$spacing-md;
-  color: vars.$gray-800;
+  color: var(--theme-text-primary);
   font-size: vars.$font-size-base;
+  font-weight: vars.$font-weight-normal;
+  line-height: vars.$line-height-normal;
   transition: vars.$glass-transition-fast;
   
   &::placeholder {
-    color: rgba(107, 114, 128, 0.7);
+    color: var(--theme-text-muted);
+    font-weight: vars.$font-weight-normal;
   }
   
   &:focus {
     outline: none;
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(59, 130, 246, 0.4);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    color: vars.$text-primary;
   }
 }
 
@@ -204,17 +222,17 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--theme-scrollbar-track);
   border-radius: vars.$border-radius-sm;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--theme-scrollbar-thumb);
   border-radius: vars.$border-radius-sm;
   transition: vars.$transition-fast;
   
   &:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: var(--theme-scrollbar-thumb-hover);
   }
 }
 

@@ -1,0 +1,102 @@
+@use '../../styles/variables' as vars;
+
+.theme-toggle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  
+  &__button {
+    position: relative;
+    overflow: hidden;
+    border-radius: vars.$border-radius-lg;
+    transition: vars.$glass-transition;
+    
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: vars.$glass-shadow-md;
+    }
+    
+    &:active {
+      transform: translateY(0);
+    }
+  }
+  
+  &__icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    
+    svg {
+      transition: vars.$glass-transition;
+      color: var(--theme-text-primary);
+      
+      // Add subtle glow effect
+      filter: drop-shadow(0 0 4px currentColor);
+    }
+  }
+  
+  &__label {
+    font-size: vars.$font-size-sm;
+    font-weight: 500;
+    color: var(--theme-text-primary);
+    margin-left: vars.$spacing-sm;
+    white-space: nowrap;
+  }
+  
+  // Theme-specific styling
+  :root & {
+    .theme-toggle__button {
+      background: var(--theme-glass-gradient);
+      border: 1px solid var(--theme-glass-border);
+      
+      &:hover {
+        background: var(--theme-glass-hover);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+    }
+    
+    .theme-toggle__icon-container svg {
+      color: vars.$yellow-400; // Sun color in light mode
+    }
+  }
+  
+  [data-theme="dark"] & {
+    .theme-toggle__button {
+      background: var(--theme-glass-gradient);
+      border: 1px solid var(--theme-glass-border);
+      
+      &:hover {
+        background: var(--theme-glass-hover);
+        border-color: rgba(100, 116, 139, 0.4);
+      }
+    }
+    
+    .theme-toggle__icon-container svg {
+      color: vars.$blue-400; // Moon color in dark mode
+    }
+  }
+  
+  // Size variants
+  &--sm {
+    .theme-toggle__button {
+      padding: vars.$spacing-xs vars.$spacing-sm;
+    }
+  }
+  
+  &--md {
+    .theme-toggle__button {
+      padding: vars.$spacing-sm vars.$spacing-md;
+    }
+  }
+  
+  &--lg {
+    .theme-toggle__button {
+      padding: vars.$spacing-md vars.$spacing-lg;
+    }
+  }
+}
+
+// Add some missing color variables for theme toggle
+$yellow-400: #facc15;
+$blue-400: #60a5fa;

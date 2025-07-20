@@ -12,15 +12,19 @@
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     
     h2 {
-      color: vars.$gray-100;
+      color: vars.$text-primary;
       font-size: vars.$font-size-lg;
-      font-weight: 600;
+      font-weight: vars.$font-weight-semibold;
+      line-height: vars.$line-height-snug;
       margin: 0;
+      letter-spacing: -0.025em;
     }
     
     p {
-      color: vars.$gray-400;
+      color: vars.$text-glass-secondary;
       font-size: vars.$font-size-sm;
+      font-weight: vars.$font-weight-normal;
+      line-height: vars.$line-height-normal;
       margin: vars.$spacing-xs 0 0;
     }
   }
@@ -32,10 +36,12 @@
     .sidebar__toggle-button {
       width: 100%;
       justify-content: flex-start;
-      color: vars.$gray-300;
+      color: vars.$text-glass-secondary;
+      font-weight: vars.$font-weight-medium;
       
       &:hover {
-        color: vars.$gray-100;
+        color: vars.$text-primary;
+        background: rgba(255, 255, 255, 0.1);
       }
     }
   }
@@ -98,17 +104,18 @@
     background: transparent;
     border: none;
     border-radius: vars.$border-radius-lg;
-    color: vars.$gray-300;
+    color: vars.$text-glass-secondary;
     font-size: vars.$font-size-sm;
-    font-weight: 500;
+    font-weight: vars.$font-weight-medium;
+    line-height: vars.$line-height-snug;
     cursor: pointer;
     transition: vars.$glass-transition-fast;
     text-align: left;
     gap: vars.$spacing-sm;
     
     &:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: vars.$gray-100;
+      background: rgba(255, 255, 255, 0.08);
+      color: vars.$text-primary;
       transform: translateX(2px);
     }
     
@@ -122,7 +129,7 @@
       
       &:hover {
         background: transparent;
-        color: vars.$gray-300;
+        color: vars.$text-glass-muted;
         transform: none;
       }
     }
@@ -155,12 +162,13 @@
     border: vars.$glass-border-primary;
     color: vars.$primary-color;
     font-size: vars.$font-size-xs;
-    font-weight: 600;
-    padding: 2px 6px;
+    font-weight: vars.$font-weight-semibold;
+    line-height: vars.$line-height-tight;
+    padding: 3px 7px;
     border-radius: vars.$border-radius-sm;
     backdrop-filter: vars.$blur-sm;
     -webkit-backdrop-filter: vars.$blur-sm;
-    min-width: 18px;
+    min-width: 20px;
     text-align: center;
     flex-shrink: 0;
   }
@@ -211,6 +219,7 @@
       background: vars.$glass-primary;
       border: vars.$glass-border-primary;
       color: vars.$primary-color;
+      font-weight: vars.$font-weight-semibold;
       
       &:hover {
         background: vars.$glass-primary-hover;
@@ -219,8 +228,9 @@
     }
     
     .sidebar-item__badge {
-      background: rgba(255, 255, 255, 0.2);
-      color: vars.$gray-100;
+      background: rgba(255, 255, 255, 0.25);
+      color: vars.$text-primary;
+      border: 1px solid rgba(255, 255, 255, 0.1);
     }
   }
   

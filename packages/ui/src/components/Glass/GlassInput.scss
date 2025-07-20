@@ -13,8 +13,9 @@
 
 .glass-input__label {
   font-size: vars.$font-size-sm;
-  font-weight: 500;
-  color: vars.$gray-700;
+  font-weight: vars.$font-weight-medium;
+  line-height: vars.$line-height-snug;
+  color: vars.$text-glass-secondary;
   margin-bottom: vars.$spacing-xs;
   transition: vars.$glass-transition-fast;
 }
@@ -23,10 +24,10 @@
   position: relative;
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.12);
   backdrop-filter: vars.$blur-sm;
   -webkit-backdrop-filter: vars.$blur-sm;
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   transition: vars.$glass-transition-fast;
   overflow: hidden;
   
@@ -61,20 +62,23 @@
   background: transparent;
   border: none;
   outline: none;
-  color: vars.$gray-800;
+  color: vars.$text-glass-primary;
   font-size: vars.$font-size-base;
+  font-weight: vars.$font-weight-normal;
+  line-height: vars.$line-height-normal;
   font-family: inherit;
   transition: vars.$glass-transition-fast;
   position: relative;
   z-index: 1;
   
   &::placeholder {
-    color: rgba(107, 114, 128, 0.6);
+    color: vars.$text-glass-muted;
+    font-weight: vars.$font-weight-normal;
     transition: vars.$glass-transition-fast;
   }
   
   &:focus::placeholder {
-    color: rgba(107, 114, 128, 0.4);
+    color: rgba(148, 163, 184, 0.7);
   }
   
   &:disabled {
@@ -195,9 +199,13 @@
   }
   
   .glass-input__wrapper {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(59, 130, 246, 0.4);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+  
+  .glass-input__field {
+    color: vars.$text-primary;
   }
 }
 
@@ -231,7 +239,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: vars.$gray-500;
+  color: vars.$text-glass-muted;
   transition: vars.$glass-transition-fast;
   
   svg {
@@ -248,12 +256,12 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  color: vars.$gray-500;
+  color: vars.$text-glass-muted;
   padding: 0 vars.$spacing-sm;
   transition: vars.$glass-transition-fast;
   
   &:hover {
-    color: vars.$gray-700;
+    color: vars.$text-glass-secondary;
   }
   
   &:disabled {
@@ -290,7 +298,8 @@
 .glass-input__error {
   font-size: vars.$font-size-sm;
   color: vars.$error-color;
-  font-weight: 500;
+  font-weight: vars.$font-weight-medium;
+  line-height: vars.$line-height-snug;
   display: flex;
   align-items: center;
   gap: vars.$spacing-xs;
@@ -313,7 +322,9 @@
 
 .glass-input__hint {
   font-size: vars.$font-size-sm;
-  color: vars.$gray-500;
+  color: vars.$text-glass-muted;
+  font-weight: vars.$font-weight-normal;
+  line-height: vars.$line-height-normal;
 }
 
 @keyframes spin {

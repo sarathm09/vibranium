@@ -11,7 +11,7 @@ import { ResolvedConfig } from '../../utils/config-resolver';
 // import { CoreApiPlugin } from '@vibraniumjs/plugins';
 // import { EnvironmentManager } from '@vibraniumjs/utils';
 
-// Temporary mock interfaces for testing
+// Enhanced execution progress with real-time step tracking
 interface ExecutionProgress {
   totalSteps: number;
   completedSteps: number;
@@ -20,6 +20,43 @@ interface ExecutionProgress {
   skippedSteps: number;
   currentBatch: number;
   totalBatches: number;
+  currentStepIndex: number;
+  currentStepStatus: 'pending' | 'running' | 'completed' | 'failed';
+  stepStartTime?: Date;
+  overallStartTime?: Date;
+  realTimeResults: Map<number, StepExecutionResult>;
+}
+
+// Real-time step execution result
+interface StepExecutionResult {
+  stepIndex: number;
+  stepName: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  startTime?: Date;
+  endTime?: Date;
+  duration?: number;
+  request?: {
+    method: string;
+    url: string;
+    headers: Record<string, string>;
+    body?: any;
+  };
+  response?: {
+    status: number;
+    statusText: string;
+    headers: Record<string, string>;
+    body: any;
+    size?: number;
+  };
+  error?: string;
+  validationResults?: Array<{
+    field: string;
+    operator: string;
+    expected: any;
+    actual: any;
+    passed: boolean;
+    message: string;
+  }>;
 }
 
 // File system tree node
@@ -52,19 +89,25 @@ export interface AppState {
   isRunning: boolean;
   canStop: boolean;
   executionProgress?: ExecutionProgress;
+  realTimeStepResults: StepExecutionResult[];
   lastResult?: ScenarioResult;
   executionHistory: ScenarioResult[];
   executionOrchestrator?: any; // ScenarioOrchestrator;
+  autoScrollToCurrentStep: boolean;
 
   // UI state
   ui: {
     selectedScenarioIndex: number;
     selectedStepIndex: number;
+    selectedStepId?: string; // Enhanced step selection tracking
     activePane: 'navigation' | 'details' | 'variables' | 'help';
     showVariablePreview: boolean;
     editorContent: string;
     editorChanged: boolean;
     navigationMode: 'scenarios' | 'folders'; // Toggle between scenarios and file navigation
+    detailsViewMode: 'overview' | 'steps' | 'step-detail' | 'raw' | 'execution' | 'realtime'; // Enhanced view modes
+    stepInspectionMode: boolean; // Whether we're in step inspection mode
+    detailsScrollOffset: number; // Scroll position in details pane
   };
 
   // Status
@@ -79,6 +122,10 @@ export interface AppActions {
   loadScenarios: () => Promise<void>;
   selectScenario: (index: number) => Promise<void>;
   selectStep: (index: number) => void;
+  selectStepById: (stepId: string) => void;
+  runSingleStep: (stepIndex: number) => Promise<void>;
+  copyStepData: (stepIndex: number, dataType: 'request' | 'response' | 'full') => void;
+  toggleStepBookmark: (stepIndex: number) => void;
   saveCurrentScenario: () => Promise<void>;
 
   // Environment management
@@ -95,6 +142,8 @@ export interface AppActions {
   convertToUIResult: (coreResult: any, uiScenario: Scenario, environment: string) => ScenarioResult;
   simulateEnhancedExecution: (scenario: any, variables: any, options: any) => Promise<any>;
   simulateApiStep: (step: any, variables: any, duration: number) => Promise<any>;
+  simulateValidationResults: (expectations: any[], response: any) => any[];
+  toggleAutoScroll: () => void;
 
   // File system navigation
   loadFileSystemTree: (directory?: string) => Promise<void>;
@@ -110,6 +159,13 @@ export interface AppActions {
   togglePane: (pane: 'variables' | 'help' | 'next') => void;
   updateEditorContent: (content: string) => void;
   setStatus: (message: string, type?: AppState['status']['type']) => void;
+
+  // Details pane specific actions
+  scrollDetailsPane: (direction: 'up' | 'down') => void;
+  resetDetailsScroll: () => void;
+  changeDetailsViewMode: (direction: 'left' | 'right') => void;
+  setDetailsViewMode: (mode: AppState['ui']['detailsViewMode']) => void;
+  toggleStepInspectionMode: () => void;
 
   // Navigation
   navigateScenarios: (direction: 'up' | 'down') => void;
@@ -136,8 +192,14 @@ type Action =
   | { type: 'SET_ORCHESTRATOR'; payload: any } // ScenarioOrchestrator
   | { type: 'SET_LAST_RESULT'; payload: ScenarioResult }
   | { type: 'ADD_EXECUTION_RESULT'; payload: ScenarioResult }
+  | { type: 'UPDATE_REAL_TIME_STEP'; payload: StepExecutionResult }
+  | { type: 'CLEAR_REAL_TIME_RESULTS' }
+  | { type: 'SET_AUTO_SCROLL'; payload: boolean }
   | { type: 'SELECT_SCENARIO'; payload: number }
   | { type: 'SELECT_STEP'; payload: number }
+  | { type: 'SELECT_STEP_BY_ID'; payload: string }
+  | { type: 'SET_DETAILS_VIEW_MODE'; payload: AppState['ui']['detailsViewMode'] }
+  | { type: 'TOGGLE_STEP_INSPECTION_MODE' }
   | { type: 'SET_ACTIVE_PANE'; payload: AppState['ui']['activePane'] }
   | { type: 'TOGGLE_VARIABLE_PREVIEW' }
   | { type: 'UPDATE_EDITOR_CONTENT'; payload: string }
@@ -149,7 +211,8 @@ type Action =
   | { type: 'EXPAND_FOLDER'; payload: string }
   | { type: 'COLLAPSE_FOLDER'; payload: string }
   | { type: 'SET_BREADCRUMBS'; payload: string[] }
-  | { type: 'TOGGLE_NAVIGATION_MODE' };
+  | { type: 'TOGGLE_NAVIGATION_MODE' }
+  | { type: 'SCROLL_DETAILS_PANE'; payload: number };
 
 // Reducer
 function appReducer(state: AppState, action: Action): AppState {
@@ -196,11 +259,68 @@ function appReducer(state: AppState, action: Action): AppState {
         executionHistory: [action.payload, ...state.executionHistory.slice(0, 9)] // Keep last 10
       };
     
+    case 'UPDATE_REAL_TIME_STEP':
+      const updatedResults = [...state.realTimeStepResults];
+      const existingIndex = updatedResults.findIndex(r => r.stepIndex === action.payload.stepIndex);
+      if (existingIndex >= 0) {
+        updatedResults[existingIndex] = action.payload;
+      } else {
+        updatedResults.push(action.payload);
+      }
+      return {
+        ...state,
+        realTimeStepResults: updatedResults
+      };
+    
+    case 'CLEAR_REAL_TIME_RESULTS':
+      return {
+        ...state,
+        realTimeStepResults: []
+      };
+    
+    case 'SET_AUTO_SCROLL':
+      return {
+        ...state,
+        autoScrollToCurrentStep: action.payload
+      };
+    
     case 'SELECT_SCENARIO':
       return { ...state, ui: { ...state.ui, selectedScenarioIndex: action.payload } };
     
     case 'SELECT_STEP':
-      return { ...state, ui: { ...state.ui, selectedStepIndex: action.payload } };
+      const selectedStep = state.currentScenario?.steps[action.payload];
+      return { 
+        ...state, 
+        ui: { 
+          ...state.ui, 
+          selectedStepIndex: action.payload,
+          selectedStepId: selectedStep ? `step-${action.payload}` : undefined
+        }
+      };
+    
+    case 'SELECT_STEP_BY_ID':
+      const stepIndex = state.currentScenario?.steps.findIndex((_, index) => `step-${index}` === action.payload) ?? 0;
+      return { 
+        ...state, 
+        ui: { 
+          ...state.ui, 
+          selectedStepIndex: stepIndex,
+          selectedStepId: action.payload
+        }
+      };
+    
+    case 'SET_DETAILS_VIEW_MODE':
+      return { ...state, ui: { ...state.ui, detailsViewMode: action.payload } };
+    
+    case 'TOGGLE_STEP_INSPECTION_MODE':
+      return { 
+        ...state, 
+        ui: { 
+          ...state.ui, 
+          stepInspectionMode: !state.ui.stepInspectionMode,
+          detailsViewMode: state.ui.stepInspectionMode ? 'overview' : 'step-detail'
+        }
+      };
     
     case 'SET_ACTIVE_PANE':
       return { ...state, ui: { ...state.ui, activePane: action.payload } };
@@ -259,6 +379,12 @@ function appReducer(state: AppState, action: Action): AppState {
         ui: { ...state.ui, navigationMode: newMode }
       };
     
+    case 'SCROLL_DETAILS_PANE':
+      return { 
+        ...state, 
+        ui: { ...state.ui, detailsScrollOffset: Math.max(0, action.payload) }
+      };
+    
     default:
       return state;
   }
@@ -281,17 +407,23 @@ function createInitialState(config: ResolvedConfig, environment: string): AppSta
     isRunning: false,
     canStop: false,
     executionProgress: undefined,
+    realTimeStepResults: [],
     lastResult: undefined,
     executionHistory: [],
     executionOrchestrator: undefined,
+    autoScrollToCurrentStep: true,
     ui: {
       selectedScenarioIndex: 0,
       selectedStepIndex: 0,
+      selectedStepId: undefined,
       activePane: 'navigation',
       showVariablePreview: false,
       editorContent: '',
       editorChanged: false,
-      navigationMode: 'folders'
+      navigationMode: 'folders',
+      detailsViewMode: 'overview',
+      stepInspectionMode: false,
+      detailsScrollOffset: 0
     },
     status: {
       message: 'Welcome to Vibranium CLI',
@@ -431,6 +563,150 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
     selectStep(index: number) {
       if (!state.currentScenario || index < 0 || index >= state.currentScenario.steps.length) return;
       dispatch({ type: 'SELECT_STEP', payload: index });
+      actions.setStatus(`Selected step: ${state.currentScenario.steps[index]?.name || `Step ${index + 1}`}`, 'info');
+    },
+
+    selectStepById(stepId: string) {
+      dispatch({ type: 'SELECT_STEP_BY_ID', payload: stepId });
+      const stepIndex = state.currentScenario?.steps.findIndex((_, index) => `step-${index}` === stepId) ?? 0;
+      const stepName = state.currentScenario?.steps[stepIndex]?.name || `Step ${stepIndex + 1}`;
+      actions.setStatus(`Selected step: ${stepName}`, 'info');
+    },
+
+    async runSingleStep(stepIndex: number) {
+      if (!state.currentScenario?.steps?.[stepIndex] || state.isRunning) {
+        actions.setStatus('No step available or execution in progress', 'warning');
+        return;
+      }
+      
+      const step = state.currentScenario.steps[stepIndex];
+      actions.setStatus(`Running step: ${step.name}...`, 'info');
+      
+      try {
+        if (!state.executionOrchestrator) {
+          await actions.initializeOrchestrator();
+        }
+        
+        dispatch({ type: 'SET_RUNNING', payload: true });
+        
+        // Create a single-step scenario
+        const singleStepScenario = {
+          ...state.currentScenario,
+          name: `${state.currentScenario.name} - ${step.name}`,
+          steps: [step]
+        };
+        
+        const coreScenario = actions.convertToCoreDomain(singleStepScenario);
+        
+        // Prepare environment variables
+        const environmentVariables = { 
+          variables: { 
+            baseUrl: 'https://jsonplaceholder.typicode.com',
+            timeout: 30000
+          } 
+        };
+        
+        // Execute single step
+        const result = await actions.simulateEnhancedExecution(
+          coreScenario,
+          {
+            env: environmentVariables?.variables || {},
+            global: {},
+            context: {},
+            request: {},
+            response: {},
+            api: {}
+          },
+          {
+            maxConcurrency: 1,
+            failFast: true,
+            timeout: 30000
+          }
+        );
+        
+        const uiResult = actions.convertToUIResult(result, singleStepScenario, state.currentEnvironment);
+        const stepResult = uiResult.stepResults?.[0];
+        
+        if (stepResult) {
+          const status = stepResult.success ? 'PASSED' : 'FAILED';
+          const statusType = stepResult.success ? 'success' : 'error';
+          actions.setStatus(`Step ${status}: ${step.name} (${stepResult.duration || 0}ms)`, statusType);
+          
+          // Store step result for display
+          const updatedResult = {
+            ...state.lastResult,
+            stepResults: state.lastResult?.stepResults ? 
+              state.lastResult.stepResults.map((sr, idx) => 
+                idx === stepIndex ? stepResult : sr
+              ) : [stepResult]
+          };
+          dispatch({ type: 'SET_LAST_RESULT', payload: updatedResult as ScenarioResult });
+        }
+        
+      } catch (error) {
+        console.error('Step execution error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        actions.setStatus(`Step execution failed: ${errorMessage}`, 'error');
+      } finally {
+        dispatch({ type: 'SET_RUNNING', payload: false });
+      }
+    },
+
+    copyStepData(stepIndex: number, dataType: 'request' | 'response' | 'full') {
+      if (!state.currentScenario?.steps?.[stepIndex]) {
+        actions.setStatus('No step available to copy', 'warning');
+        return;
+      }
+      
+      const step = state.currentScenario.steps[stepIndex];
+      const stepResult = state.lastResult?.stepResults?.[stepIndex];
+      
+      let dataToCopy = '';
+      
+      try {
+        if (dataType === 'request') {
+          // Copy request data
+          const requestData = {
+            name: step.name,
+            type: step.type,
+            method: (step as any).method,
+            url: (step as any).url,
+            headers: (step as any).headers,
+            body: (step as any).body,
+            params: (step as any).params
+          };
+          dataToCopy = JSON.stringify(requestData, null, 2);
+        } else if (dataType === 'response' && stepResult?.response) {
+          // Copy response data
+          dataToCopy = JSON.stringify(stepResult.response, null, 2);
+        } else if (dataType === 'full') {
+          // Copy full step data including results
+          const fullData = {
+            step,
+            result: stepResult
+          };
+          dataToCopy = JSON.stringify(fullData, null, 2);
+        }
+        
+        if (dataToCopy) {
+          // In a real implementation, you'd copy to clipboard
+          // For now, we'll just show a success message
+          actions.setStatus(`${dataType} data copied for ${step.name}`, 'success');
+          console.log('Data copied:', dataToCopy);
+        } else {
+          actions.setStatus(`No ${dataType} data available to copy`, 'warning');
+        }
+      } catch (error) {
+        actions.setStatus('Failed to copy step data', 'error');
+      }
+    },
+
+    toggleStepBookmark(stepIndex: number) {
+      // For now, just show status - would need persistent storage implementation
+      const step = state.currentScenario?.steps?.[stepIndex];
+      if (step) {
+        actions.setStatus(`Bookmark toggled for ${step.name}`, 'info');
+      }
     },
 
     async saveCurrentScenario() {
@@ -739,30 +1015,113 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
       };
     },
     
-    // Enhanced simulation that mimics real HTTP execution
+    // Enhanced simulation that mimics real HTTP execution with real-time feedback
     async simulateEnhancedExecution(scenario: any, variables: any, options: any) {
       const startTime = new Date();
       const stepResults: any[] = [];
       let overallSuccess = true;
       
+      // Clear previous real-time results
+      dispatch({ type: 'CLEAR_REAL_TIME_RESULTS' });
+      
+      // Initialize all steps as pending
       for (let i = 0; i < scenario.steps.length; i++) {
         const step = scenario.steps[i];
-        const stepStartTime = Date.now();
+        const pendingResult: StepExecutionResult = {
+          stepIndex: i,
+          stepName: step.stepName || step.name || `Step ${i + 1}`,
+          status: 'pending'
+        };
+        dispatch({ type: 'UPDATE_REAL_TIME_STEP', payload: pendingResult });
+      }
+      
+      // Initial progress
+      const initialProgress: ExecutionProgress = {
+        totalSteps: scenario.steps.length,
+        completedSteps: 0,
+        passedSteps: 0,
+        failedSteps: 0,
+        skippedSteps: 0,
+        currentBatch: 1,
+        totalBatches: 1,
+        currentStepIndex: 0,
+        currentStepStatus: 'pending',
+        overallStartTime: startTime,
+        realTimeResults: new Map()
+      };
+      dispatch({ type: 'SET_EXECUTION_PROGRESS', payload: initialProgress });
+      
+      for (let i = 0; i < scenario.steps.length; i++) {
+        const step = scenario.steps[i];
+        const stepStartTime = new Date();
         
-        // Update step progress
+        // Update step to running state
         dispatch({ type: 'SELECT_STEP', payload: i });
+        const runningResult: StepExecutionResult = {
+          stepIndex: i,
+          stepName: step.stepName || step.name || `Step ${i + 1}`,
+          status: 'running',
+          startTime: stepStartTime,
+          request: step.type === 'api' ? {
+            method: step.method || step.type.toUpperCase() || 'GET',
+            url: step.url || 'https://jsonplaceholder.typicode.com/posts/1',
+            headers: step.headers || {},
+            body: step.body
+          } : undefined
+        };
+        dispatch({ type: 'UPDATE_REAL_TIME_STEP', payload: runningResult });
+        
+        // Update progress to show current step as running
+        const runningProgress: ExecutionProgress = {
+          ...initialProgress,
+          currentStepIndex: i,
+          currentStepStatus: 'running',
+          stepStartTime
+        };
+        dispatch({ type: 'SET_EXECUTION_PROGRESS', payload: runningProgress });
+        
+        // Show real-time status update
+        actions.setStatus(`⏳ Running step ${i + 1}/${scenario.steps.length}: ${runningResult.stepName}`, 'info');
         
         // Simulate step execution time based on step type
-        const baseDelay = step.type === 'api' ? 500 : 200;
-        const randomDelay = Math.random() * 1000;
+        const baseDelay = step.type === 'api' ? 800 : 300;
+        const randomDelay = Math.random() * 1200;
         await new Promise(resolve => setTimeout(resolve, baseDelay + randomDelay));
         
-        const stepDuration = Date.now() - stepStartTime;
+        const stepEndTime = new Date();
+        const stepDuration = stepEndTime.getTime() - stepStartTime.getTime();
         
         // Enhanced simulation based on step type
         let stepResult: any;
+        let realTimeResult: StepExecutionResult;
+        
         if (step.type === 'api' || ['get', 'post', 'put', 'patch', 'delete', 'head', 'options'].includes(step.type)) {
           stepResult = await actions.simulateApiStep(step, variables, stepDuration);
+          
+          // Create comprehensive real-time result
+          realTimeResult = {
+            stepIndex: i,
+            stepName: step.stepName || step.name || `Step ${i + 1}`,
+            status: stepResult.status === 'passed' ? 'completed' : 'failed',
+            startTime: stepStartTime,
+            endTime: stepEndTime,
+            duration: stepDuration,
+            request: {
+              method: stepResult.data?.request?.method || 'GET',
+              url: stepResult.data?.request?.url || '',
+              headers: stepResult.data?.request?.headers || {},
+              body: stepResult.data?.request?.body
+            },
+            response: stepResult.data?.response ? {
+              status: stepResult.data.response.status,
+              statusText: stepResult.data.response.statusText,
+              headers: stepResult.data.response.headers,
+              body: stepResult.data.response.body,
+              size: stepResult.data.response.body ? JSON.stringify(stepResult.data.response.body).length : 0
+            } : undefined,
+            error: stepResult.error?.message,
+            validationResults: step.expect ? actions.simulateValidationResults(step.expect, stepResult.data?.response) : undefined
+          };
         } else {
           // Generic step simulation
           const stepSuccess = Math.random() > 0.1; // 90% success rate
@@ -773,15 +1132,31 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
             error: stepSuccess ? undefined : new Error('Step execution failed'),
             data: stepSuccess ? { result: 'success' } : undefined
           };
+          
+          realTimeResult = {
+            stepIndex: i,
+            stepName: step.stepName || step.name || `Step ${i + 1}`,
+            status: stepSuccess ? 'completed' : 'failed',
+            startTime: stepStartTime,
+            endTime: stepEndTime,
+            duration: stepDuration,
+            error: stepSuccess ? undefined : 'Step execution failed'
+          };
         }
+        
+        // Update real-time result
+        dispatch({ type: 'UPDATE_REAL_TIME_STEP', payload: realTimeResult });
         
         stepResults.push(stepResult);
         
         if (stepResult.status === 'failed') {
           overallSuccess = false;
+          actions.setStatus(`❌ Step ${i + 1} failed: ${realTimeResult.stepName}`, 'error');
           if (options.failFast) {
             break;
           }
+        } else {
+          actions.setStatus(`✅ Step ${i + 1} completed: ${realTimeResult.stepName} (${stepDuration}ms)`, 'success');
         }
         
         // Update execution progress
@@ -792,9 +1167,16 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
           failedSteps: stepResults.filter(r => r.status === 'failed').length,
           skippedSteps: stepResults.filter(r => r.status === 'skipped').length,
           currentBatch: 1,
-          totalBatches: 1
+          totalBatches: 1,
+          currentStepIndex: i,
+          currentStepStatus: realTimeResult.status === 'completed' ? 'completed' : 'failed',
+          overallStartTime: startTime,
+          realTimeResults: new Map()
         };
         dispatch({ type: 'SET_EXECUTION_PROGRESS', payload: progress });
+        
+        // Small delay to show the completed state before moving to next step
+        await new Promise(resolve => setTimeout(resolve, 200));
       }
       
       const endTime = new Date();
@@ -889,8 +1271,70 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
         }
       };
     },
+    
+    // Simulate validation results for real-time display
+    simulateValidationResults(expectations: any[], response: any) {
+      if (!expectations || !Array.isArray(expectations)) return [];
+      
+      return expectations.map(expectation => {
+        let passed = false;
+        let actual: any = 'N/A';
+        
+        try {
+          if (expectation.field === 'status' || expectation.field === 'response.status') {
+            actual = response?.status;
+            passed = actual === expectation.value;
+          } else if (expectation.field?.startsWith('body.')) {
+            const bodyField = expectation.field.replace('body.', '');
+            actual = response?.body?.[bodyField];
+            
+            switch (expectation.operator) {
+              case 'equals':
+                passed = actual === expectation.value;
+                break;
+              case 'exists':
+                passed = actual !== undefined && actual !== null;
+                break;
+              case 'contains':
+                passed = typeof actual === 'string' && actual.includes(expectation.value);
+                break;
+              case 'gt':
+                passed = typeof actual === 'number' && actual > expectation.value;
+                break;
+              case 'lt':
+                passed = typeof actual === 'number' && actual < expectation.value;
+                break;
+              default:
+                passed = actual === expectation.value;
+            }
+          } else {
+            // Generic field validation
+            passed = Math.random() > 0.2; // 80% pass rate for other validations
+          }
+        } catch (error) {
+          passed = false;
+          actual = 'Error evaluating';
+        }
+        
+        return {
+          field: expectation.field || 'unknown',
+          operator: expectation.operator || 'equals',
+          expected: expectation.value,
+          actual,
+          passed,
+          message: passed 
+            ? `${expectation.field} ${expectation.operator || 'equals'} ${expectation.value}` 
+            : `Expected ${expectation.field} to ${expectation.operator || 'equal'} ${expectation.value}, got ${actual}`
+        };
+      });
+    },
 
-    togglePane(pane: 'variables' | 'help' | 'next') {
+    toggleAutoScroll() {
+    dispatch({ type: 'SET_AUTO_SCROLL', payload: !state.autoScrollToCurrentStep });
+    actions.setStatus(`Auto-scroll ${!state.autoScrollToCurrentStep ? 'enabled' : 'disabled'}`, 'info');
+  },
+  
+  togglePane(pane: 'variables' | 'help' | 'next') {
       if (pane === 'variables') {
         dispatch({ type: 'TOGGLE_VARIABLE_PREVIEW' });
         actions.setStatus(`Variable preview ${state.ui.showVariablePreview ? 'hidden' : 'shown'}`, 'info');
@@ -915,6 +1359,48 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
 
     setStatus(message: string, type: AppState['status']['type'] = 'info') {
       dispatch({ type: 'SET_STATUS', payload: { message, type } });
+    },
+
+    setDetailsViewMode(mode: AppState['ui']['detailsViewMode']) {
+      dispatch({ type: 'SET_DETAILS_VIEW_MODE', payload: mode });
+      actions.setStatus(`Switched to ${mode} view`, 'info');
+    },
+
+    scrollDetailsPane(direction: 'up' | 'down') {
+      const currentOffset = state.ui.detailsScrollOffset;
+      const scrollAmount = 3; // Lines to scroll per action
+      const newOffset = direction === 'up' 
+        ? Math.max(0, currentOffset - scrollAmount)
+        : currentOffset + scrollAmount;
+      
+      dispatch({ type: 'SCROLL_DETAILS_PANE', payload: newOffset });
+      
+      // Only show status for significant scrolling to avoid spam
+      if (Math.abs(newOffset - currentOffset) >= scrollAmount) {
+        actions.setStatus(`Scrolled ${direction} in details pane`, 'info');
+      }
+    },
+
+    resetDetailsScroll() {
+      dispatch({ type: 'SCROLL_DETAILS_PANE', payload: 0 });
+    },
+
+    changeDetailsViewMode(direction: 'left' | 'right') {
+      const modes: AppState['ui']['detailsViewMode'][] = ['overview', 'steps', 'step-detail', 'raw', 'execution'];
+      const currentIndex = modes.indexOf(state.ui.detailsViewMode);
+      
+      const newIndex = direction === 'left'
+        ? (currentIndex - 1 + modes.length) % modes.length
+        : (currentIndex + 1) % modes.length;
+      
+      const newMode = modes[newIndex];
+      actions.setDetailsViewMode(newMode);
+    },
+
+    toggleStepInspectionMode() {
+      dispatch({ type: 'TOGGLE_STEP_INSPECTION_MODE' });
+      const newMode = !state.ui.stepInspectionMode;
+      actions.setStatus(`Step inspection mode ${newMode ? 'enabled' : 'disabled'}`, 'info');
     },
 
     navigateScenarios(direction: 'up' | 'down') {

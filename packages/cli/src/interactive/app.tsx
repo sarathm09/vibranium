@@ -26,6 +26,11 @@ const VibraniumAppInner: React.FC = () => {
       switchEnvironment, 
       runCurrentScenario,
       runCurrentStep,
+      runSingleStep,
+      copyStepData,
+      toggleStepBookmark,
+      setDetailsViewMode,
+      toggleStepInspectionMode,
       stopExecution,
       retryExecution,
       togglePane,
@@ -36,7 +41,9 @@ const VibraniumAppInner: React.FC = () => {
       selectFileSystemNode,
       toggleNavigationMode,
       setStatus,
-      selectScenario
+      selectScenario,
+      scrollDetailsPane,
+      changeDetailsViewMode
     } 
   } = useAppContext();
   
@@ -194,42 +201,95 @@ const VibraniumAppInner: React.FC = () => {
         return;
       }
       
-      // Navigation without modifiers
+      // Handle view mode switching with number keys (only when details pane is active)
+      if (state.ui.activePane === 'details') {
+        if (input === '1') {
+          setDetailsViewMode('overview');
+          return;
+        } else if (input === '2') {
+          setDetailsViewMode('steps');
+          return;
+        } else if (input === '3') {
+          setDetailsViewMode('step-detail');
+          return;
+        } else if (input === '4') {
+          setDetailsViewMode('raw');
+          return;
+        } else if (input === '5') {
+          setDetailsViewMode('execution');
+          return;
+        }
+      }
+      
+      // Handle step inspection mode toggle (I key)
+      if (input.toLowerCase() === 'i' && !key.ctrl) {
+        toggleStepInspectionMode();
+        return;
+      }
+      
+      // Navigation without modifiers - respect active pane
       if (key.upArrow) {
-        if (state.ui.navigationMode === 'folders') {
-          void navigateFileSystem('up');
-        } else {
-          navigateScenarios('up');
+        if (state.ui.activePane === 'navigation') {
+          if (state.ui.navigationMode === 'folders') {
+            void navigateFileSystem('up');
+          } else {
+            navigateScenarios('up');
+          }
+        } else if (state.ui.activePane === 'details') {
+          // Scroll up in details pane
+          scrollDetailsPane('up');
         }
       } else if (key.downArrow) {
-        if (state.ui.navigationMode === 'folders') {
-          void navigateFileSystem('down');
-        } else {
-          navigateScenarios('down');
+        if (state.ui.activePane === 'navigation') {
+          if (state.ui.navigationMode === 'folders') {
+            void navigateFileSystem('down');
+          } else {
+            navigateScenarios('down');
+          }
+        } else if (state.ui.activePane === 'details') {
+          // Scroll down in details pane
+          scrollDetailsPane('down');
+        }
+      } else if (key.leftArrow) {
+        if (state.ui.activePane === 'details') {
+          // Navigate view modes left in details pane
+          changeDetailsViewMode('left');
+        }
+      } else if (key.rightArrow) {
+        if (state.ui.activePane === 'details') {
+          // Navigate view modes right in details pane
+          changeDetailsViewMode('right');
         }
       } else if (key.return) {
-        if (state.ui.navigationMode === 'folders') {
-          // Handle folder/file selection
-          const selectedNode = state.fileSystemTree.find(node => node.path === state.selectedNodePath);
-          if (selectedNode) {
-            if (selectedNode.type === 'directory') {
-              navigateToDirectory(selectedNode.path);
-            } else if (selectedNode.name.endsWith('.json') || selectedNode.name.endsWith('.yaml') || selectedNode.name.endsWith('.yml')) {
-              // Try to load the scenario file
-              const scenarioIndex = state.scenarios.findIndex(s => s === selectedNode.path);
-              if (scenarioIndex >= 0) {
-                selectScenario(scenarioIndex);
-                setStatus(`Loaded scenario: ${selectedNode.name}`, 'success');
+        if (state.ui.activePane === 'navigation') {
+          if (state.ui.navigationMode === 'folders') {
+            // Handle folder/file selection
+            const selectedNode = state.fileSystemTree.find(node => node.path === state.selectedNodePath);
+            if (selectedNode) {
+              if (selectedNode.type === 'directory') {
+                navigateToDirectory(selectedNode.path);
+              } else if (selectedNode.name.endsWith('.json') || selectedNode.name.endsWith('.yaml') || selectedNode.name.endsWith('.yml')) {
+                // Try to load the scenario file
+                const scenarioIndex = state.scenarios.findIndex(s => s === selectedNode.path);
+                if (scenarioIndex >= 0) {
+                  selectScenario(scenarioIndex);
+                  setStatus(`Loaded scenario: ${selectedNode.name}`, 'success');
+                }
               }
             }
+          } else {
+            if (state.scenarios.length > 0) {
+              selectScenario(state.ui.selectedScenarioIndex);
+            }
           }
-        } else {
-          if (state.scenarios.length > 0) {
-            selectScenario(state.ui.selectedScenarioIndex);
+        } else if (state.ui.activePane === 'details') {
+          // Handle action in details pane (like running current step or switching mode)
+          if (state.currentScenario?.steps && !state.isRunning) {
+            runCurrentStep();
           }
         }
       } else if (key.backspace) {
-        if (state.ui.navigationMode === 'folders') {
+        if (state.ui.activePane === 'navigation' && state.ui.navigationMode === 'folders') {
           navigateToParentDirectory();
         }
       } else if (key.tab) {
@@ -262,20 +322,24 @@ const VibraniumAppInner: React.FC = () => {
         switch (parts[0]) {
           case 'up':
           case 'u':
-            if (state.ui.navigationMode === 'folders') {
-              void navigateFileSystem('up');
-            } else {
-              navigateScenarios('up');
+            if (state.ui.activePane === 'navigation') {
+              if (state.ui.navigationMode === 'folders') {
+                void navigateFileSystem('up');
+              } else {
+                navigateScenarios('up');
+              }
             }
             console.log('↑ Moved up');
             break;
             
           case 'down':  
           case 'd':
-            if (state.ui.navigationMode === 'folders') {
-              void navigateFileSystem('down');
-            } else {
-              navigateScenarios('down');
+            if (state.ui.activePane === 'navigation') {
+              if (state.ui.navigationMode === 'folders') {
+                void navigateFileSystem('down');
+              } else {
+                navigateScenarios('down');
+              }
             }
             console.log('↓ Moved down');
             break;
@@ -296,6 +360,16 @@ const VibraniumAppInner: React.FC = () => {
               console.log('🏃 Running scenario...');
             } else {
               console.log('⏳ Scenario already running');
+            }
+            break;
+          
+          case 'step':
+          case 'rs':
+            if (!state.isRunning && state.currentScenario?.steps?.[state.ui.selectedStepIndex]) {
+              runSingleStep(state.ui.selectedStepIndex);
+              console.log('🔧 Running single step...');
+            } else {
+              console.log('❌ No step selected or execution in progress');
             }
             break;
             
@@ -367,6 +441,7 @@ const VibraniumAppInner: React.FC = () => {
             console.log('- mode/m: Toggle navigation mode (files/scenarios)');
             console.log('- open/o: Open selected folder (folder mode only)');
             console.log('- back/b: Go to parent directory (folder mode only)');
+            console.log('- step/rs: Run single selected step');
             console.log('- quit/q: Exit application');
             console.log('- help/h: Show this help');
             console.log('\nKeyboard shortcuts (direct mode):');
@@ -376,6 +451,10 @@ const VibraniumAppInner: React.FC = () => {
             console.log('- M: Toggle navigation mode');
             console.log('- Tab: Switch panes');
             console.log('- Ctrl+R: Run scenario');
+            console.log('- Shift+R: Run single step');
+            console.log('- I: Toggle step inspection mode');
+            console.log('- 1-5: Switch details view modes (when in details pane)');
+            console.log('- J/K: Navigate steps (when in details pane)');
             console.log('- Ctrl+E: Switch environment');
             console.log('- Ctrl+V: Toggle variables');
             console.log('- Ctrl+C: Command mode');

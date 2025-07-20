@@ -45,12 +45,21 @@ const VibraniumAppInner: React.FC = () => {
       toggleNavigationMode,
       setStatus,
       selectScenario,
+      selectOverviewStep,
       scrollDetailsPane,
       changeDetailsViewMode,
       toggleAutoScroll,
       showEnvironmentViewer,
       showEnvironmentSwitcher,
       reloadEnvironments,
+      // Enhanced source view actions
+      scrollSourcePageUp,
+      scrollSourcePageDown,
+      jumpToSourceStart,
+      jumpToSourceEnd,
+      copySourceContent,
+      goToSourceLine,
+      searchInSource,
       dispatch
     } 
   } = useAppContext();
@@ -247,14 +256,113 @@ const VibraniumAppInner: React.FC = () => {
         return;
       }
       
+      // Handle overview step navigation (J/K keys)
+      if (state.ui.detailsViewMode === 'overview' && state.ui.activePane === 'details') {
+        if (input.toLowerCase() === 'j' && !key.ctrl) {
+          // Navigate down in overview steps
+          if (state.currentScenario?.steps) {
+            const newIndex = Math.min(state.ui.overviewSelectedStepIndex + 1, state.currentScenario.steps.length - 1);
+            if (newIndex !== state.ui.overviewSelectedStepIndex) {
+              actions.selectOverviewStep(newIndex);
+            }
+          }
+          return;
+        } else if (input.toLowerCase() === 'k' && !key.ctrl) {
+          // Navigate up in overview steps
+          const newIndex = Math.max(state.ui.overviewSelectedStepIndex - 1, 0);
+          if (newIndex !== state.ui.overviewSelectedStepIndex) {
+            actions.selectOverviewStep(newIndex);
+          }
+          return;
+        }
+      }
+      
       // Handle auto-scroll toggle (A key)
       if (input.toLowerCase() === 'a' && !key.ctrl) {
         toggleAutoScroll();
         return;
       }
       
-      // Handle step navigation with J/K keys (when in details pane)
-      if (state.ui.activePane === 'details') {
+      // Enhanced Source View Mode Keyboard Shortcuts
+      if (state.ui.activePane === 'details' && (state.ui.detailsViewMode === 'raw' || state.ui.detailsViewMode === 'source')) {
+        // Page Up/Down for fast scrolling
+        if (key.pageUp) {
+          scrollSourcePageUp();
+          return;
+        } else if (key.pageDown) {
+          scrollSourcePageDown();
+          return;
+        }
+        
+        // Home/End for jumping to start/end
+        if (key.meta && key.upArrow) { // Cmd+Up on Mac, equivalent to Home
+          jumpToSourceStart();
+          return;
+        } else if (key.meta && key.downArrow) { // Cmd+Down on Mac, equivalent to End
+          jumpToSourceEnd();
+          return;
+        }
+        
+        // Ctrl+Home/End for cross-platform support
+        if (key.ctrl && key.upArrow) {
+          jumpToSourceStart();
+          return;
+        } else if (key.ctrl && key.downArrow) {
+          jumpToSourceEnd();
+          return;
+        }
+        
+        // Copy source content (C key in source view)
+        if (input.toLowerCase() === 'c' && !key.ctrl) {
+          copySourceContent();
+          return;
+        }
+        
+        // Search in source (/ key)
+        if (input === '/' && !key.ctrl) {
+          searchInSource(); // Will show instructions
+          return;
+        }
+        
+        // Go to line (G key)
+        if (input.toLowerCase() === 'g' && !key.ctrl) {
+          goToSourceLine(); // Will show instructions
+          return;
+        }
+        
+        // Enhanced scrolling with J/K keys for vim-like navigation
+        if (input.toLowerCase() === 'j' && !key.ctrl) {
+          scrollDetailsPane('down');
+          return;
+        } else if (input.toLowerCase() === 'k' && !key.ctrl) {
+          scrollDetailsPane('up');
+          return;
+        }
+        
+        // Space for page down, Shift+Space for page up (like less/more)
+        if (input === ' ' && !key.shift && !key.ctrl) {
+          scrollSourcePageDown();
+          return;
+        } else if (input === ' ' && key.shift) {
+          scrollSourcePageUp();
+          return;
+        }
+      }
+      
+      // Handle copy step data (C key) - works in non-source views
+      if (input.toLowerCase() === 'c' && !key.ctrl && state.ui.activePane === 'details' && 
+          state.ui.detailsViewMode !== 'raw' && state.ui.detailsViewMode !== 'source') {
+        if (state.ui.detailsViewMode === 'overview') {
+          copyStepData(state.ui.overviewSelectedStepIndex, 'full');
+        } else {
+          copyStepData(state.ui.selectedStepIndex, 'full');
+        }
+        return;
+      }
+      
+      // Handle step navigation with J/K keys (when in details pane, but not in source view)
+      if (state.ui.activePane === 'details' && 
+          state.ui.detailsViewMode !== 'raw' && state.ui.detailsViewMode !== 'source') {
         if (input.toLowerCase() === 'j' && !key.ctrl) {
           // Navigate to next step
           if (state.currentScenario?.steps && state.ui.selectedStepIndex < state.currentScenario.steps.length - 1) {
@@ -336,7 +444,12 @@ const VibraniumAppInner: React.FC = () => {
         } else if (state.ui.activePane === 'details') {
           // Handle action in details pane (like running current step or switching mode)
           if (state.currentScenario?.steps && !state.isRunning) {
-            runCurrentStep();
+            if (state.ui.detailsViewMode === 'overview') {
+              // Run the selected overview step
+              runSingleStep(state.ui.overviewSelectedStepIndex);
+            } else {
+              runCurrentStep();
+            }
           }
         }
       } else if (key.backspace) {

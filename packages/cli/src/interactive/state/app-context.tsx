@@ -232,6 +232,15 @@ export interface AppActions {
   setDetailsViewMode: (mode: AppState['ui']['detailsViewMode']) => void;
   toggleStepInspectionMode: () => void;
 
+  // Enhanced source view actions
+  scrollSourcePageUp: () => void;
+  scrollSourcePageDown: () => void;
+  jumpToSourceStart: () => void;
+  jumpToSourceEnd: () => void;
+  copySourceContent: () => void;
+  goToSourceLine: (lineNumber?: number) => void;
+  searchInSource: (searchTerm?: string) => void;
+
   // Navigation
   navigateScenarios: (direction: 'up' | 'down') => void;
   navigateSteps: (direction: 'up' | 'down') => void;
@@ -1711,6 +1720,151 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
       dispatch({ type: 'TOGGLE_STEP_INSPECTION_MODE' });
       const newMode = !state.ui.stepInspectionMode;
       actions.setStatus(`Step inspection mode ${newMode ? 'enabled' : 'disabled'}`, 'info');
+    },
+
+    // Enhanced source view actions
+    scrollSourcePageUp() {
+      const currentOffset = state.ui.detailsScrollOffset;
+      const pageSize = Math.max(10, Math.floor((process.stdout.rows || 25) * 0.7));
+      const newOffset = Math.max(0, currentOffset - pageSize);
+      
+      dispatch({ type: 'SCROLL_DETAILS_PANE', payload: newOffset });
+      actions.setStatus(`Page up - Line ${newOffset + 1}`, 'info');
+    },
+
+    scrollSourcePageDown() {
+      const currentOffset = state.ui.detailsScrollOffset;
+      const pageSize = Math.max(10, Math.floor((process.stdout.rows || 25) * 0.7));
+      const newOffset = currentOffset + pageSize;
+      
+      dispatch({ type: 'SCROLL_DETAILS_PANE', payload: newOffset });
+      actions.setStatus(`Page down - Line ${newOffset + 1}`, 'info');
+    },
+
+    jumpToSourceStart() {
+      dispatch({ type: 'SCROLL_DETAILS_PANE', payload: 0 });
+      actions.setStatus('Jumped to start of file', 'info');
+    },
+
+    jumpToSourceEnd() {
+      // Calculate total lines from current scenario content
+      let content = state.ui.editorContent;
+      if (!content && state.currentScenario) {
+        try {
+          const isYaml = state.currentScenarioPath?.endsWith('.yaml') || state.currentScenarioPath?.endsWith('.yml');
+          if (isYaml) {
+            content = JSON.stringify(state.currentScenario, null, 2); // Simplified for now
+          } else {
+            content = JSON.stringify(state.currentScenario, null, 2);
+          }
+        } catch (error) {
+          content = '// Error serializing scenario data';
+        }
+      }
+      
+      if (content) {
+        const totalLines = content.split('\\n').length;
+        const pageSize = Math.max(10, Math.floor((process.stdout.rows || 25) * 0.7));
+        const newOffset = Math.max(0, totalLines - pageSize);
+        
+        dispatch({ type: 'SCROLL_DETAILS_PANE', payload: newOffset });
+        actions.setStatus(`Jumped to end of file - Line ${totalLines}`, 'info');
+      }
+    },
+
+    copySourceContent() {
+      let content = state.ui.editorContent;
+      if (!content && state.currentScenario) {
+        try {
+          const isYaml = state.currentScenarioPath?.endsWith('.yaml') || state.currentScenarioPath?.endsWith('.yml');
+          if (isYaml) {
+            content = JSON.stringify(state.currentScenario, null, 2); // Simplified for now
+          } else {
+            content = JSON.stringify(state.currentScenario, null, 2);
+          }
+        } catch (error) {
+          content = '// Error serializing scenario data';
+        }
+      }
+      
+      if (content) {
+        // Copy to clipboard using the Node.js clipboard functionality
+        try {
+          const clipboardy = require('clipboardy');
+          clipboardy.writeSync(content);
+          actions.setStatus(`Copied ${content.split('\\n').length} lines to clipboard`, 'success');
+        } catch (error) {
+          // Fallback - at least show the user what would be copied
+          actions.setStatus('Copy functionality requires clipboardy package. Content available in console.', 'warning');
+          console.log('--- SOURCE CONTENT ---');
+          console.log(content);
+          console.log('--- END SOURCE CONTENT ---');
+        }
+      } else {
+        actions.setStatus('No source content available to copy', 'warning');
+      }
+    },
+
+    goToSourceLine(lineNumber?: number) {
+      if (!lineNumber) {
+        // Show prompt for line number input - simplified for terminal
+        actions.setStatus('Go to line: Use G key + line number (e.g., G50)', 'info');
+        return;
+      }
+      
+      const targetLine = Math.max(1, lineNumber);
+      const offset = Math.max(0, targetLine - 1);
+      
+      dispatch({ type: 'SCROLL_DETAILS_PANE', payload: offset });
+      actions.setStatus(`Jumped to line ${targetLine}`, 'info');
+    },
+
+    searchInSource(searchTerm?: string) {
+      if (!searchTerm) {
+        actions.setStatus('Search in source: Use / key + search term', 'info');
+        return;
+      }
+      
+      let content = state.ui.editorContent;
+      if (!content && state.currentScenario) {
+        try {
+          const isYaml = state.currentScenarioPath?.endsWith('.yaml') || state.currentScenarioPath?.endsWith('.yml');
+          if (isYaml) {
+            content = JSON.stringify(state.currentScenario, null, 2); // Simplified for now
+          } else {
+            content = JSON.stringify(state.currentScenario, null, 2);
+          }
+        } catch (error) {
+          content = '// Error serializing scenario data';
+        }
+      }
+      
+      if (content) {
+        const lines = content.split('\\n');
+        const currentOffset = state.ui.detailsScrollOffset;
+        
+        // Search from current position forward
+        for (let i = currentOffset; i < lines.length; i++) {
+          if (lines[i].toLowerCase().includes(searchTerm.toLowerCase())) {
+            dispatch({ type: 'SCROLL_DETAILS_PANE', payload: i });
+            actions.setStatus(`Found "${searchTerm}" at line ${i + 1}`, 'success');
+            return;
+          }
+        }
+        
+        // If not found forward, search from beginning
+        for (let i = 0; i < currentOffset; i++) {
+          if (lines[i].toLowerCase().includes(searchTerm.toLowerCase())) {
+            dispatch({ type: 'SCROLL_DETAILS_PANE', payload: i });
+            actions.setStatus(`Found "${searchTerm}" at line ${i + 1} (wrapped around)`, 'success');
+            return;
+          }
+        }
+        
+        actions.setStatus(`"${searchTerm}" not found in source`, 'warning');
+      } else {
+        actions.setStatus('No source content available to search', 'warning');
+      }
     },
 
     navigateScenarios(direction: 'up' | 'down') {

@@ -121,7 +121,7 @@ export const DetailsPane: React.FC = () => {
       <Box flexDirection="column" height="100%">
         {renderScenarioMetadata()}
         {state.currentScenario?.steps && state.currentScenario.steps.length > 0 && renderStepsSection()}
-        {state.currentScenario?.steps && state.currentScenario.steps.length > 0 && renderCurrentStepSection()}
+        {state.currentScenario?.steps && state.currentScenario.steps.length > 0 && renderSelectedOverviewStepSection()}
         {state.isRunning && state.executionProgress && renderLiveExecutionSection()}
         {state.lastResult && !state.isRunning && renderExecutionSummarySection()}
       </Box>
@@ -206,6 +206,26 @@ export const DetailsPane: React.FC = () => {
       </Box>
     </Box>
   );
+
+  const renderSelectedOverviewStepSection = () => {
+    const selectedStep = state.currentScenario?.steps?.[state.ui.overviewSelectedStepIndex];
+    if (!selectedStep) return null;
+    
+    return (
+      <Box flexDirection="column" marginBottom={2}>
+        {renderSectionHeader(
+          `Selected Step (${state.ui.overviewSelectedStepIndex + 1}/${state.currentScenario?.steps?.length || 0})`,
+          '🔍'
+        )}
+        <Box paddingLeft={1}>
+          <Text color="gray" marginBottom={1}>
+            Use J/K to navigate steps, Enter to run this step
+          </Text>
+          {renderOverviewStepDetails(selectedStep, state.ui.overviewSelectedStepIndex)}
+        </Box>
+      </Box>
+    );
+  };
 
   const renderLiveExecutionSection = () => (
     <Box flexDirection="column" marginBottom={2}>
@@ -315,7 +335,7 @@ export const DetailsPane: React.FC = () => {
     return (
       <Box flexDirection="column">
         {state.currentScenario?.steps?.map((step, index) => {
-          const isSelected = index === state.ui.selectedStepIndex;
+          const isSelected = index === state.ui.overviewSelectedStepIndex;
           const isCurrent = state.executionProgress?.currentStepIndex === index && state.isRunning;
           
           // Get status from real-time results if available, fallback to last result
@@ -366,8 +386,8 @@ export const DetailsPane: React.FC = () => {
               <Text color={isSelected ? 'white' : 'gray'} bold={isSelected} marginLeft={1}>
                 {step.name}
               </Text>
-              <Text color="gray" marginLeft={1}>
-                {getTypeIcon(step.type)}
+              <Text color={isSelected ? 'cyan' : 'gray'} marginLeft={1}>
+                [{step.type}]
               </Text>
               {isCurrent && (
                 <Text color="yellow" marginLeft={1}>
@@ -589,157 +609,6 @@ export const DetailsPane: React.FC = () => {
   const renderStepsView = () => {
     // Use the new enhanced steps view for consistency
     return renderEnhancedStepsView();
-                
-                {/* Step Details */}
-                <Box paddingLeft={1} flexDirection="column">
-                  <Text color="cyan">
-                    <Text bold>Type:</Text> {step.type}
-                  </Text>
-                  
-                  {/* API-specific details */}
-                  {step.type === 'api' && (
-                    <>
-                      <Text color="green">
-                        <Text bold>Method:</Text> {(step as any).method || 'GET'}
-                      </Text>
-                      <Text color="green">
-                        <Text bold>URL:</Text> {(step as any).url || 'Not specified'}
-                      </Text>
-                      
-                      {/* Headers */}
-                      {(step as any).headers && Object.keys((step as any).headers).length > 0 && (
-                        <Box flexDirection="column" marginTop={1}>
-                          <Text color="blue" bold>Headers ({Object.keys((step as any).headers).length}):</Text>
-                          <Box paddingLeft={2}>
-                            {Object.entries((step as any).headers).map(([key, value]) => (
-                              <Text key={key} color="gray">
-                                {key}: {String(value)}
-                              </Text>
-                            ))}
-                          </Box>
-                        </Box>
-                      )}
-                      
-                      {/* Body */}
-                      {(step as any).body && (
-                        <Box flexDirection="column" marginTop={1}>
-                          <Text color="blue" bold>Body:</Text>
-                          <Box paddingLeft={2}>
-                            {renderStepBodyPreview((step as any).body)}
-                          </Box>
-                        </Box>
-                      )}
-                      
-                      {/* Auth */}
-                      {(step as any).auth && (
-                        <Text color="magenta">
-                          <Text bold>Auth:</Text> {(step as any).auth.type || 'configured'}
-                        </Text>
-                      )}
-                      
-                      {/* Params */}
-                      {(step as any).params && Object.keys((step as any).params).length > 0 && (
-                        <Text color="blue">
-                          <Text bold>Params:</Text> {Object.keys((step as any).params).length} defined
-                        </Text>
-                      )}
-                    </>
-                  )}
-                  
-                  {/* UI-specific details */}
-                  {step.type === 'ui' && (
-                    <>
-                      <Text color="green">
-                        <Text bold>Action:</Text> {(step as any).action || 'Not specified'}
-                      </Text>
-                      <Text color="green">
-                        <Text bold>Target:</Text> {(step as any).target || (step as any).selector || 'Not specified'}
-                      </Text>
-                      {(step as any).value && (
-                        <Text color="green">
-                          <Text bold>Value:</Text> {String((step as any).value)}
-                        </Text>
-                      )}
-                    </>
-                  )}
-                  
-                  {/* Expectations */}
-                  {step.expect && (
-                    <Box flexDirection="column" marginTop={1}>
-                      <Text color="yellow" bold>
-                        Expectations ({Array.isArray(step.expect) ? step.expect.length : 1}):
-                      </Text>
-                      <Box paddingLeft={2}>
-                        {(Array.isArray(step.expect) ? step.expect : [step.expect]).map((expectation, expIndex) => (
-                          <Text key={expIndex} color="blue">
-                            • {(expectation as any).operator || 'unknown'}: {(expectation as any).value !== undefined ? String((expectation as any).value) : ''}
-                            {(expectation as any).path && <Text color="gray"> (path: {(expectation as any).path})</Text>}
-                          </Text>
-                        ))}
-                      </Box>
-                    </Box>
-                  )}
-                  
-                  {/* Dependencies */}
-                  {(step as any).depends_on && (
-                    <Text color="purple" marginTop={1}>
-                      <Text bold>Dependencies:</Text> {Array.isArray((step as any).depends_on) ? (step as any).depends_on.join(', ') : (step as any).depends_on}
-                    </Text>
-                  )}
-                  
-                  {/* Configuration */}
-                  <Box flexDirection="row" marginTop={1}>
-                    {step.timeout && (
-                      <Text color="orange" marginRight={2}>
-                        <Text bold>Timeout:</Text> {step.timeout}ms
-                      </Text>
-                    )}
-                    {step.retries && (
-                      <Text color="orange" marginRight={2}>
-                        <Text bold>Retries:</Text> {step.retries}
-                      </Text>
-                    )}
-                    {(step as any).continueOnFailure && (
-                      <Text color="orange" marginRight={2}>
-                        <Text bold>Continue on failure</Text>
-                      </Text>
-                    )}
-                  </Box>
-                  
-                  {/* Save Response */}
-                  {(step as any).saveResponse && (
-                    <Text color="cyan" marginTop={1}>
-                      <Text bold>Saves:</Text> {Object.keys((step as any).saveResponse).join(', ')}
-                    </Text>
-                  )}
-                  
-                  {/* Step Result */}
-                  {stepResult && (
-                    <Box flexDirection="column" marginTop={1} paddingTop={1} borderTop borderColor="gray">
-                      <Text color={stepResult.success ? 'green' : 'red'} bold>
-                        {stepResult.success ? '✓ PASSED' : '✗ FAILED'} ({stepResult.duration || 0}ms)
-                      </Text>
-                      {stepResult.error && (
-                        <Text color="red">
-                          Error: {stepResult.error}
-                        </Text>
-                      )}
-                    </Box>
-                  )}
-                </Box>
-              </Box>
-            );
-          })}
-        </Box>
-        
-        {/* Bottom scroll indicator */}
-        {(state.currentScenario?.steps?.length || 0) > scrollOffset + maxVisibleSteps && (
-          <Text color="gray" dimColor marginTop={1} paddingLeft={1}>
-            ↓ {(state.currentScenario?.steps?.length || 0) - (scrollOffset + maxVisibleSteps)} more steps (press ↓ to scroll down)
-          </Text>
-        )}
-      </Box>
-    );
   };
 
   const renderCurrentStepDetails = () => {
@@ -1753,6 +1622,152 @@ export const DetailsPane: React.FC = () => {
     );
   };
 
+  // Render details for the selected step in overview mode
+  const renderOverviewStepDetails = (step: any, stepIndex: number) => {
+    // Get the most recent response data for this step
+    const responseData = actions.getStepResponseData(stepIndex);
+    const stepResult = state.lastResult?.stepResults?.[stepIndex];
+    
+    return (
+      <Box flexDirection="column">
+        {/* Basic step information */}
+        <Box marginBottom={2}>
+          <Box flexDirection="row" marginBottom={1}>
+            <Text bold color="cyan">Name: </Text>
+            <Text color="white">{step.name || 'Unnamed step'}</Text>
+          </Box>
+          
+          <Box flexDirection="row" marginBottom={1}>
+            <Text bold color="cyan">Type: </Text>
+            <Text color="white">{step.type} {getTypeIcon(step.type)}</Text>
+          </Box>
+          
+          {step.description && (
+            <Box marginBottom={1}>
+              <Text bold color="cyan">Description: </Text>
+              <Text color="gray">{step.description}</Text>
+            </Box>
+          )}
+        </Box>
+        
+        {/* Step configuration */}
+        {step.type === 'api' && (
+          <Box flexDirection="column" marginBottom={2}>
+            <Text bold color="white" marginBottom={1}>API Configuration</Text>
+            
+            <Box paddingLeft={1}>
+              <Box flexDirection="row" marginBottom={1}>
+                <Text bold color="cyan">Method: </Text>
+                <Text color="green">{step.method || 'GET'}</Text>
+              </Box>
+              
+              <Box marginBottom={1}>
+                <Text bold color="cyan">URL: </Text>
+                <Text color="white">{step.url || 'Not specified'}</Text>
+              </Box>
+              
+              {step.headers && Object.keys(step.headers).length > 0 && (
+                <Box marginBottom={1}>
+                  <Text bold color="cyan">Headers: </Text>
+                  <Text color="gray">{Object.keys(step.headers).length} defined</Text>
+                </Box>
+              )}
+              
+              {step.body && (
+                <Box marginBottom={1}>
+                  <Text bold color="cyan">Body: </Text>
+                  <Text color="gray">{
+                    typeof step.body === 'object' ? 'JSON payload' : 
+                    step.body.toString().length > 50 ? 
+                    step.body.toString().substring(0, 50) + '...' : 
+                    step.body.toString()
+                  }</Text>
+                </Box>
+              )}
+            </Box>
+          </Box>
+        )}
+        
+        {/* Execution result */}
+        {responseData && (
+          <Box flexDirection="column" marginBottom={2}>
+            <Text bold color="white" marginBottom={1}>Latest Execution Result</Text>
+            
+            <Box paddingLeft={1} borderLeft borderColor={responseData.success ? 'green' : 'red'}>
+              <Box flexDirection="row" marginBottom={1}>
+                <Text bold color={responseData.success ? 'green' : 'red'}>
+                  {responseData.success ? '✅ PASSED' : '❌ FAILED'}
+                </Text>
+                <Text color="gray" marginLeft={2}>
+                  ({responseData.timing.duration}ms)
+                </Text>
+              </Box>
+              
+              {responseData.error && (
+                <Box marginBottom={1}>
+                  <Text color="red">Error: {responseData.error}</Text>
+                </Box>
+              )}
+              
+              {responseData.response && (
+                <Box flexDirection="column">
+                  <Text color="cyan">Status: </Text>
+                  <Text color={responseData.response.status < 400 ? 'green' : 'red'}>
+                    {responseData.response.status} {responseData.response.statusText}
+                  </Text>
+                  
+                  {responseData.response.headers && Object.keys(responseData.response.headers).length > 0 && (
+                    <Box marginTop={1}>
+                      <Text color="blue">Headers ({Object.keys(responseData.response.headers).length}):</Text>
+                      <Box paddingLeft={2} marginTop={1}>
+                        {Object.entries(responseData.response.headers).slice(0, 3).map(([key, value]) => (
+                          <Text key={key} color="gray">
+                            {key}: {String(value).substring(0, 40)}...
+                          </Text>
+                        ))}
+                        {Object.keys(responseData.response.headers).length > 3 && (
+                          <Text color="gray" dimColor>
+                            ... {Object.keys(responseData.response.headers).length - 3} more
+                          </Text>
+                        )}
+                      </Box>
+                    </Box>
+                  )}
+                  
+                  {responseData.response.body && (
+                    <Box marginTop={1}>
+                      <Text color="blue">Response Preview:</Text>
+                      <Box paddingLeft={2} marginTop={1}>
+                        {renderResponseBodyPreview(responseData.response.body)}
+                      </Box>
+                    </Box>
+                  )}
+                </Box>
+              )}
+            </Box>
+          </Box>
+        )}
+        
+        {/* No execution data message */}
+        {!responseData && !stepResult && (
+          <Box paddingX={1} paddingY={1} borderStyle="single" borderColor="yellow">
+            <Text color="yellow">⚠️ No execution data available for this step</Text>
+            <Text color="gray" marginTop={1}>
+              Run the scenario or this specific step to see response data
+            </Text>
+          </Box>
+        )}
+        
+        {/* Action hints */}
+        <Box marginTop={1} paddingTop={1} borderTop borderColor="gray">
+          <Text color="gray" dimColor>
+            💡 Press Enter to run this step • R to run entire scenario • C to copy step data
+          </Text>
+        </Box>
+      </Box>
+    );
+  };
+
   // Helper functions for enhanced steps UI
   const getEnhancedStepStatus = (result?: any, isCurrent?: boolean): { icon: string; color: string } => {
     if (isCurrent) {
@@ -1909,7 +1924,10 @@ export const DetailsPane: React.FC = () => {
       <Box paddingX={1} height={2} borderTop borderColor="gray">
         <Text color="gray" dimColor>
           {state.ui.activePane === 'details' ? 
-            'ACTIVE: ↑↓ Scroll | ←→ Views | 1-Overview 2-Steps 3-Timeline 4-Source 5-Results | Enter Run | Tab Switch Pane' : 
+            (state.ui.detailsViewMode === 'overview' ? 
+              'ACTIVE: J/K Navigate Steps | Enter Run Selected | C Copy | ←→ Views | Tab Switch Pane' :
+              'ACTIVE: ↑↓ Scroll | ←→ Views | 1-Overview 2-Steps 3-Timeline 4-Source 5-Results | Enter Run | Tab Switch Pane'
+            ) : 
             'Tab Activate | 1-Overview 2-Steps 3-Timeline 4-Source 5-Results | R Run | Enter Select'
           }
         </Text>

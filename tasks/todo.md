@@ -9,6 +9,7 @@
 - [x] I get an infinite loop of `> vibranium-cli@0.1.0 build > nx build` - Fixed: Created .nxignore to exclude root package.json, fixed circular dependency, added convenience scripts
 - [x] Way too many issues when I run the cli using npm run dev - Fixed: Resolved all TypeScript errors, added missing types, fixed parameter types, updated dependencies, switched to tsx for better ES module support
 - [x] Directory detection issue in interactive mode - Fixed: Updated ConfigResolver to use workspaceRoot instead of process.cwd() in fallback logic, ensuring interactive mode loads scenarios from user's actual current directory
+- [x] Interactive mode responsive layout issues - Fixed: Implemented comprehensive responsive layout system with terminal size detection, dynamic width calculations, compact headers/footers, smart three-pane fallback, and automatic resize handling
 
 
 ## 🚀 Phase 1: Foundation & Monorepo Setup (Priority 1)
@@ -71,6 +72,7 @@
 - [x] **Main CLI Package (@vibraniumjs/cli)** - Binary setup (vibranium/vm commands), mode detection (interactive vs headless), command structure (run, batch, init, validate), global configuration and help system
 - [x] **Headless CLI** - Single scenario execution, batch execution with parallel processing, report generation (HTML, JSON, JUnit), proper exit codes and error handling, ability to disable colors, JSON/JSONL response format
 - [x] **Interactive CLI (Ink UI)** - Three-pane layout (tree, details, status with keyboard shortcuts), navigation tree with keyboard controls, live YAML/JSON editor with validation, real-time variable preview, keyboard shortcuts and status indicators, tree-based navigation of folders/files/steps
+- [x] **Enhanced Folder Navigation** - Comprehensive folder navigation system with intuitive file explorer patterns, keyboard shortcuts (Enter to open/select, Backspace for parent directory, M to toggle modes), visual indicators for directories and scenario files, breadcrumb navigation, mode toggle between file explorer and scenario views
 
 ### Phase 5: Plugin System  
 - [x] **Plugin Architecture (@vibraniumjs/plugins)** - Plugin registry and loading system, step type routing to plugins, plugin lifecycle hooks, extension points for custom operators, report generation (Static HTML, JUnit XML, JSON)

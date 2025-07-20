@@ -64,9 +64,9 @@ const VibraniumAppInner: React.FC = () => {
   const getResponsiveWidths = () => {
     const { width } = terminalSize;
     
-    // Minimum viable widths
-    const minNavWidth = 18;
-    const minDetailsWidth = 35;
+    // Enhanced minimum viable widths to prevent text cropping
+    const minNavWidth = 25; // Increased from 18 to accommodate icons + file names
+    const minDetailsWidth = 30; // Reduced slightly to make room for navigation
     const minVarWidth = 18;
     const borderSpace = 6; // Space for borders
     
@@ -79,19 +79,24 @@ const VibraniumAppInner: React.FC = () => {
       
       if (availableWidth < minTotalRequired) {
         // Terminal too narrow for three-pane, disable variable preview temporarily
-        navWidth = Math.min(minNavWidth, Math.floor(availableWidth * 0.3));
+        navWidth = Math.min(minNavWidth, Math.floor(availableWidth * 0.35));
         detailsWidth = availableWidth - navWidth;
         varWidth = 0;
       } else {
-        if (width < 100) {
-          // Narrow terminal - compress navigation more
-          navWidth = Math.max(minNavWidth, Math.floor(width * 0.18));
-          varWidth = Math.max(minVarWidth, Math.floor(width * 0.22));
+        if (width < 90) {
+          // Very narrow terminal - give navigation more space
+          navWidth = Math.max(minNavWidth, Math.floor(width * 0.25));
+          varWidth = Math.max(minVarWidth, Math.floor(width * 0.20));
+          detailsWidth = width - navWidth - varWidth - borderSpace;
+        } else if (width < 120) {
+          // Medium terminal - balanced approach with more navigation space
+          navWidth = Math.max(minNavWidth, Math.floor(width * 0.22));
+          varWidth = Math.max(minVarWidth, Math.floor(width * 0.25));
           detailsWidth = width - navWidth - varWidth - borderSpace;
         } else {
-          // Wide terminal - more balanced
-          navWidth = Math.max(minNavWidth, Math.min(30, Math.floor(width * 0.22)));
-          varWidth = Math.max(minVarWidth, Math.min(35, Math.floor(width * 0.28)));
+          // Wide terminal - comfortable spacing with larger navigation
+          navWidth = Math.max(minNavWidth, Math.min(40, Math.floor(width * 0.25)));
+          varWidth = Math.max(minVarWidth, Math.min(35, Math.floor(width * 0.27)));
           detailsWidth = width - navWidth - varWidth - borderSpace;
         }
         
@@ -104,13 +109,18 @@ const VibraniumAppInner: React.FC = () => {
         }
       }
     } else {
-      // Two-pane layout
+      // Two-pane layout - more generous navigation space
       const availableWidth = width - 4; // Space for borders
       
       if (width < 80) {
-        navWidth = Math.max(minNavWidth, Math.min(Math.floor(width * 0.25), availableWidth - minDetailsWidth));
+        // Very narrow - ensure navigation gets reasonable space
+        navWidth = Math.max(minNavWidth, Math.min(Math.floor(width * 0.32), availableWidth - minDetailsWidth));
+      } else if (width < 100) {
+        // Narrow terminal - give navigation more space
+        navWidth = Math.max(minNavWidth, Math.min(32, Math.floor(width * 0.28)));
       } else {
-        navWidth = Math.max(minNavWidth, Math.min(28, Math.floor(width * 0.2)));
+        // Wide terminal - comfortable navigation space
+        navWidth = Math.max(minNavWidth, Math.min(40, Math.floor(width * 0.25)));
       }
       detailsWidth = availableWidth - navWidth;
       varWidth = 0;

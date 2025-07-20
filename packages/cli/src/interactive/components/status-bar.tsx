@@ -39,10 +39,17 @@ export const StatusBar: React.FC = () => {
 
   const getExecutionStatus = () => {
     if (state.isRunning) {
+      let details = 'Executing scenario...';
+      if (state.executionProgress) {
+        const { completedSteps, totalSteps, passedSteps, failedSteps } = state.executionProgress;
+        details = `${completedSteps}/${totalSteps} steps • ${passedSteps} ✓ ${failedSteps} ✗`;
+      }
+      
       return {
         text: '⏳ RUNNING',
         color: 'yellow',
-        details: 'Executing scenario...'
+        details,
+        showStop: state.canStop
       };
     }
     
@@ -50,12 +57,17 @@ export const StatusBar: React.FC = () => {
       const icon = state.lastResult.success ? '✓' : '✗';
       const color = state.lastResult.success ? 'green' : 'red';
       const status = state.lastResult.success ? 'PASSED' : 'FAILED';
+      const stepInfo = state.lastResult.stepResults 
+        ? `${state.lastResult.stepResults.filter(r => r.success).length}/${state.lastResult.stepResults.length} steps`
+        : '';
       const duration = state.lastResult.duration ? `${state.lastResult.duration}ms` : '';
+      const details = [stepInfo, duration].filter(Boolean).join(' • ');
       
       return {
         text: `${icon} ${status}`,
         color,
-        details: duration
+        details,
+        canRetry: !state.lastResult.success
       };
     }
     
@@ -126,14 +138,16 @@ export const StatusBar: React.FC = () => {
           </Text>
         </Box>
 
-        {/* Right - Active pane and essential shortcuts */}
+        {/* Right - Active pane and execution controls */}
         <Box>
           <Text color="yellow">
             {getActivePaneIndicator()} {state.ui.activePane.slice(0,3).toUpperCase()}
             {state.ui.showVariablePreview && <Text color="cyan"> VAR</Text>}
           </Text>
           <Text color="gray" dimColor marginLeft={2}>
-            ↑↓•Enter•Tab•Ctrl+R•Ctrl+Q
+            {state.isRunning ? 'Ctrl+S:Stop' : 'Ctrl+R:Run'}
+            {executionStatus.canRetry && <Text color="cyan"> • Ctrl+T:Retry</Text>}
+            <Text> • Ctrl+Q:Quit</Text>
           </Text>
         </Box>
       </Box>

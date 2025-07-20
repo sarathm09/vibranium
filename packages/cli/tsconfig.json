@@ -4,9 +4,11 @@
     "outDir": "./dist",
     "declaration": true,
     "declarationMap": true,
+    "jsx": "react-jsx",
+    "skipLibCheck": true,
+    "skipDefaultLibCheck": true,
     "composite": true,
-    "rootDir": "./src",
-    "jsx": "react-jsx"
+    "moduleResolution": "node"
   },
   "include": ["src/**/*"],
   "exclude": ["dist", "**/*.spec.ts", "**/*.test.ts"],

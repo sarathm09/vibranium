@@ -1055,8 +1055,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
         const step = scenario.steps[i];
         const stepStartTime = new Date();
         
-        // Update step to running state
+        // Update step to running state and auto-scroll if enabled
         dispatch({ type: 'SELECT_STEP', payload: i });
+        
+        // Auto-scroll to current step if enabled
+        if (state.autoScrollToCurrentStep) {
+          // The UI will automatically follow the selected step
+        }
         const runningResult: StepExecutionResult = {
           stepIndex: i,
           stepName: step.stepName || step.name || `Step ${i + 1}`,

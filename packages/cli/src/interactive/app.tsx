@@ -43,7 +43,8 @@ const VibraniumAppInner: React.FC = () => {
       setStatus,
       selectScenario,
       scrollDetailsPane,
-      changeDetailsViewMode
+      changeDetailsViewMode,
+      toggleAutoScroll
     } 
   } = useAppContext();
   
@@ -218,12 +219,21 @@ const VibraniumAppInner: React.FC = () => {
         } else if (input === '5') {
           setDetailsViewMode('execution');
           return;
+        } else if (input === '6') {
+          setDetailsViewMode('realtime');
+          return;
         }
       }
       
       // Handle step inspection mode toggle (I key)
       if (input.toLowerCase() === 'i' && !key.ctrl) {
         toggleStepInspectionMode();
+        return;
+      }
+      
+      // Handle auto-scroll toggle (A key)
+      if (input.toLowerCase() === 'a' && !key.ctrl) {
+        toggleAutoScroll();
         return;
       }
       

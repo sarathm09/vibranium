@@ -1,0 +1,83 @@
+name: Example API Test Scenario
+description: A comprehensive example scenario for testing the new editor features
+version: 1.0
+
+environment: local
+
+variables:
+  baseUrl: "https://api.example.com"
+  userId: null
+  token: null
+
+steps:
+  - name: Health check
+    type: api
+    method: GET
+    url: "${baseUrl}/health"
+    expect:
+      status: 200
+      body:
+        type: object
+        properties:
+          status:
+            type: string
+            enum: ["healthy"]
+
+  - name: Login user
+    type: api
+    method: POST
+    url: "${baseUrl}/auth/login"
+    headers:
+      Content-Type: application/json
+    body:
+      username: "testuser"
+      password: "testpass"
+    expect:
+      status: 200
+      body:
+        type: object
+        properties:
+          token:
+            type: string
+          user:
+            type: object
+    extract:
+      token: body.token
+      userId: body.user.id
+
+  - name: Get user profile
+    type: api
+    method: GET
+    url: "${baseUrl}/users/${userId}"
+    headers:
+      Authorization: "Bearer ${token}"
+    expect:
+      status: 200
+      body:
+        type: object
+        properties:
+          id:
+            type: number
+          name:
+            type: string
+          email:
+            type: string
+
+  - name: Update user profile
+    type: api
+    method: PUT
+    url: "${baseUrl}/users/${userId}"
+    headers:
+      Authorization: "Bearer ${token}"
+      Content-Type: application/json
+    body:
+      name: "Updated Test User"
+      bio: "Testing scenario editor features"
+    expect:
+      status: 200
+      body:
+        type: object
+        properties:
+          name:
+            type: string
+            const: "Updated Test User"

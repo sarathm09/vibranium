@@ -1,0 +1,349 @@
+@import '../../styles/variables.scss';
+
+.dashboard-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: $spacing-xl 0;
+  
+  &__header {
+    margin-bottom: $spacing-2xl;
+    text-align: center;
+  }
+  
+  &__title {
+    font-size: $font-size-3xl;
+    font-weight: 700;
+    color: $gray-900;
+    margin-bottom: $spacing-sm;
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  &__subtitle {
+    font-size: $font-size-lg;
+    color: $gray-600;
+    margin: 0;
+  }
+  
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: $spacing-lg;
+    margin-bottom: $spacing-2xl;
+  }
+  
+  &__content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: $spacing-xl;
+    
+    @media (max-width: $breakpoint-lg) {
+      grid-template-columns: 1fr;
+      gap: $spacing-lg;
+    }
+  }
+  
+  &__section {
+    display: flex;
+    flex-direction: column;
+  }
+}
+
+// Dashboard Stat Cards
+.dashboard-stat-card {
+  display: flex;
+  align-items: center;
+  gap: $spacing-lg;
+  padding: $spacing-lg;
+  
+  &__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: $border-radius-lg;
+    background: rgba(255, 255, 255, 0.1);
+    color: currentColor;
+    flex-shrink: 0;
+  }
+  
+  &__content {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  &__value {
+    font-size: $font-size-2xl;
+    font-weight: 700;
+    color: $gray-900;
+    line-height: 1;
+    margin-bottom: $spacing-xs;
+  }
+  
+  &__title {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $gray-700;
+    margin-bottom: $spacing-xs;
+  }
+  
+  &__change {
+    font-size: $font-size-xs;
+    color: $gray-500;
+    font-weight: 500;
+  }
+}
+
+// Section Titles
+.dashboard-section-title {
+  font-size: $font-size-xl;
+  font-weight: 600;
+  color: $gray-900;
+  margin-bottom: $spacing-lg;
+  padding-bottom: $spacing-sm;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+// Quick Actions
+.dashboard-quick-actions {
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: $spacing-md;
+  }
+}
+
+.dashboard-quick-action {
+  width: 100%;
+  height: auto;
+  padding: $spacing-lg;
+  text-align: left;
+  flex-direction: column;
+  align-items: stretch;
+  gap: $spacing-sm;
+  
+  &__content {
+    display: flex;
+    flex-direction: column;
+    gap: $spacing-xs;
+    flex: 1;
+  }
+  
+  &__title {
+    font-size: $font-size-base;
+    font-weight: 600;
+    color: currentColor;
+  }
+  
+  &__description {
+    font-size: $font-size-sm;
+    color: currentColor;
+    opacity: 0.8;
+  }
+}
+
+// Recent Activity
+.dashboard-recent-activity {
+  &__footer {
+    margin-top: $spacing-lg;
+    padding-top: $spacing-lg;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+  }
+}
+
+.dashboard-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.dashboard-activity-item {
+  display: flex;
+  align-items: flex-start;
+  gap: $spacing-md;
+  padding: $spacing-md;
+  border-radius: $border-radius-lg;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: $glass-transition-fast;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(4px);
+  }
+  
+  &__indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 6px;
+    background: $gray-400;
+  }
+  
+  &__content {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  &__title {
+    font-size: $font-size-sm;
+    font-weight: 600;
+    color: $gray-900;
+    margin-bottom: $spacing-xs;
+  }
+  
+  &__description {
+    font-size: $font-size-sm;
+    color: $gray-600;
+    margin-bottom: $spacing-xs;
+  }
+  
+  &__time {
+    font-size: $font-size-xs;
+    color: $gray-500;
+    font-weight: 500;
+  }
+  
+  // Status variants
+  &--success {
+    .dashboard-activity-item__indicator {
+      background: $success-color;
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
+    }
+  }
+  
+  &--error {
+    .dashboard-activity-item__indicator {
+      background: $error-color;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
+    }
+  }
+  
+  &--warning {
+    .dashboard-activity-item__indicator {
+      background: $warning-color;
+      box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+    }
+  }
+  
+  &--info {
+    .dashboard-activity-item__indicator {
+      background: $info-color;
+      box-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
+    }
+  }
+}
+
+// Responsive Design
+@media (max-width: $breakpoint-md) {
+  .dashboard-page {
+    padding: $spacing-lg 0;
+    
+    &__stats {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: $spacing-md;
+      margin-bottom: $spacing-xl;
+    }
+    
+    &__content {
+      gap: $spacing-lg;
+    }
+  }
+  
+  .dashboard-stat-card {
+    padding: $spacing-md;
+    flex-direction: column;
+    text-align: center;
+    gap: $spacing-md;
+    
+    &__icon {
+      width: 40px;
+      height: 40px;
+    }
+    
+    &__value {
+      font-size: $font-size-xl;
+    }
+  }
+  
+  .dashboard-quick-actions__grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .dashboard-quick-action {
+    padding: $spacing-md;
+  }
+}
+
+@media (max-width: $breakpoint-sm) {
+  .dashboard-page {
+    &__title {
+      font-size: $font-size-2xl;
+    }
+    
+    &__subtitle {
+      font-size: $font-size-base;
+    }
+    
+    &__stats {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  .dashboard-stat-card {
+    &__value {
+      font-size: $font-size-lg;
+    }
+  }
+}
+
+// Dark theme adjustments
+@media (prefers-color-scheme: dark) {
+  .dashboard-page {
+    &__title {
+      color: $gray-100;
+    }
+    
+    &__subtitle {
+      color: $gray-400;
+    }
+  }
+  
+  .dashboard-stat-card {
+    &__value {
+      color: $gray-100;
+    }
+    
+    &__title {
+      color: $gray-300;
+    }
+    
+    &__change {
+      color: $gray-400;
+    }
+  }
+  
+  .dashboard-section-title {
+    color: $gray-100;
+  }
+  
+  .dashboard-activity-item {
+    &__title {
+      color: $gray-100;
+    }
+    
+    &__description {
+      color: $gray-300;
+    }
+    
+    &__time {
+      color: $gray-400;
+    }
+  }
+}

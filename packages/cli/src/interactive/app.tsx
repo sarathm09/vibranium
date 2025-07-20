@@ -11,6 +11,7 @@ import { StatusBar } from './components/status-bar';
 import { EnhancedVariablePreview } from './components/enhanced-variable-preview';
 import EnvironmentViewer from './components/environment-viewer';
 import EnvironmentSwitcher from './components/environment-switcher';
+import { SearchInterface } from './components/search/SearchInterface';
 import { ExitCodes } from '../utils/exit-codes';
 
 export interface VibraniumAppProps {
@@ -197,6 +198,14 @@ const VibraniumAppInner: React.FC = () => {
             break;
           case 'v':
             togglePane('variables');
+            break;
+          case 'f':
+            // Toggle search interface
+            if (state.ui.showSearchInterface) {
+              actions.hideSearchInterface();
+            } else {
+              actions.showSearchInterface();
+            }
             break;
           case 'c':
             // Toggle command prompt
@@ -725,6 +734,12 @@ const VibraniumAppInner: React.FC = () => {
       <EnvironmentSwitcher 
         isVisible={state.ui.showEnvironmentSwitcher}
         onClose={() => dispatch({ type: 'SHOW_ENVIRONMENT_SWITCHER', payload: false })}
+      />
+      
+      {/* Search interface overlay */}
+      <SearchInterface 
+        isVisible={state.ui.showSearchInterface}
+        onClose={() => actions.hideSearchInterface()}
       />
     </Box>
   );

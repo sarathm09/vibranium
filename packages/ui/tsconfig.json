@@ -28,7 +28,8 @@
       "@assets/*": ["./src/assets/*"]
     }
   },
-  "include": ["src", "**/*.test.ts", "**/*.test.tsx"],
+  "include": ["src/**/*"],
+  "exclude": ["src/backup/**/*", "node_modules", "dist"],
   "references": [
     {
       "path": "../types"

@@ -105,7 +105,8 @@ export const StatusBar: React.FC = () => {
       'navigation': '📁',
       'details': '📝',
       'variables': '🔢',
-      'help': '❓'
+      'help': '❓',
+      'search': '🔍'
     };
     
     return paneIcons[state.ui.activePane] || '📁';
@@ -152,7 +153,7 @@ export const StatusBar: React.FC = () => {
           <Text color="gray" dimColor marginLeft={2}>
             {state.isRunning ? 'Ctrl+S:Stop' : 'Ctrl+R:Run'}
             {executionStatus.canRetry && <Text color="cyan"> • Ctrl+T:Retry</Text>}
-            <Text> • E:Env • Ctrl+Q:Quit</Text>
+            <Text> • E:Env • Ctrl+F:Search • Ctrl+Q:Quit</Text>
           </Text>
         </Box>
       </Box>

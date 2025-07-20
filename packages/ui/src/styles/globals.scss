@@ -1,0 +1,267 @@
+// Global styles for Vibranium Frosted Glass UI
+@import './variables.scss';
+
+// === GLOBAL RESET & BASE STYLES ===
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  font-family: $font-family-base;
+  font-size: $font-size-base;
+  color: $gray-900;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  overflow-x: hidden;
+  
+  // Frosted glass background pattern
+  &::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+      radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
+    z-index: $z-background;
+    pointer-events: none;
+  }
+}
+
+#root {
+  position: relative;
+  z-index: $z-base;
+  min-height: 100vh;
+}
+
+// === GLASSMORPHISM BASE CLASSES ===
+.glass-panel {
+  background: $glass-gradient-light;
+  backdrop-filter: $blur-lg;
+  -webkit-backdrop-filter: $blur-lg;
+  border: $glass-border-light;
+  border-radius: $border-radius-xl;
+  box-shadow: $glass-shadow-md, $glass-inner-shadow;
+  transition: $glass-transition;
+  
+  &:hover {
+    background: $glass-gradient-light;
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: $glass-shadow-lg, $glass-inner-shadow-strong;
+    transform: translateY(-2px);
+  }
+  
+  &.glass-panel--primary {
+    background: $glass-gradient-primary;
+    border: $glass-border-primary;
+    
+    &:hover {
+      background: $glass-gradient-primary;
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+  }
+  
+  &.glass-panel--secondary {
+    background: $glass-gradient-secondary;
+    border: $glass-border-secondary;
+    
+    &:hover {
+      background: $glass-gradient-secondary;
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+  }
+  
+  &.glass-panel--dark {
+    background: $glass-gradient-dark;
+    border: $glass-border-dark;
+    color: $gray-100;
+    
+    &:hover {
+      background: $glass-gradient-dark;
+      border-color: rgba(0, 0, 0, 0.3);
+    }
+  }
+}
+
+.glass-card {
+  @extend .glass-panel;
+  padding: $spacing-lg;
+  
+  &.glass-card--sm {
+    padding: $spacing-md;
+  }
+  
+  &.glass-card--lg {
+    padding: $spacing-xl;
+  }
+  
+  &.glass-card--xl {
+    padding: $spacing-2xl;
+  }
+}
+
+.glass-surface {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: $blur-md;
+  -webkit-backdrop-filter: $blur-md;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: $border-radius-lg;
+  transition: $glass-transition-fast;
+}
+
+// === GLASS BUTTON BASE ===
+.glass-button {
+  background: $glass-gradient-light;
+  backdrop-filter: $blur-md;
+  -webkit-backdrop-filter: $blur-md;
+  border: $glass-border-light;
+  border-radius: $border-radius-lg;
+  padding: $spacing-sm $spacing-md;
+  color: $gray-800;
+  font-weight: 500;
+  cursor: pointer;
+  transition: $glass-transition-fast;
+  display: inline-flex;
+  align-items: center;
+  gap: $spacing-sm;
+  text-decoration: none;
+  
+  &:hover {
+    background: $glass-white-hover;
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+    box-shadow: $glass-shadow-sm;
+  }
+  
+  &:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}
+
+// === GLASS INPUT BASE ===
+.glass-input {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: $blur-sm;
+  -webkit-backdrop-filter: $blur-sm;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: $border-radius-md;
+  padding: $spacing-sm $spacing-md;
+  color: $gray-800;
+  font-size: $font-size-base;
+  transition: $glass-transition-fast;
+  
+  &::placeholder {
+    color: rgba(107, 114, 128, 0.7);
+  }
+  
+  &:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+// === UTILITY CLASSES ===
+.backdrop-blur-sm { backdrop-filter: $blur-sm; -webkit-backdrop-filter: $blur-sm; }
+.backdrop-blur-md { backdrop-filter: $blur-md; -webkit-backdrop-filter: $blur-md; }
+.backdrop-blur-lg { backdrop-filter: $blur-lg; -webkit-backdrop-filter: $blur-lg; }
+.backdrop-blur-xl { backdrop-filter: $blur-xl; -webkit-backdrop-filter: $blur-xl; }
+
+.glass-transition { transition: $glass-transition; }
+.glass-transition-fast { transition: $glass-transition-fast; }
+.glass-transition-slow { transition: $glass-transition-slow; }
+
+// === SCROLLBAR STYLING ===
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: $border-radius-sm;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: $border-radius-sm;
+  transition: $transition-fast;
+  
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+// === RESPONSIVE BREAKPOINTS ===
+@media (max-width: $breakpoint-sm) {
+  .glass-panel {
+    border-radius: $border-radius-lg;
+  }
+  
+  .glass-card {
+    padding: $spacing-md;
+    
+    &.glass-card--lg,
+    &.glass-card--xl {
+      padding: $spacing-md;
+    }
+  }
+}
+
+// === ANIMATION KEYFRAMES ===
+@keyframes glass-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    backdrop-filter: $blur-lg;
+  }
+}
+
+@keyframes glass-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.glass-fade-in {
+  animation: glass-fade-in $transition-slow $ease-glass;
+}
+
+.glass-scale-in {
+  animation: glass-scale-in $transition-normal $ease-glass;
+}

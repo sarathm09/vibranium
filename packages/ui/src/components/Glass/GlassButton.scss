@@ -1,0 +1,255 @@
+@import '../../styles/variables.scss';
+
+.glass-button {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $spacing-sm;
+  font-family: inherit;
+  font-weight: 500;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  background: $glass-gradient-light;
+  backdrop-filter: $blur-md;
+  -webkit-backdrop-filter: $blur-md;
+  border: $glass-border-light;
+  color: $gray-800;
+  transition: $glass-transition-fast;
+  overflow: hidden;
+  
+  // Pseudo elements for enhanced glass effect
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    border-radius: inherit;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    right: 1px;
+    bottom: 1px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0.8;
+  }
+  
+  // Size variants
+  &.glass-button--xs {
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-xs;
+    border-radius: $border-radius-sm;
+    min-height: 24px;
+  }
+  
+  &.glass-button--sm {
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-sm;
+    border-radius: $border-radius-md;
+    min-height: 32px;
+  }
+  
+  &.glass-button--md {
+    padding: $spacing-sm $spacing-lg;
+    font-size: $font-size-base;
+    border-radius: $border-radius-lg;
+    min-height: 40px;
+  }
+  
+  &.glass-button--lg {
+    padding: $spacing-md $spacing-xl;
+    font-size: $font-size-lg;
+    border-radius: $border-radius-lg;
+    min-height: 48px;
+  }
+  
+  &.glass-button--xl {
+    padding: $spacing-lg $spacing-2xl;
+    font-size: $font-size-xl;
+    border-radius: $border-radius-xl;
+    min-height: 56px;
+  }
+  
+  // Color variants
+  &.glass-button--primary {
+    background: $glass-gradient-primary;
+    border: $glass-border-primary;
+    color: $primary-color;
+    
+    &:hover:not(.glass-button--disabled) {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.08) 100%);
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: $glass-shadow-md, 0 0 20px rgba(59, 130, 246, 0.2);
+    }
+  }
+  
+  &.glass-button--secondary {
+    background: $glass-gradient-secondary;
+    border: $glass-border-secondary;
+    color: $secondary-color;
+    
+    &:hover:not(.glass-button--disabled) {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.08) 100%);
+      border-color: rgba(99, 102, 241, 0.4);
+      box-shadow: $glass-shadow-md, 0 0 20px rgba(99, 102, 241, 0.2);
+    }
+  }
+  
+  &.glass-button--success {
+    background: $glass-success;
+    border: $glass-success-border;
+    color: $success-color;
+    
+    &:hover:not(.glass-button--disabled) {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(16, 185, 129, 0.08) 100%);
+      border-color: rgba(16, 185, 129, 0.4);
+      box-shadow: $glass-shadow-md, 0 0 20px rgba(16, 185, 129, 0.2);
+    }
+  }
+  
+  &.glass-button--warning {
+    background: $glass-warning;
+    border: $glass-warning-border;
+    color: $warning-color;
+    
+    &:hover:not(.glass-button--disabled) {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(245, 158, 11, 0.08) 100%);
+      border-color: rgba(245, 158, 11, 0.4);
+      box-shadow: $glass-shadow-md, 0 0 20px rgba(245, 158, 11, 0.2);
+    }
+  }
+  
+  &.glass-button--error {
+    background: $glass-error;
+    border: $glass-error-border;
+    color: $error-color;
+    
+    &:hover:not(.glass-button--disabled) {
+      background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, rgba(239, 68, 68, 0.08) 100%);
+      border-color: rgba(239, 68, 68, 0.4);
+      box-shadow: $glass-shadow-md, 0 0 20px rgba(239, 68, 68, 0.2);
+    }
+  }
+  
+  &.glass-button--ghost {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: $gray-700;
+    
+    &:hover:not(.glass-button--disabled) {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+  }
+  
+  // State variants
+  &.glass-button--full-width {
+    width: 100%;
+  }
+  
+  &.glass-button--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  
+  &.glass-button--loading {
+    cursor: wait;
+    pointer-events: none;
+  }
+  
+  // Hover effects
+  &:hover:not(.glass-button--disabled) {
+    border-color: rgba(255, 255, 255, 0.3);
+    box-shadow: $glass-shadow-sm;
+    transform: translateY(-1px);
+  }
+  
+  &:active:not(.glass-button--disabled) {
+    transform: translateY(0) scale(0.98);
+    box-shadow: none;
+  }
+  
+  // Focus styles
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+  
+  // Icon spacing
+  &.glass-button--with-left-icon .glass-button__text {
+    margin-left: $spacing-xs;
+  }
+  
+  &.glass-button--with-right-icon .glass-button__text {
+    margin-right: $spacing-xs;
+  }
+  
+  // Icons
+  .glass-button__left-icon,
+  .glass-button__right-icon {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    svg {
+      width: 1em;
+      height: 1em;
+    }
+  }
+  
+  .glass-button__text {
+    position: relative;
+    z-index: 1;
+  }
+  
+  // Loading spinner
+  .glass-button__spinner {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .glass-button__spinner-circle {
+    width: 1em;
+    height: 1em;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Dark theme adjustments
+@media (prefers-color-scheme: dark) {
+  .glass-button {
+    &::before {
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    }
+    
+    &::after {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+    }
+  }
+}

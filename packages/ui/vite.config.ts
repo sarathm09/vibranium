@@ -36,7 +36,9 @@ export default defineConfig({
       output: {
         // Code splitting
         manualChunks: {
-          vendor: ['react', 'react-dom'],
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          utils: ['clsx', 'framer-motion'],
+          icons: ['@heroicons/react'],
         },
       },
     },
@@ -64,7 +66,7 @@ export default defineConfig({
     },
     preprocessorOptions: {
       scss: {
-        additionalData: `@import "@/styles/variables.scss";`,
+        // Variables are imported directly in each SCSS file
       },
     },
   },
@@ -74,6 +76,10 @@ export default defineConfig({
     include: [
       'react',
       'react-dom',
+      'react-router-dom',
+      'clsx',
+      'framer-motion',
+      '@heroicons/react/24/outline',
     ],
   },
   

@@ -1,0 +1,348 @@
+@import '../../styles/variables.scss';
+
+.glass-input-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-sm;
+  
+  &.glass-input-container--full-width {
+    width: 100%;
+  }
+}
+
+.glass-input__label {
+  font-size: $font-size-sm;
+  font-weight: 500;
+  color: $gray-700;
+  margin-bottom: $spacing-xs;
+  transition: $glass-transition-fast;
+}
+
+.glass-input__wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: $blur-sm;
+  -webkit-backdrop-filter: $blur-sm;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transition: $glass-transition-fast;
+  overflow: hidden;
+  
+  // Pseudo elements for enhanced glass effect
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    border-radius: inherit;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    right: 1px;
+    bottom: 1px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0.8;
+  }
+}
+
+.glass-input__field {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: $gray-800;
+  font-size: $font-size-base;
+  font-family: inherit;
+  transition: $glass-transition-fast;
+  position: relative;
+  z-index: 1;
+  
+  &::placeholder {
+    color: rgba(107, 114, 128, 0.6);
+    transition: $glass-transition-fast;
+  }
+  
+  &:focus::placeholder {
+    color: rgba(107, 114, 128, 0.4);
+  }
+  
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+}
+
+// Size variants
+.glass-input-container--sm {
+  .glass-input__wrapper {
+    border-radius: $border-radius-md;
+    min-height: 32px;
+  }
+  
+  .glass-input__field {
+    padding: $spacing-xs $spacing-sm;
+    font-size: $font-size-sm;
+  }
+  
+  .glass-input__left-icon,
+  .glass-input__right-icon {
+    padding: 0 $spacing-xs;
+    
+    svg {
+      width: 14px;
+      height: 14px;
+    }
+  }
+}
+
+.glass-input-container--md {
+  .glass-input__wrapper {
+    border-radius: $border-radius-lg;
+    min-height: 40px;
+  }
+  
+  .glass-input__field {
+    padding: $spacing-sm $spacing-md;
+    font-size: $font-size-base;
+  }
+  
+  .glass-input__left-icon,
+  .glass-input__right-icon {
+    padding: 0 $spacing-sm;
+    
+    svg {
+      width: 16px;
+      height: 16px;
+    }
+  }
+}
+
+.glass-input-container--lg {
+  .glass-input__wrapper {
+    border-radius: $border-radius-lg;
+    min-height: 48px;
+  }
+  
+  .glass-input__field {
+    padding: $spacing-md $spacing-lg;
+    font-size: $font-size-lg;
+  }
+  
+  .glass-input__left-icon,
+  .glass-input__right-icon {
+    padding: 0 $spacing-md;
+    
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+}
+
+// Icon adjustments
+.glass-input-container--with-left-icon {
+  .glass-input__field {
+    padding-left: 0;
+  }
+}
+
+.glass-input-container--with-right-icon {
+  .glass-input__field {
+    padding-right: 0;
+  }
+}
+
+// Color variants
+.glass-input-container--primary {
+  .glass-input__wrapper {
+    border-color: rgba(59, 130, 246, 0.2);
+  }
+  
+  &.glass-input-container--focused .glass-input__wrapper {
+    background: rgba(59, 130, 246, 0.05);
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.glass-input-container--secondary {
+  .glass-input__wrapper {
+    border-color: rgba(99, 102, 241, 0.2);
+  }
+  
+  &.glass-input-container--focused .glass-input__wrapper {
+    background: rgba(99, 102, 241, 0.05);
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  }
+}
+
+// State variants
+.glass-input-container--focused {
+  .glass-input__label {
+    color: $primary-color;
+  }
+  
+  .glass-input__wrapper {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  }
+}
+
+.glass-input-container--error {
+  .glass-input__label {
+    color: $error-color;
+  }
+  
+  .glass-input__wrapper {
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  }
+}
+
+.glass-input-container--disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.glass-input-container--loading {
+  .glass-input__field {
+    padding-right: 40px;
+  }
+}
+
+// Icons
+.glass-input__left-icon,
+.glass-input__right-icon {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $gray-500;
+  transition: $glass-transition-fast;
+  
+  svg {
+    display: block;
+  }
+}
+
+.glass-input__clear-button {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: $gray-500;
+  padding: 0 $spacing-sm;
+  transition: $glass-transition-fast;
+  
+  &:hover {
+    color: $gray-700;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+// Loading spinner
+.glass-input__spinner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 $spacing-sm;
+}
+
+.glass-input__spinner-circle {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(59, 130, 246, 0.2);
+  border-top: 2px solid $primary-color;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+// Error and hint text
+.glass-input__error {
+  font-size: $font-size-sm;
+  color: $error-color;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: $spacing-xs;
+  
+  &::before {
+    content: '!';
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background: $error-color;
+    color: white;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: bold;
+    flex-shrink: 0;
+  }
+}
+
+.glass-input__hint {
+  font-size: $font-size-sm;
+  color: $gray-500;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Dark theme adjustments
+@media (prefers-color-scheme: dark) {
+  .glass-input__wrapper {
+    &::before {
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    }
+    
+    &::after {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.04) 0%, transparent 50%);
+    }
+  }
+  
+  .glass-input__label {
+    color: $gray-300;
+  }
+  
+  .glass-input__field {
+    color: $gray-200;
+    
+    &::placeholder {
+      color: rgba(156, 163, 175, 0.6);
+    }
+  }
+}

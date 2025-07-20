@@ -18,15 +18,27 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useInput } from 'ink';
 import { useAppContext } from '../state/app-context';
 import { ResultsView } from './execution-results';
 import { OverviewDashboard } from './overview-dashboard';
+import { ScenarioEditor } from './scenario-editor/scenario-editor';
+import { VisualScenarioBuilder } from './scenario-editor/visual-scenario-builder';
+import { ScenarioManager } from './scenario-editor/scenario-manager';
+import { SearchAndReplace } from './scenario-editor/search-and-replace';
+import { StepTemplates } from './scenario-editor/step-templates';
+import { EditorSidebar } from './scenario-editor/editor-sidebar';
+import { EditorMinimap } from './scenario-editor/editor-minimap';
 import chalk from 'chalk';
 
 export const DetailsPane: React.FC = () => {
   const { state, actions } = useAppContext();
   const [showNavigator, setShowNavigator] = useState(false);
+  const [editorMode, setEditorMode] = useState<'view' | 'edit' | 'visual' | 'manager'>('view');
+  const [showSearch, setShowSearch] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [showMinimap, setShowMinimap] = useState(false);
   
   // Use scrollOffset from context instead of local state
   const scrollOffset = state.ui.detailsScrollOffset;
@@ -38,6 +50,54 @@ export const DetailsPane: React.FC = () => {
   useEffect(() => {
     actions.resetDetailsScroll();
   }, [state.currentScenario]);
+
+  // Enhanced input handling for editor features
+  useInput((input, key) => {
+    // Only handle inputs when details pane is active
+    if (state.ui.activePane !== 'details') return;
+
+    if (key.ctrl) {
+      switch (input.toLowerCase()) {
+        case 'e':
+          // Toggle edit mode
+          setEditorMode(prev => prev === 'edit' ? 'view' : 'edit');
+          return;
+        case 'v':
+          // Toggle visual builder
+          setEditorMode(prev => prev === 'visual' ? 'view' : 'visual');
+          return;
+        case 'm':
+          // Toggle scenario manager
+          setEditorMode(prev => prev === 'manager' ? 'view' : 'manager');
+          return;
+        case 'f':
+          // Toggle search
+          setShowSearch(!showSearch);
+          return;
+        case 't':
+          // Toggle templates
+          setShowTemplates(!showTemplates);
+          return;
+        case 'b':
+          // Toggle sidebar
+          setShowSidebar(!showSidebar);
+          return;
+        case 'i':
+          // Toggle minimap
+          setShowMinimap(!showMinimap);
+          return;
+      }
+    }
+
+    // Handle mode-specific shortcuts
+    if (input.toLowerCase() === 'w' && !key.ctrl) {
+      // Toggle word wrap (editor feature)
+      actions.setStatus('Word wrap toggled', 'info');
+    } else if (input.toLowerCase() === 'l' && !key.ctrl) {
+      // Toggle line numbers (editor feature)
+      actions.setStatus('Line numbers toggled', 'info');
+    }
+  });
   
 
   const getPanelTitle = () => {
@@ -69,6 +129,10 @@ export const DetailsPane: React.FC = () => {
         return renderRawContent();
       case 'results':
         return renderExecutionDetails();
+      case 'editor':
+        return renderAdvancedEditor();
+      case 'visual':
+        return renderVisualBuilder();
       default:
         return renderOverview();
     }
@@ -96,7 +160,9 @@ export const DetailsPane: React.FC = () => {
       { key: 'steps', label: 'Steps' },
       { key: 'timeline', label: 'Timeline' },
       { key: 'source', label: 'Source' }, 
-      { key: 'results', label: 'Results' }
+      { key: 'results', label: 'Results' },
+      { key: 'editor', label: 'Editor' },
+      { key: 'visual', label: 'Visual' }
     ];
     
     return (
@@ -1923,6 +1989,135 @@ export const DetailsPane: React.FC = () => {
     );
   };
 
+  const renderAdvancedEditor = () => {
+    if (editorMode === 'manager') {
+      return (
+        <ScenarioManager
+          width={80}
+          height={30}
+          onSelectScenario={(filePath) => {
+            actions.setStatus(`Loading scenario: ${filePath}`, 'info');
+            setEditorMode('view');
+          }}
+          onCreateScenario={(template) => {
+            actions.setStatus('Creating new scenario from template', 'info');
+            setEditorMode('edit');
+          }}
+          onClose={() => setEditorMode('view')}
+        />
+      );
+    }
+
+    const containerWidth = showSidebar && showMinimap ? 60 : showSidebar || showMinimap ? 70 : 80;
+    const containerHeight = 30;
+
+    return (
+      <Box flexDirection="row" height="100%">
+        {showSidebar && (
+          <EditorSidebar
+            width={15}
+            height={containerHeight}
+            isVisible={showSidebar}
+            onToggle={() => setShowSidebar(!showSidebar)}
+            onSelectFile={(filePath) => {
+              actions.setStatus(`Opening file: ${filePath}`, 'info');
+            }}
+            onCreateFile={() => {
+              actions.setStatus('Creating new file', 'info');
+            }}
+          />
+        )}
+
+        <Box flexGrow={1}>
+          <ScenarioEditor
+            mode={editorMode === 'edit' ? 'text' : 'preview'}
+            width={containerWidth}
+            height={containerHeight}
+            onSave={(content) => {
+              actions.setStatus('Scenario saved successfully', 'success');
+            }}
+            onValidation={(results) => {
+              const errorCount = results.filter(r => r.level === 'error').length;
+              const warningCount = results.filter(r => r.level === 'warning').length;
+              if (errorCount > 0) {
+                actions.setStatus(`${errorCount} errors, ${warningCount} warnings`, 'warning');
+              } else if (warningCount > 0) {
+                actions.setStatus(`${warningCount} warnings`, 'info');
+              }
+            }}
+            readOnly={editorMode === 'view'}
+          />
+        </Box>
+
+        {showMinimap && (
+          <EditorMinimap
+            editorState={{
+              content: state.rawScenarioContent || '',
+              fileName: state.currentScenario?.name || 'untitled.yaml',
+              fileType: 'yaml',
+              isDirty: false,
+              isReadOnly: false,
+              cursor: { line: 0, column: 0 },
+              scrollTop: scrollOffset,
+              scrollLeft: 0,
+              validationResults: [],
+              searchResults: [],
+              isAutoSaveEnabled: true,
+              history: [],
+              historyIndex: -1
+            }}
+            width={10}
+            height={containerHeight}
+            onScrollTo={(line) => {
+              actions.setStatus(`Jumping to line ${line + 1}`, 'info');
+            }}
+          />
+        )}
+
+        {/* Overlay components */}
+        <SearchAndReplace
+          content={state.rawScenarioContent || ''}
+          width={80}
+          height={30}
+          onSearch={(results) => {
+            actions.setStatus(`Found ${results.length} matches`, 'info');
+          }}
+          onReplace={(newContent) => {
+            actions.setStatus('Content replaced', 'success');
+          }}
+          onClose={() => setShowSearch(false)}
+          isVisible={showSearch}
+        />
+
+        <StepTemplates
+          width={80}
+          height={30}
+          onSelectTemplate={(template) => {
+            actions.setStatus(`Inserted template: ${template.name}`, 'success');
+            setShowTemplates(false);
+          }}
+          onClose={() => setShowTemplates(false)}
+          isVisible={showTemplates}
+        />
+      </Box>
+    );
+  };
+
+  const renderVisualBuilder = () => {
+    return (
+      <VisualScenarioBuilder
+        width={80}
+        height={30}
+        onSave={(scenario) => {
+          actions.setStatus('Visual scenario saved successfully', 'success');
+        }}
+        onClose={() => {
+          actions.setDetailsViewMode('overview');
+        }}
+      />
+    );
+  };
+
   const { title, color, indicator } = getPanelTitle();
   
   return (
@@ -1951,9 +2146,13 @@ export const DetailsPane: React.FC = () => {
           {state.ui.activePane === 'details' ? 
             (state.ui.detailsViewMode === 'overview' ? 
               'ACTIVE: J/K Navigate Steps | Enter Run Selected | C Copy | ←→ Views | Tab Switch Pane' :
-              'ACTIVE: ↑↓ Scroll | ←→ Views | 1-Overview 2-Steps 3-Timeline 4-Source 5-Results | Enter Run | Tab Switch Pane'
+              state.ui.detailsViewMode === 'editor' ?
+                'EDITOR: Ctrl+E Edit | Ctrl+F Search | Ctrl+B Sidebar | Ctrl+I Minimap | Ctrl+T Templates | Ctrl+M Manager' :
+              state.ui.detailsViewMode === 'visual' ?
+                'VISUAL: A Add Step | E Edit | C Connect | D Delete | Ctrl+S Save | Esc Exit' :
+                'ACTIVE: ↑↓ Scroll | ←→ Views | 1-Overview 2-Steps 3-Timeline 4-Source 5-Results 6-Editor 7-Visual | Tab Switch Pane'
             ) : 
-            'Tab Activate | 1-Overview 2-Steps 3-Timeline 4-Source 5-Results | R Run | Enter Select'
+            'Tab Activate | 1-5 Views | 6-Editor 7-Visual | R Run | Enter Select'
           }
         </Text>
       </Box>

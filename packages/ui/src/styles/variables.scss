@@ -1,15 +1,62 @@
-// SCSS Variables for Vibranium UI
-// Design system colors, spacing, and other design tokens
+// SCSS Variables for Vibranium Frosted Glass UI
+// Glassmorphism design system with advanced glass effects
 
-// Color Palette
-$primary-color: #3b82f6; // Blue
-$secondary-color: #6366f1; // Indigo
-$success-color: #10b981; // Green
-$warning-color: #f59e0b; // Amber
-$error-color: #ef4444; // Red
-$info-color: #06b6d4; // Cyan
+// === GLASSMORPHISM COLOR PALETTE ===
+// Primary Glass Colors with transparency
+$glass-primary: rgba(59, 130, 246, 0.1); // Blue glass
+$glass-primary-border: rgba(59, 130, 246, 0.2);
+$glass-primary-hover: rgba(59, 130, 246, 0.15);
+$glass-primary-active: rgba(59, 130, 246, 0.25);
 
-// Neutral Colors
+$glass-secondary: rgba(99, 102, 241, 0.1); // Indigo glass
+$glass-secondary-border: rgba(99, 102, 241, 0.2);
+
+$glass-success: rgba(16, 185, 129, 0.1); // Green glass
+$glass-success-border: rgba(16, 185, 129, 0.2);
+
+$glass-warning: rgba(245, 158, 11, 0.1); // Amber glass
+$glass-warning-border: rgba(245, 158, 11, 0.2);
+
+$glass-error: rgba(239, 68, 68, 0.1); // Red glass
+$glass-error-border: rgba(239, 68, 68, 0.2);
+
+$glass-info: rgba(6, 182, 212, 0.1); // Cyan glass
+$glass-info-border: rgba(6, 182, 212, 0.2);
+
+// Solid Colors (for text, icons, etc.)
+$primary-color: #3b82f6;
+$secondary-color: #6366f1;
+$success-color: #10b981;
+$warning-color: #f59e0b;
+$error-color: #ef4444;
+$info-color: #06b6d4;
+
+// === GLASS NEUTRAL SYSTEM ===
+// Light theme glass colors
+$glass-white: rgba(255, 255, 255, 0.1);
+$glass-white-strong: rgba(255, 255, 255, 0.2);
+$glass-white-border: rgba(255, 255, 255, 0.15);
+$glass-white-hover: rgba(255, 255, 255, 0.15);
+
+// Dark theme glass colors
+$glass-dark: rgba(0, 0, 0, 0.1);
+$glass-dark-strong: rgba(0, 0, 0, 0.2);
+$glass-dark-border: rgba(0, 0, 0, 0.15);
+$glass-dark-hover: rgba(0, 0, 0, 0.15);
+
+// Neutral Glass Grays
+$glass-gray-50: rgba(249, 250, 251, 0.8);
+$glass-gray-100: rgba(243, 244, 246, 0.7);
+$glass-gray-200: rgba(229, 231, 235, 0.6);
+$glass-gray-300: rgba(209, 213, 219, 0.5);
+$glass-gray-400: rgba(156, 163, 175, 0.4);
+$glass-gray-500: rgba(107, 114, 128, 0.3);
+$glass-gray-600: rgba(75, 85, 99, 0.25);
+$glass-gray-700: rgba(55, 65, 81, 0.2);
+$glass-gray-800: rgba(31, 41, 55, 0.15);
+$glass-gray-900: rgba(17, 24, 39, 0.1);
+
+// Solid Neutral Colors
 $gray-50: #f9fafb;
 $gray-100: #f3f4f6;
 $gray-200: #e5e7eb;
@@ -47,7 +94,39 @@ $border-radius-md: 0.375rem; // 6px
 $border-radius-lg: 0.5rem;  // 8px
 $border-radius-xl: 0.75rem; // 12px
 
-// Shadows
+// === GLASSMORPHISM EFFECTS ===
+// Backdrop Blur Values
+$blur-none: blur(0);
+$blur-sm: blur(4px);
+$blur-md: blur(8px);
+$blur-lg: blur(16px);
+$blur-xl: blur(24px);
+$blur-2xl: blur(40px);
+$blur-3xl: blur(64px);
+
+// Glass Panel Shadows
+$glass-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.1), 0 1px 4px rgba(0, 0, 0, 0.05);
+$glass-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.1), 0 2px 8px rgba(0, 0, 0, 0.06);
+$glass-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 16px rgba(0, 0, 0, 0.08);
+$glass-shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.15), 0 8px 32px rgba(0, 0, 0, 0.1);
+
+// Inner Shadows for Glass Effect
+$glass-inner-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+$glass-inner-shadow-strong: inset 0 2px 0 rgba(255, 255, 255, 0.15), inset 0 -2px 0 rgba(0, 0, 0, 0.15);
+
+// Gradient Backgrounds for Glass Panels
+$glass-gradient-light: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+$glass-gradient-dark: linear-gradient(135deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.05) 100%);
+$glass-gradient-primary: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%);
+$glass-gradient-secondary: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(99, 102, 241, 0.05) 100%);
+
+// Glass Borders
+$glass-border-light: 1px solid rgba(255, 255, 255, 0.2);
+$glass-border-dark: 1px solid rgba(0, 0, 0, 0.2);
+$glass-border-primary: 1px solid rgba(59, 130, 246, 0.3);
+$glass-border-secondary: 1px solid rgba(99, 102, 241, 0.3);
+
+// Traditional Shadows (for non-glass elements)
 $shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
 $shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 $shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -59,7 +138,31 @@ $breakpoint-lg: 1024px;
 $breakpoint-xl: 1280px;
 $breakpoint-2xl: 1536px;
 
+// === ANIMATIONS & TRANSITIONS ===
+// Transition Durations
+$transition-fast: 150ms;
+$transition-normal: 300ms;
+$transition-slow: 500ms;
+$transition-slower: 700ms;
+
+// Transition Timing Functions
+$ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+$ease-out: cubic-bezier(0, 0, 0.2, 1);
+$ease-in: cubic-bezier(0.4, 0, 1, 1);
+$ease-glass: cubic-bezier(0.25, 0.46, 0.45, 0.94); // Custom glass-like easing
+
+// Glass Effect Transitions
+$glass-transition: all $transition-normal $ease-glass;
+$glass-transition-fast: all $transition-fast $ease-glass;
+$glass-transition-slow: all $transition-slow $ease-glass;
+
+// Backdrop Blur Transitions
+$blur-transition: backdrop-filter $transition-normal $ease-glass;
+$blur-transition-fast: backdrop-filter $transition-fast $ease-glass;
+
 // Z-index Scale
+$z-background: -1;
+$z-base: 0;
 $z-dropdown: 1000;
 $z-sticky: 1020;
 $z-fixed: 1030;
@@ -67,3 +170,4 @@ $z-modal-backdrop: 1040;
 $z-modal: 1050;
 $z-popover: 1060;
 $z-tooltip: 1070;
+$z-loading: 1080;

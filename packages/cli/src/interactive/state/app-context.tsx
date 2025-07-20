@@ -148,12 +148,12 @@ export interface AppState {
     overviewSelectedStepIndex: number; // Separate selection for overview mode
     stepResponseViewerMode: 'current' | 'historical'; // Current execution vs historical data
     selectedHistoricalExecution?: string; // Selected execution ID for historical viewing
-    activePane: 'navigation' | 'details' | 'variables' | 'help';
+    activePane: 'navigation' | 'details' | 'variables' | 'help' | 'search';
     showVariablePreview: boolean;
     editorContent: string;
     editorChanged: boolean;
     navigationMode: 'scenarios' | 'folders'; // Toggle between scenarios and file navigation
-    detailsViewMode: 'overview' | 'steps' | 'timeline' | 'source' | 'results'; // Logical view mode ordering
+    detailsViewMode: 'overview' | 'steps' | 'timeline' | 'source' | 'results' | 'editor' | 'visual'; // Logical view mode ordering
     stepInspectionMode: boolean; // Whether we're in step inspection mode
     detailsScrollOffset: number; // Scroll position in details pane
     // Environment UI state
@@ -161,6 +161,13 @@ export interface AppState {
     showEnvironmentSwitcher: boolean;
     environmentComparisonMode: boolean;
     selectedEnvironmentForComparison?: string;
+    // Search UI state
+    showSearchInterface: boolean;
+    searchMode: 'instant' | 'manual';
+    searchQuery: string;
+    searchFilters: any; // SearchFilters type
+    searchResults: any[]; // SearchResult[] type
+    searchStats: any; // SearchStats type
   };
 
   // Status
@@ -250,6 +257,16 @@ export interface AppActions {
   updateVariableState: () => void;
   trackVariableUsage: (path: string, stepIndex: number, stepName: string, usageType: 'read' | 'write' | 'reference', field: string) => void;
   
+  // Search management
+  showSearchInterface: () => void;
+  hideSearchInterface: () => void;
+  setSearchMode: (mode: 'instant' | 'manual') => void;
+  setSearchQuery: (query: string) => void;
+  setSearchFilters: (filters: any) => void;
+  setSearchResults: (results: any[]) => void;
+  setSearchStats: (stats: any) => void;
+  performGlobalSearch: (query: string, filters?: any) => Promise<void>;
+  
   // Utils
   dispatch: React.Dispatch<Action>;
 }
@@ -301,7 +318,13 @@ type Action =
   | { type: 'ADD_STEP_RESPONSE'; payload: PersistentStepResponse }
   | { type: 'SET_CURRENT_EXECUTION_ID'; payload: string }
   | { type: 'SET_STEP_RESPONSE_VIEWER_MODE'; payload: 'current' | 'historical' }
-  | { type: 'SET_SELECTED_HISTORICAL_EXECUTION'; payload: string | undefined };
+  | { type: 'SET_SELECTED_HISTORICAL_EXECUTION'; payload: string | undefined }
+  | { type: 'SHOW_SEARCH_INTERFACE'; payload: boolean }
+  | { type: 'SET_SEARCH_MODE'; payload: 'instant' | 'manual' }
+  | { type: 'SET_SEARCH_QUERY'; payload: string }
+  | { type: 'SET_SEARCH_FILTERS'; payload: any }
+  | { type: 'SET_SEARCH_RESULTS'; payload: any[] }
+  | { type: 'SET_SEARCH_STATS'; payload: any };
 
 // Reducer
 function appReducer(state: AppState, action: Action): AppState {
@@ -548,6 +571,61 @@ function appReducer(state: AppState, action: Action): AppState {
         }
       };
     
+    case 'SHOW_SEARCH_INTERFACE':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          showSearchInterface: action.payload,
+          activePane: action.payload ? 'search' : 'navigation'
+        }
+      };
+    
+    case 'SET_SEARCH_MODE':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          searchMode: action.payload
+        }
+      };
+    
+    case 'SET_SEARCH_QUERY':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          searchQuery: action.payload
+        }
+      };
+    
+    case 'SET_SEARCH_FILTERS':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          searchFilters: action.payload
+        }
+      };
+    
+    case 'SET_SEARCH_RESULTS':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          searchResults: action.payload
+        }
+      };
+    
+    case 'SET_SEARCH_STATS':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          searchStats: action.payload
+        }
+      };
+    
     default:
       return state;
   }
@@ -597,7 +675,14 @@ function createInitialState(config: ResolvedConfig, environment: string): AppSta
       showEnvironmentViewer: false,
       showEnvironmentSwitcher: false,
       environmentComparisonMode: false,
-      selectedEnvironmentForComparison: undefined
+      selectedEnvironmentForComparison: undefined,
+      // Search UI state
+      showSearchInterface: false,
+      searchMode: 'instant',
+      searchQuery: '',
+      searchFilters: {},
+      searchResults: [],
+      searchStats: null
     },
     status: {
       message: 'Welcome to Vibranium CLI',
@@ -1730,7 +1815,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
     },
 
     changeDetailsViewMode(direction: 'left' | 'right') {
-      const modes: AppState['ui']['detailsViewMode'][] = ['overview', 'steps', 'timeline', 'source', 'results'];
+      const modes: AppState['ui']['detailsViewMode'][] = ['overview', 'steps', 'timeline', 'source', 'results', 'editor', 'visual'];
       const currentIndex = modes.indexOf(state.ui.detailsViewMode);
       
       const newIndex = direction === 'left'
@@ -2264,6 +2349,90 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
       dispatch({ type: 'SET_STEP_RESPONSE_VIEWER_MODE', payload: 'current' });
       dispatch({ type: 'SET_SELECTED_HISTORICAL_EXECUTION', payload: undefined });
       actions.setStatus('Viewing current execution data', 'info');
+    },
+
+    // Search management actions
+    showSearchInterface() {
+      dispatch({ type: 'SHOW_SEARCH_INTERFACE', payload: true });
+      actions.setStatus('Search interface opened', 'info');
+    },
+
+    hideSearchInterface() {
+      dispatch({ type: 'SHOW_SEARCH_INTERFACE', payload: false });
+      actions.setStatus('Search interface closed', 'info');
+    },
+
+    setSearchMode(mode: 'instant' | 'manual') {
+      dispatch({ type: 'SET_SEARCH_MODE', payload: mode });
+      actions.setStatus(`Search mode: ${mode}`, 'info');
+    },
+
+    setSearchQuery(query: string) {
+      dispatch({ type: 'SET_SEARCH_QUERY', payload: query });
+    },
+
+    setSearchFilters(filters: any) {
+      dispatch({ type: 'SET_SEARCH_FILTERS', payload: filters });
+    },
+
+    setSearchResults(results: any[]) {
+      dispatch({ type: 'SET_SEARCH_RESULTS', payload: results });
+    },
+
+    setSearchStats(stats: any) {
+      dispatch({ type: 'SET_SEARCH_STATS', payload: stats });
+    },
+
+    async performGlobalSearch(query: string, filters?: any) {
+      try {
+        actions.setStatus('Performing global search...', 'info');
+        
+        // This would integrate with the SearchEngine
+        // For now, we'll simulate search results
+        const mockResults = [
+          {
+            id: 'scenario-1',
+            type: 'scenario',
+            name: 'User Authentication Test',
+            path: '/scenarios/auth-test.yaml',
+            relevanceScore: 95,
+            matches: [
+              {
+                field: 'name',
+                text: query,
+                startIndex: 0,
+                endIndex: query.length,
+                context: `User Authentication Test scenario for ${query}`
+              }
+            ],
+            metadata: {
+              scenario: state.currentScenario,
+              tags: ['authentication', 'api'],
+              isFavorite: false
+            }
+          }
+        ];
+
+        const mockStats = {
+          totalResults: mockResults.length,
+          searchTime: 50,
+          indexSize: state.scenarios.length,
+          facets: {
+            fileTypes: { yaml: 1 },
+            environments: { local: 1 },
+            tags: { authentication: 1, api: 1 },
+            status: { pending: 1 },
+            stepTypes: { api: 1 }
+          }
+        };
+
+        actions.setSearchResults(mockResults);
+        actions.setSearchStats(mockStats);
+        actions.setStatus(`Found ${mockResults.length} results`, 'success');
+      } catch (error) {
+        console.error('Search failed:', error);
+        actions.setStatus('Search failed', 'error');
+      }
     },
 
     dispatch

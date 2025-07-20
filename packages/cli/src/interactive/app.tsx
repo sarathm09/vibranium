@@ -38,6 +38,7 @@ const VibraniumAppInner: React.FC = () => {
       togglePane,
       navigateScenarios,
       navigateFileSystem,
+      navigateSteps,
       navigateToDirectory,
       navigateToParentDirectory,
       selectFileSystemNode,
@@ -229,16 +230,13 @@ const VibraniumAppInner: React.FC = () => {
           setDetailsViewMode('steps');
           return;
         } else if (input === '3') {
-          setDetailsViewMode('step-detail');
+          setDetailsViewMode('timeline');
           return;
         } else if (input === '4') {
-          setDetailsViewMode('raw');
+          setDetailsViewMode('source');
           return;
         } else if (input === '5') {
-          setDetailsViewMode('execution');
-          return;
-        } else if (input === '6') {
-          setDetailsViewMode('realtime');
+          setDetailsViewMode('results');
           return;
         }
       }
@@ -255,6 +253,23 @@ const VibraniumAppInner: React.FC = () => {
         return;
       }
       
+      // Handle step navigation with J/K keys (when in details pane)
+      if (state.ui.activePane === 'details') {
+        if (input.toLowerCase() === 'j' && !key.ctrl) {
+          // Navigate to next step
+          if (state.currentScenario?.steps && state.ui.selectedStepIndex < state.currentScenario.steps.length - 1) {
+            actions.selectStep(state.ui.selectedStepIndex + 1);
+          }
+          return;
+        } else if (input.toLowerCase() === 'k' && !key.ctrl) {
+          // Navigate to previous step
+          if (state.currentScenario?.steps && state.ui.selectedStepIndex > 0) {
+            actions.selectStep(state.ui.selectedStepIndex - 1);
+          }
+          return;
+        }
+      }
+      
       // Navigation without modifiers - respect active pane
       if (key.upArrow) {
         if (state.ui.activePane === 'navigation') {
@@ -264,8 +279,12 @@ const VibraniumAppInner: React.FC = () => {
             navigateScenarios('up');
           }
         } else if (state.ui.activePane === 'details') {
-          // Scroll up in details pane
-          scrollDetailsPane('up');
+          // In steps view, navigate between steps; otherwise scroll
+          if (state.ui.detailsViewMode === 'steps' && state.currentScenario?.steps) {
+            navigateSteps('up');
+          } else {
+            scrollDetailsPane('up');
+          }
         }
       } else if (key.downArrow) {
         if (state.ui.activePane === 'navigation') {
@@ -275,8 +294,12 @@ const VibraniumAppInner: React.FC = () => {
             navigateScenarios('down');
           }
         } else if (state.ui.activePane === 'details') {
-          // Scroll down in details pane
-          scrollDetailsPane('down');
+          // In steps view, navigate between steps; otherwise scroll
+          if (state.ui.detailsViewMode === 'steps' && state.currentScenario?.steps) {
+            navigateSteps('down');
+          } else {
+            scrollDetailsPane('down');
+          }
         }
       } else if (key.leftArrow) {
         if (state.ui.activePane === 'details') {
@@ -483,6 +506,7 @@ const VibraniumAppInner: React.FC = () => {
             console.log('- I: Toggle step inspection mode');
             console.log('- 1-5: Switch details view modes (when in details pane)');
             console.log('- J/K: Navigate steps (when in details pane)');
+            console.log('- ↑↓: Navigate steps in steps view, otherwise scroll');
             console.log('- E: Environment switcher');
             console.log('- Ctrl+E: Environment viewer');
             console.log('- Shift+E: Reload environments');

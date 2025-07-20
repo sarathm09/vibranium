@@ -62,15 +62,11 @@ export const DetailsPane: React.FC = () => {
         return renderOverview();
       case 'steps':
         return renderNewStepsView();
-      case 'step-summary':
-        return renderStepSummaryView();
-      case 'step-navigator':
-        return renderStepNavigatorView();
-      case 'raw':
+      case 'timeline':
+        return renderTimelineView();
+      case 'source':
         return renderRawContent();
-      case 'execution':
-        return renderExecutionDetails();
-      case 'realtime':
+      case 'results':
         return renderExecutionDetails();
       default:
         return renderOverview();
@@ -97,9 +93,9 @@ export const DetailsPane: React.FC = () => {
     const modes = [
       { key: 'overview', label: 'Overview' }, 
       { key: 'steps', label: 'Steps' },
-      { key: 'raw', label: 'Source' }, 
-      { key: 'execution', label: 'Results' },
-      { key: 'realtime', label: 'Timeline' }
+      { key: 'timeline', label: 'Timeline' },
+      { key: 'source', label: 'Source' }, 
+      { key: 'results', label: 'Results' }
     ];
     
     return (
@@ -244,12 +240,29 @@ export const DetailsPane: React.FC = () => {
           <Text color={statusColor} marginLeft={2}>
             [{status}]
           </Text>
+          <Text color="gray" marginLeft={2}>
+            F Full-screen | Esc Exit
+          </Text>
         </Box>
-        {renderFormattedContent(isYaml)}
+        {renderFullScreenSourceView(isYaml)}
       </Box>
     );
   };
   
+  const renderTimelineView = () => {
+    return (
+      <ResultsView
+        result={state.lastResult}
+        isRunning={state.isRunning}
+        currentStepIndex={state.executionProgress?.currentStepIndex || 0}
+        selectedStepIndex={state.ui.selectedStepIndex}
+        onStepSelect={(index) => actions.selectStep(index)}
+        viewMode="timeline"
+        onViewModeChange={() => {}} // Timeline view is standalone
+      />
+    );
+  };
+
   const renderExecutionDetails = () => {
     return (
       <ResultsView
@@ -258,14 +271,8 @@ export const DetailsPane: React.FC = () => {
         currentStepIndex={state.executionProgress?.currentStepIndex || 0}
         selectedStepIndex={state.ui.selectedStepIndex}
         onStepSelect={(index) => actions.selectStep(index)}
-        viewMode={state.ui.detailsViewMode === 'execution' ? 'summary' : 
-                 state.ui.detailsViewMode === 'realtime' ? 'timeline' : 'summary'}
-        onViewModeChange={(mode) => {
-          // Map results view modes to details view modes
-          const detailsMode = mode === 'summary' ? 'execution' : 
-                             mode === 'timeline' ? 'realtime' : 'execution';
-          actions.setDetailsViewMode(detailsMode);
-        }}
+        viewMode="summary"
+        onViewModeChange={() => {}} // Results view is standalone
       />
     );
   };
@@ -319,36 +326,48 @@ export const DetailsPane: React.FC = () => {
           if (realTimeResult) {
             switch (realTimeResult.status) {
               case 'running':
-                statusIcon = '→';
+                statusIcon = '⏳';
                 statusColor = 'yellow';
                 break;
               case 'completed':
-                statusIcon = '✓';
+                statusIcon = '✅';
                 statusColor = 'green';
                 break;
               case 'failed':
-                statusIcon = '✗';
+                statusIcon = '❌';
                 statusColor = 'red';
                 break;
               default:
-                statusIcon = '○';
+                statusIcon = '⚪';
                 statusColor = 'gray';
             }
           } else if (state.lastResult?.stepResults?.[index]) {
-            statusIcon = state.lastResult.stepResults[index].success ? '✓' : '✗';
+            statusIcon = state.lastResult.stepResults[index].success ? '✅' : '❌';
             statusColor = state.lastResult.stepResults[index].success ? 'green' : 'red';
           }
           
           return (
-            <Box key={index} flexDirection="row" marginBottom={0}>
+            <Box 
+              key={index} 
+              flexDirection="row" 
+              marginBottom={0}
+              paddingX={isSelected ? 1 : 0}
+              paddingY={0}
+              backgroundColor={isSelected ? '#0A3A4A' : undefined}
+              borderLeft={isSelected}
+              borderColor={isSelected ? 'cyan' : undefined}
+            >
               <Text color={statusColor} bold>
                 {statusIcon}
               </Text>
-              <Text color={isSelected ? 'yellow' : 'white'} bold={isSelected} marginLeft={1}>
-                {index + 1}. {step.name}
+              <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected} marginLeft={1}>
+                {index + 1}.
+              </Text>
+              <Text color={isSelected ? 'white' : 'gray'} bold={isSelected} marginLeft={1}>
+                {step.name}
               </Text>
               <Text color="gray" marginLeft={1}>
-                [{step.type}]
+                {getTypeIcon(step.type)}
               </Text>
               {isCurrent && (
                 <Text color="yellow" marginLeft={1}>
@@ -385,7 +404,7 @@ export const DetailsPane: React.FC = () => {
     if (!state.currentScenario?.steps) {
       return (
         <Box justifyContent="center" alignItems="center" height="100%" flexDirection="column">
-          <Text color="gray" bold>📝 No Steps Available</Text>
+          <Text color="gray" bold>No Steps Available</Text>
           <Text color="gray" dimColor marginTop={1}>
             This scenario doesn't contain any steps
           </Text>
@@ -399,28 +418,28 @@ export const DetailsPane: React.FC = () => {
       <Box flexDirection="column" height="100%">
         {/* Clean header with summary */}
         <Box paddingX={1} paddingY={1} borderBottom>
-          <Text bold color="cyan">📋 {steps.length} Steps</Text>
+          <Text bold color="cyan">{steps.length} Steps</Text>
           <Box marginTop={1}>
             <Text color="gray">
-              {steps.filter(s => s.type === 'api').length > 0 && <Text color="blue">🌐 {steps.filter(s => s.type === 'api').length} API</Text>}
+              {steps.filter(s => s.type === 'api').length > 0 && <Text color="blue">{steps.filter(s => s.type === 'api').length} API</Text>}
               {steps.filter(s => s.type === 'api').length > 0 && steps.filter(s => s.type === 'ui').length > 0 && <Text> • </Text>}
-              {steps.filter(s => s.type === 'ui').length > 0 && <Text color="green">🖥️ {steps.filter(s => s.type === 'ui').length} UI</Text>}
+              {steps.filter(s => s.type === 'ui').length > 0 && <Text color="green">{steps.filter(s => s.type === 'ui').length} UI</Text>}
             </Text>
           </Box>
           {state.lastResult?.stepResults && (
             <Box marginTop={1}>
               <Text>
-                <Text color="green">✅ {state.lastResult.stepResults.filter(r => r.success).length}</Text>
+                <Text color="green">{state.lastResult.stepResults.filter(r => r.success).length} passed</Text>
                 <Text> • </Text>
-                <Text color="red">❌ {state.lastResult.stepResults.filter(r => !r.success).length}</Text>
+                <Text color="red">{state.lastResult.stepResults.filter(r => !r.success).length} failed</Text>
                 <Text color="gray"> / {state.lastResult.stepResults.length}</Text>
               </Text>
             </Box>
           )}
         </Box>
 
-        {/* Enhanced steps list */}
-        <Box flexDirection="column" flexGrow={1} paddingX={1}>
+        {/* Clean steps list without boxes */}
+        <Box flexDirection="column" flexGrow={1} paddingY={1}>
           {steps.map((step, index) => {
             const isSelected = index === state.ui.selectedStepIndex;
             const isCurrent = index === state.executionProgress?.currentStepIndex && state.isRunning;
@@ -431,62 +450,62 @@ export const DetailsPane: React.FC = () => {
               <Box
                 key={index}
                 flexDirection="column"
-                marginBottom={1}
-                paddingX={1}
-                paddingY={1}
-                borderStyle={isSelected ? 'round' : undefined}
+                marginY={0}
+                paddingX={isSelected ? 2 : 1}
+                paddingY={0}
+                backgroundColor={isSelected ? '#0A3A4A' : undefined}
+                borderLeft={isSelected}
                 borderColor={isSelected ? 'cyan' : undefined}
               >
-                {/* Clean step header */}
-                <Box justifyContent="space-between" alignItems="center">
-                  <Box>
-                    <Text color={statusDisplay.color} bold={isSelected}>
-                      {statusDisplay.icon} {index + 1}. {step.name}
+                {/* Clean step header with numbering */}
+                <Box justifyContent="space-between" alignItems="center" paddingY={1}>
+                  <Box flexDirection="row" alignItems="center">
+                    <Text color={statusDisplay.color} bold>
+                      {statusDisplay.icon}
                     </Text>
-                    {isCurrent && <Text color="yellow" bold> ← Running</Text>}
+                    <Text color={isSelected ? 'cyan' : 'white'} bold={isSelected} marginLeft={1}>
+                      {index + 1}.
+                    </Text>
+                    <Text color={isSelected ? 'white' : 'gray'} bold={isSelected} marginLeft={1}>
+                      {step.name}
+                    </Text>
+                    {isCurrent && <Text color="yellow" bold marginLeft={1}>← Active</Text>}
                   </Box>
-                  <Box>
-                    <Text color={getTypeColor(step.type)}>{getTypeIcon(step.type)}</Text>
+                  <Box flexDirection="row" alignItems="center">
+                    <Text color={getTypeColor(step.type)} marginRight={1}>{getTypeIcon(step.type)}</Text>
                     {result?.duration && (
-                      <Text color="gray" marginLeft={1}>{result.duration}ms</Text>
+                      <Text color="gray">{result.duration}ms</Text>
                     )}
                   </Box>
                 </Box>
 
                 {/* Essential step info (clean, scannable) */}
-                <Box flexDirection="column" marginTop={1} paddingLeft={2}>
-                  {step.type === 'api' && (
-                    <Text color="gray">
-                      <Text color="cyan">{(step as any).method || 'GET'}</Text>
-                      <Text> {truncateUrl((step as any).url || '')}</Text>
-                    </Text>
-                  )}
-                  {step.type === 'ui' && (
-                    <Text color="gray">
-                      <Text color="green">{(step as any).action || 'click'}</Text>
-                      <Text> {truncateText((step as any).selector || (step as any).target || '', 40)}</Text>
-                    </Text>
-                  )}
-                  {step.description && (
-                    <Text color="gray" dimColor>
-                      {truncateText(step.description, 60)}
-                    </Text>
-                  )}
+                {(isSelected || step.type === 'api' || step.type === 'ui') && (
+                  <Box paddingLeft={4} paddingBottom={isSelected ? 1 : 0}>
+                    {step.type === 'api' && (
+                      <Text color="gray">
+                        <Text color="cyan">{(step as any).method || 'GET'}</Text>
+                        <Text> {truncateUrl((step as any).url || '')}</Text>
+                      </Text>
+                    )}
+                    {step.type === 'ui' && (
+                      <Text color="gray">
+                        <Text color="green">{(step as any).action || 'click'}</Text>
+                        <Text> {truncateText((step as any).selector || (step as any).target || '', 40)}</Text>
+                      </Text>
+                    )}
+                    {step.description && isSelected && (
+                      <Text color="gray" dimColor marginTop={1}>
+                        {truncateText(step.description, 80)}
+                      </Text>
+                    )}
+                  </Box>
+                )}
 
-                  {/* Progressive disclosure for selected step */}
-                  {isSelected && (
-                    <Box marginTop={1} paddingLeft={2} borderLeft borderColor="gray">
-                      {renderSelectedStepDetails(step, result)}
-                    </Box>
-                  )}
-                </Box>
-
-                {/* Simple status indicator */}
-                {isSelected && result && (
-                  <Box marginTop={1}>
-                    <Text color={result.success ? 'green' : 'red'}>
-                      {'▄'.repeat(30)}
-                    </Text>
+                {/* Progressive disclosure for selected step */}
+                {isSelected && (
+                  <Box paddingLeft={4} paddingBottom={1} borderTop borderColor="gray" paddingTop={1}>
+                    {renderSelectedStepDetails(step, result)}
                   </Box>
                 )}
               </Box>
@@ -497,7 +516,7 @@ export const DetailsPane: React.FC = () => {
         {/* Clean footer */}
         <Box paddingX={1} paddingY={1} borderTop>
           <Text color="gray" dimColor>
-            ↑↓ Navigate • Enter Select/Run • Tab Switch
+            ↑↓ Navigate • J/K Step Nav • Enter Run Step • Tab Switch Pane
           </Text>
         </Box>
       </Box>
@@ -568,59 +587,8 @@ export const DetailsPane: React.FC = () => {
   };
 
   const renderStepsView = () => {
-    if (!state.currentScenario?.steps) {
-      return (
-        <Box justifyContent="center" alignItems="center" height="100%" flexDirection="column">
-          <Text color="gray" bold>
-            No Steps Available
-          </Text>
-          <Text color="gray" dimColor marginTop={1}>
-            This scenario doesn't contain any steps
-          </Text>
-        </Box>
-      );
-    }
-    
-    const maxVisibleSteps = 8;
-    const visibleSteps = state.currentScenario?.steps?.slice(scrollOffset, scrollOffset + maxVisibleSteps) || [];
-    
-    return (
-      <Box flexDirection="column" height="100%">
-        {renderSectionHeader(`All Steps (${state.currentScenario?.steps?.length || 0})`)}
-        
-        {/* Scroll indicator */}
-        {scrollOffset > 0 && (
-          <Text color="gray" dimColor marginBottom={1} paddingLeft={1}>
-            ↑ {scrollOffset} steps above (press ↑ to scroll up)
-          </Text>
-        )}
-        
-        <Box flexDirection="column" paddingLeft={1}>
-          {visibleSteps.map((step, visibleIndex) => {
-            const actualIndex = scrollOffset + visibleIndex;
-            const isSelected = actualIndex === state.ui.selectedStepIndex;
-            const stepResult = state.lastResult?.stepResults?.[actualIndex];
-            const statusIcon = stepResult?.success === true ? '✓' : 
-                              stepResult?.success === false ? '✗' : '○';
-            const statusColor = stepResult?.success === true ? 'green' : 
-                               stepResult?.success === false ? 'red' : 'gray';
-            
-            return (
-              <Box key={actualIndex} flexDirection="column" marginBottom={2} paddingX={1} 
-                   borderStyle={isSelected ? 'single' : 'single'} 
-                   borderColor={isSelected ? 'cyan' : 'gray'}>
-                {/* Step Header */}
-                <Box flexDirection="row" marginBottom={1}>
-                  <Text color={statusColor} bold>
-                    {statusIcon}
-                  </Text>
-                  <Text color={isSelected ? 'yellow' : 'white'} bold={isSelected} marginLeft={1}>
-                    {actualIndex + 1}. {step.name}
-                  </Text>
-                  <Text color="gray" marginLeft={1}>
-                    [{step.type}]
-                  </Text>
-                </Box>
+    // Use the new enhanced steps view for consistency
+    return renderEnhancedStepsView();
                 
                 {/* Step Details */}
                 <Box paddingLeft={1} flexDirection="column">
@@ -1254,7 +1222,7 @@ export const DetailsPane: React.FC = () => {
     return <Text color="white">{String(body)}</Text>;
   };
   
-  const renderFormattedContent = (isYaml: boolean = false) => {
+  const renderFullScreenSourceView = (isYaml: boolean = false) => {
     let content = state.ui.editorContent;
     
     // If no editor content, try to reconstruct from current scenario
@@ -1273,100 +1241,216 @@ export const DetailsPane: React.FC = () => {
     
     if (!content) {
       return (
-        <Box justifyContent="center" paddingY={2}>
-          <Text color="gray" dimColor>No content available</Text>
+        <Box justifyContent="center" alignItems="center" height="100%" flexDirection="column">
+          <Text color="gray" bold>No Source Content Available</Text>
+          <Text color="gray" dimColor marginTop={1}>
+            No scenario file loaded or content could not be retrieved
+          </Text>
         </Box>
       );
     }
     
     const lines = content.split('\n');
-    const maxVisibleLines = 15;
-    const visibleLines = lines.slice(scrollOffset, scrollOffset + maxVisibleLines);
+    const totalLines = lines.length;
+    
+    // Calculate available lines based on terminal height (minus header/footer)
+    const availableHeight = Math.max(10, Math.floor((process.stdout.rows || 25) * 0.8) - 6);
+    const maxVisibleLines = availableHeight;
+    
+    // Ensure scroll offset doesn't exceed total lines
+    const safeScrollOffset = Math.min(scrollOffset, Math.max(0, totalLines - maxVisibleLines));
+    const visibleLines = lines.slice(safeScrollOffset, safeScrollOffset + maxVisibleLines);
+    
+    // Calculate scroll indicators
+    const scrollPercentage = totalLines > maxVisibleLines ? 
+      Math.round((safeScrollOffset / (totalLines - maxVisibleLines)) * 100) : 100;
+    const isAtTop = safeScrollOffset === 0;
+    const isAtBottom = safeScrollOffset >= totalLines - maxVisibleLines;
 
     return (
-      <Box flexDirection="column" paddingX={1}>
-        {/* Scroll indicator */}
-        {scrollOffset > 0 && (
-          <Text color="gray" dimColor>
-            ... {scrollOffset} lines above (↑ to scroll up)
-          </Text>
-        )}
+      <Box flexDirection="column" height="100%">
+        {/* Enhanced scroll indicator */}
+        <Box flexDirection="row" justifyContent="space-between" marginBottom={1}>
+          <Box>
+            {!isAtTop && (
+              <Text color="cyan">↑ {safeScrollOffset} lines above</Text>
+            )}
+          </Box>
+          <Box>
+            <Text color="gray">
+              Lines {safeScrollOffset + 1}-{Math.min(safeScrollOffset + maxVisibleLines, totalLines)} of {totalLines} ({scrollPercentage}%)
+            </Text>
+          </Box>
+          <Box>
+            {!isAtBottom && (
+              <Text color="cyan">{totalLines - (safeScrollOffset + maxVisibleLines)} lines below ↓</Text>
+            )}
+          </Box>
+        </Box>
         
-        {visibleLines.map((line, index) => {
-          const lineNumber = scrollOffset + index + 1;
-          return (
-            <Box key={lineNumber}>
-              <Text color="blue" dimColor>
-                {lineNumber.toString().padStart(3, ' ')}
-              </Text>
-              <Text> {highlightSyntax(line, isYaml)}</Text>
-            </Box>
-          );
-        })}
+        {/* Source content with line numbers */}
+        <Box flexDirection="column" flexGrow={1} overflow="hidden">
+          {visibleLines.map((line, index) => {
+            const lineNumber = safeScrollOffset + index + 1;
+            const lineNumberStr = lineNumber.toString().padStart(4, ' ');
+            
+            return (
+              <Box key={lineNumber} flexDirection="row">
+                <Text color="blue" dimColor backgroundColor="gray" bold>
+                  {lineNumberStr}
+                </Text>
+                <Text color="gray"> │ </Text>
+                <Text>{enhancedSyntaxHighlight(line, isYaml, lineNumber)}</Text>
+              </Box>
+            );
+          })}
+        </Box>
         
-        {lines.length > scrollOffset + maxVisibleLines && (
-          <Text color="gray" dimColor marginTop={1}>
-            ... {lines.length - (scrollOffset + maxVisibleLines)} more lines (↓ to scroll down)
-          </Text>
-        )}
-        
-        {/* File info footer */}
-        <Box marginTop={1} paddingTop={1}>
-          <Text color="gray" dimColor>
-            {lines.length} lines | {isYaml ? 'YAML' : 'JSON'} format
-            {state.currentScenarioPath && <Text> | {state.currentScenarioPath.split('/').pop()}</Text>}
-          </Text>
+        {/* Enhanced footer with navigation hints and file info */}
+        <Box marginTop={1} borderTop borderColor="gray" paddingTop={1}>
+          <Box flexDirection="row" justifyContent="space-between">
+            <Text color="gray" dimColor>
+              {totalLines} lines | {isYaml ? 'YAML' : 'JSON'} | {Math.round(content.length / 1024)}KB
+              {state.currentScenarioPath && <Text> | {state.currentScenarioPath.split('/').pop()}</Text>}
+            </Text>
+            <Text color="cyan" dimColor>
+              ↑↓ Scroll | PgUp/PgDn Fast | Home/End Jump | C Copy | / Search
+            </Text>
+          </Box>
         </Box>
       </Box>
     );
   };
 
-  const highlightSyntax = (line: string, isYaml: boolean = false) => {
-    // Basic syntax highlighting - simplified approach for terminal
+  const renderFormattedContent = (isYaml: boolean = false) => {
+    // Legacy method - now delegates to full screen view for better experience
+    return renderFullScreenSourceView(isYaml);
+  };
+
+  const enhancedSyntaxHighlight = (line: string, isYaml: boolean = false, lineNumber: number = 0) => {
+    // Enhanced syntax highlighting with better color schemes and patterns
     const trimmed = line.trim();
     
     if (isYaml) {
-      // YAML highlighting
+      // YAML enhanced highlighting
       if (trimmed.startsWith('#')) {
         return <Text color="gray" dimColor>{line}</Text>;
       }
-      if (trimmed.includes(': ')) {
-        const [key, ...rest] = line.split(': ');
+      
+      // Key-value pairs with better detection
+      if (trimmed.includes(': ') && !trimmed.startsWith('- ')) {
+        const colonIndex = line.indexOf(': ');
+        const key = line.substring(0, colonIndex);
+        const value = line.substring(colonIndex + 2);
+        
+        // Detect value types for better coloring
+        const trimmedValue = value.trim();
+        let valueColor = 'white';
+        
+        if (trimmedValue === 'true' || trimmedValue === 'false') {
+          valueColor = 'magenta';
+        } else if (!isNaN(Number(trimmedValue)) && trimmedValue !== '') {
+          valueColor = 'yellow';
+        } else if (trimmedValue.startsWith('"') && trimmedValue.endsWith('"')) {
+          valueColor = 'green';
+        } else if (trimmedValue.startsWith('${') && trimmedValue.endsWith('}')) {
+          valueColor = 'cyan';
+        }
+        
         return (
           <>
-            <Text color="cyan">{key}:</Text>
-            <Text> {rest.join(': ')}</Text>
+            <Text color="cyan" bold>{key}:</Text>
+            <Text color={valueColor}> {value}</Text>
           </>
         );
       }
+      
+      // Array items
       if (trimmed.startsWith('- ')) {
+        const content = line.substring(line.indexOf('- ') + 2);
         return (
           <>
-            <Text color="yellow">-</Text>
-            <Text> {line.substring(line.indexOf('- ') + 2)}</Text>
+            <Text color="yellow" bold>-</Text>
+            <Text> {content}</Text>
           </>
         );
+      }
+      
+      // YAML document separators
+      if (trimmed === '---' || trimmed === '...') {
+        return <Text color="magenta" bold>{line}</Text>;
       }
     } else {
-      // JSON highlighting
+      // JSON enhanced highlighting
       if (trimmed.startsWith('//') || trimmed.startsWith('/*')) {
         return <Text color="gray" dimColor>{line}</Text>;
       }
-      if (trimmed.includes('": ')) {
-        const parts = line.split('": ');
+      
+      // JSON object/array brackets
+      if (trimmed.match(/^[{}\[\]]/)) {
+        return <Text color="yellow" bold>{line}</Text>;
+      }
+      
+      // JSON key-value pairs
+      if (trimmed.includes('"): ')) {
+        const parts = line.split('"): ');
+        const value = parts[1];
+        let valueColor = 'white';
+        
+        // Type-based coloring for JSON values
+        if (value?.trim() === 'true' || value?.trim() === 'false' || value?.trim() === 'null') {
+          valueColor = 'magenta';
+        } else if (!isNaN(Number(value?.trim())) && value?.trim() !== '') {
+          valueColor = 'yellow';
+        } else if (value?.trim().startsWith('"')) {
+          valueColor = 'green';
+        }
+        
         return (
           <>
-            <Text color="cyan">{parts[0]}":</Text>
-            <Text> {parts.slice(1).join('": ')}</Text>
+            <Text color="cyan" bold>{parts[0]}":</Text>
+            <Text color={valueColor}> {parts.slice(1).join('"): ')}</Text>
           </>
         );
       }
-      if (trimmed.match(/^[{}[\],]/)) {
+      
+      // JSON strings
+      if (trimmed.startsWith('"') && trimmed.endsWith('"') && !trimmed.includes(': ')) {
+        return <Text color="green">{line}</Text>;
+      }
+      
+      // JSON numbers
+      if (/^\s*\d+(\.\d+)?,?\s*$/.test(trimmed)) {
         return <Text color="yellow">{line}</Text>;
+      }
+      
+      // JSON booleans and null
+      if (/^\s*(true|false|null),?\s*$/.test(trimmed)) {
+        return <Text color="magenta" bold>{line}</Text>;
       }
     }
     
+    // Default: check for variables and special patterns
+    if (line.includes('${') && line.includes('}')) {
+      const parts = line.split(/(\\$\\{[^}]+\\})/);
+      return (
+        <>
+          {parts.map((part, index) => {
+            if (part.startsWith('${') && part.endsWith('}')) {
+              return <Text key={index} color="cyan" bold>{part}</Text>;
+            }
+            return <Text key={index}>{part}</Text>;
+          })}
+        </>
+      );
+    }
+    
     return <Text>{line}</Text>;
+  };
+
+  const highlightSyntax = (line: string, isYaml: boolean = false) => {
+    // Legacy method - now delegates to enhanced version
+    return enhancedSyntaxHighlight(line, isYaml);
   };
 
   const convertToBasicYaml = (obj: any, indent: number = 0): string => {
@@ -1825,8 +1909,8 @@ export const DetailsPane: React.FC = () => {
       <Box paddingX={1} height={2} borderTop borderColor="gray">
         <Text color="gray" dimColor>
           {state.ui.activePane === 'details' ? 
-            'ACTIVE: ↑↓ Scroll | ←→ Views | 1-5 Quick Switch | Enter Run | Tab Switch Pane' : 
-            'Tab Activate | 1-5 Quick Views | R Run | Enter Select'
+            'ACTIVE: ↑↓ Scroll | ←→ Views | 1-Overview 2-Steps 3-Timeline 4-Source 5-Results | Enter Run | Tab Switch Pane' : 
+            'Tab Activate | 1-Overview 2-Steps 3-Timeline 4-Source 5-Results | R Run | Enter Select'
           }
         </Text>
       </Box>

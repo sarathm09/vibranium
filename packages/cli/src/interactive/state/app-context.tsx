@@ -29,6 +29,42 @@ interface ExecutionProgress {
   realTimeResults: Map<number, StepExecutionResult>;
 }
 
+// Persistent step response data for historical viewing
+interface PersistentStepResponse {
+  stepIndex: number;
+  stepName: string;
+  executionId: string;
+  timestamp: Date;
+  request?: {
+    method: string;
+    url: string;
+    headers: Record<string, string>;
+    body?: any;
+  };
+  response?: {
+    status: number;
+    statusText: string;
+    headers: Record<string, string>;
+    body: any;
+    size?: number;
+  };
+  timing: {
+    startTime: Date;
+    endTime?: Date;
+    duration?: number;
+  };
+  success: boolean;
+  error?: string;
+  validationResults?: Array<{
+    field: string;
+    operator: string;
+    expected: any;
+    actual: any;
+    passed: boolean;
+    message: string;
+  }>;
+}
+
 // Real-time step execution result
 interface StepExecutionResult {
   stepIndex: number;
@@ -99,18 +135,25 @@ export interface AppState {
   executionHistory: ScenarioResult[];
   executionOrchestrator?: any; // ScenarioOrchestrator;
   autoScrollToCurrentStep: boolean;
+  
+  // Persistent step response data
+  stepResponseHistory: Map<string, PersistentStepResponse[]>; // keyed by scenario name
+  currentExecutionId?: string;
 
   // UI state
   ui: {
     selectedScenarioIndex: number;
     selectedStepIndex: number;
     selectedStepId?: string; // Enhanced step selection tracking
+    overviewSelectedStepIndex: number; // Separate selection for overview mode
+    stepResponseViewerMode: 'current' | 'historical'; // Current execution vs historical data
+    selectedHistoricalExecution?: string; // Selected execution ID for historical viewing
     activePane: 'navigation' | 'details' | 'variables' | 'help';
     showVariablePreview: boolean;
     editorContent: string;
     editorChanged: boolean;
     navigationMode: 'scenarios' | 'folders'; // Toggle between scenarios and file navigation
-    detailsViewMode: 'overview' | 'steps' | 'step-detail' | 'raw' | 'execution' | 'realtime' | 'results-summary' | 'results-timeline' | 'results-details' | 'results-errors'; // Enhanced view modes
+    detailsViewMode: 'overview' | 'steps' | 'timeline' | 'source' | 'results'; // Logical view mode ordering
     stepInspectionMode: boolean; // Whether we're in step inspection mode
     detailsScrollOffset: number; // Scroll position in details pane
     // Environment UI state
@@ -133,10 +176,17 @@ export interface AppActions {
   selectScenario: (index: number) => Promise<void>;
   selectStep: (index: number) => void;
   selectStepById: (stepId: string) => void;
+  selectOverviewStep: (index: number) => void;
   runSingleStep: (stepIndex: number) => Promise<void>;
   copyStepData: (stepIndex: number, dataType: 'request' | 'response' | 'full') => void;
   toggleStepBookmark: (stepIndex: number) => void;
   saveCurrentScenario: () => Promise<void>;
+  
+  // Step response data management
+  getStepResponseData: (stepIndex: number, executionId?: string) => PersistentStepResponse | undefined;
+  getExecutionStepResponses: (executionId: string) => PersistentStepResponse[];
+  switchToHistoricalView: (executionId: string) => void;
+  switchToCurrentView: () => void;
 
   // Environment management
   switchEnvironment: (environment?: string) => Promise<void>;
@@ -190,6 +240,9 @@ export interface AppActions {
   // Variable management
   updateVariableState: () => void;
   trackVariableUsage: (path: string, stepIndex: number, stepName: string, usageType: 'read' | 'write' | 'reference', field: string) => void;
+  
+  // Utils
+  dispatch: React.Dispatch<Action>;
 }
 
 export interface AppContextValue {
@@ -216,6 +269,7 @@ type Action =
   | { type: 'SET_AUTO_SCROLL'; payload: boolean }
   | { type: 'SELECT_SCENARIO'; payload: number }
   | { type: 'SELECT_STEP'; payload: number }
+  | { type: 'SELECT_OVERVIEW_STEP'; payload: number }
   | { type: 'SELECT_STEP_BY_ID'; payload: string }
   | { type: 'SET_DETAILS_VIEW_MODE'; payload: AppState['ui']['detailsViewMode'] }
   | { type: 'TOGGLE_STEP_INSPECTION_MODE' }
@@ -234,7 +288,11 @@ type Action =
   | { type: 'SCROLL_DETAILS_PANE'; payload: number }
   | { type: 'SHOW_ENVIRONMENT_VIEWER'; payload: boolean }
   | { type: 'SHOW_ENVIRONMENT_SWITCHER'; payload: boolean }
-  | { type: 'SET_ENVIRONMENT_COMPARISON'; payload: { enabled: boolean; environment?: string } };
+  | { type: 'SET_ENVIRONMENT_COMPARISON'; payload: { enabled: boolean; environment?: string } }
+  | { type: 'ADD_STEP_RESPONSE'; payload: PersistentStepResponse }
+  | { type: 'SET_CURRENT_EXECUTION_ID'; payload: string }
+  | { type: 'SET_STEP_RESPONSE_VIEWER_MODE'; payload: 'current' | 'historical' }
+  | { type: 'SET_SELECTED_HISTORICAL_EXECUTION'; payload: string };
 
 // Reducer
 function appReducer(state: AppState, action: Action): AppState {
@@ -320,6 +378,15 @@ function appReducer(state: AppState, action: Action): AppState {
         }
       };
     
+    case 'SELECT_OVERVIEW_STEP':
+      return { 
+        ...state, 
+        ui: { 
+          ...state.ui, 
+          overviewSelectedStepIndex: action.payload
+        }
+      };
+    
     case 'SELECT_STEP_BY_ID':
       const stepIndex = state.currentScenario?.steps.findIndex((_, index) => `step-${index}` === action.payload) ?? 0;
       return { 
@@ -340,7 +407,7 @@ function appReducer(state: AppState, action: Action): AppState {
         ui: { 
           ...state.ui, 
           stepInspectionMode: !state.ui.stepInspectionMode,
-          detailsViewMode: state.ui.stepInspectionMode ? 'overview' : 'step-detail'
+          detailsViewMode: state.ui.stepInspectionMode ? 'overview' : 'steps'
         }
       };
     
@@ -437,6 +504,41 @@ function appReducer(state: AppState, action: Action): AppState {
         }
       };
     
+    case 'ADD_STEP_RESPONSE':
+      const scenarioName = state.currentScenario?.name || 'unknown';
+      const existingResponses = state.stepResponseHistory.get(scenarioName) || [];
+      const updatedResponses = [...existingResponses, action.payload];
+      const newHistory = new Map(state.stepResponseHistory);
+      newHistory.set(scenarioName, updatedResponses);
+      return {
+        ...state,
+        stepResponseHistory: newHistory
+      };
+    
+    case 'SET_CURRENT_EXECUTION_ID':
+      return {
+        ...state,
+        currentExecutionId: action.payload
+      };
+    
+    case 'SET_STEP_RESPONSE_VIEWER_MODE':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          stepResponseViewerMode: action.payload
+        }
+      };
+    
+    case 'SET_SELECTED_HISTORICAL_EXECUTION':
+      return {
+        ...state,
+        ui: {
+          ...state.ui,
+          selectedHistoricalExecution: action.payload
+        }
+      };
+    
     default:
       return state;
   }
@@ -465,10 +567,15 @@ function createInitialState(config: ResolvedConfig, environment: string): AppSta
     executionHistory: [],
     executionOrchestrator: undefined,
     autoScrollToCurrentStep: true,
+    stepResponseHistory: new Map<string, PersistentStepResponse[]>(),
+    currentExecutionId: undefined,
     ui: {
       selectedScenarioIndex: 0,
       selectedStepIndex: 0,
       selectedStepId: undefined,
+      overviewSelectedStepIndex: 0,
+      stepResponseViewerMode: 'current',
+      selectedHistoricalExecution: undefined,
       activePane: 'navigation',
       showVariablePreview: false,
       editorContent: '',
@@ -629,6 +736,13 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
       const stepIndex = state.currentScenario?.steps.findIndex((_, index) => `step-${index}` === stepId) ?? 0;
       const stepName = state.currentScenario?.steps[stepIndex]?.name || `Step ${stepIndex + 1}`;
       actions.setStatus(`Selected step: ${stepName}`, 'info');
+    },
+
+    selectOverviewStep(index: number) {
+      if (!state.currentScenario || index < 0 || index >= state.currentScenario.steps.length) return;
+      dispatch({ type: 'SELECT_OVERVIEW_STEP', payload: index });
+      const stepName = state.currentScenario.steps[index]?.name || `Step ${index + 1}`;
+      actions.setStatus(`Overview step selected: ${stepName}`, 'info');
     },
 
     async runSingleStep(stepIndex: number) {
@@ -1170,6 +1284,10 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
       const stepResults: any[] = [];
       let overallSuccess = true;
       
+      // Generate unique execution ID
+      const executionId = `exec_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      dispatch({ type: 'SET_CURRENT_EXECUTION_ID', payload: executionId });
+      
       // Clear previous real-time results
       dispatch({ type: 'CLEAR_REAL_TIME_RESULTS' });
       
@@ -1311,6 +1429,25 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
         
         // Update real-time result
         dispatch({ type: 'UPDATE_REAL_TIME_STEP', payload: realTimeResult });
+        
+        // Store persistent step response data for historical viewing
+        const persistentResponse: PersistentStepResponse = {
+          stepIndex: i,
+          stepName: realTimeResult.stepName,
+          executionId,
+          timestamp: stepEndTime,
+          request: realTimeResult.request,
+          response: realTimeResult.response,
+          timing: {
+            startTime: stepStartTime,
+            endTime: stepEndTime,
+            duration: stepDuration
+          },
+          success: stepResult.status === 'passed',
+          error: realTimeResult.error,
+          validationResults: realTimeResult.validationResults
+        };
+        dispatch({ type: 'ADD_STEP_RESPONSE', payload: persistentResponse });
         
         // Track response variable writes
         if (stepResult.status === 'passed' && realTimeResult.response) {
@@ -1559,7 +1696,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
     },
 
     changeDetailsViewMode(direction: 'left' | 'right') {
-      const modes: AppState['ui']['detailsViewMode'][] = ['overview', 'steps', 'step-detail', 'raw', 'execution'];
+      const modes: AppState['ui']['detailsViewMode'][] = ['overview', 'steps', 'timeline', 'source', 'results'];
       const currentIndex = modes.indexOf(state.ui.detailsViewMode);
       
       const newIndex = direction === 'left'
@@ -1902,7 +2039,42 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
       } catch (error) {
         console.error('Failed to track variable usage:', error);
       }
-    }
+    },
+
+    // Step response data management
+    getStepResponseData(stepIndex: number, executionId?: string): PersistentStepResponse | undefined {
+      const scenarioName = state.currentScenario?.name || 'unknown';
+      const responses = state.stepResponseHistory.get(scenarioName) || [];
+      
+      if (executionId) {
+        return responses.find(r => r.stepIndex === stepIndex && r.executionId === executionId);
+      } else {
+        // Get the most recent response for this step
+        return responses
+          .filter(r => r.stepIndex === stepIndex)
+          .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())[0];
+      }
+    },
+
+    getExecutionStepResponses(executionId: string): PersistentStepResponse[] {
+      const scenarioName = state.currentScenario?.name || 'unknown';
+      const responses = state.stepResponseHistory.get(scenarioName) || [];
+      return responses.filter(r => r.executionId === executionId);
+    },
+
+    switchToHistoricalView(executionId: string) {
+      dispatch({ type: 'SET_STEP_RESPONSE_VIEWER_MODE', payload: 'historical' });
+      dispatch({ type: 'SET_SELECTED_HISTORICAL_EXECUTION', payload: executionId });
+      actions.setStatus(`Viewing historical execution: ${executionId}`, 'info');
+    },
+
+    switchToCurrentView() {
+      dispatch({ type: 'SET_STEP_RESPONSE_VIEWER_MODE', payload: 'current' });
+      dispatch({ type: 'SET_SELECTED_HISTORICAL_EXECUTION', payload: undefined });
+      actions.setStatus('Viewing current execution data', 'info');
+    },
+
+    dispatch
   };
 
   // Load initial data

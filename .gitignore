@@ -104,3 +104,5 @@ src/res/ui/*
 .nx/workspace-data
 .cursor/rules/nx-rules.mdc
 .github/instructions/nx.instructions.md
+**/dist/*
+**/to_be_deleted/*

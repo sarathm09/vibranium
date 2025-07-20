@@ -2,6 +2,9 @@
 
 
 ## Issues:
+- [ ] [CRITICAL] the spacing/padding is not proper in the UI, things overlap. 
+- [ ] [CRITICAL] UI doesn't load scenarios in any folder, it has dummy data. I should be able to select a fol(or pass it as args), view the scenarios, scenario details, steps, execute them and see the results.
+- [ ] [CRITICAL] 
 - [x] Readme says run `nx build-all` I get `command not found: nx` - Fixed: Updated README with proper npx commands and added npm scripts
 - [x] I ran `npx nx build-all` I get `Cannot find configuration for task vibranium-cli:build-all` - Fixed: Created working build scripts for packages without errors, added build:working script
 - [x] I want to test the cli in my system for dev purposes, document the steps in Readme - Fixed: Added comprehensive development setup section with working commands

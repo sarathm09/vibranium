@@ -103,22 +103,22 @@ export const DetailsPane: React.FC = () => {
         {/* Scenario metadata */}
         <Box flexDirection="column" marginBottom={2}>
           <Text bold>
-            <Text color="cyan">🏷️ Name:</Text> {state.currentScenario.name}
+            <Text color="cyan">🏷️ Name:</Text> {state.currentScenario?.name}
           </Text>
-          {state.currentScenario.description && (
+          {state.currentScenario?.description && (
             <Text marginTop={1}>
               <Text color="cyan">📋 Description:</Text> {state.currentScenario.description}
             </Text>
           )}
-          {state.currentScenario.version && (
+          {(state.currentScenario as any)?.version && (
             <Text marginTop={1}>
-              <Text color="cyan">🔖 Version:</Text> {state.currentScenario.version}
+              <Text color="cyan">🔖 Version:</Text> {(state.currentScenario as any).version}
             </Text>
           )}
           <Text marginTop={1}>
-            <Text color="cyan">🔢 Steps:</Text> {state.currentScenario.steps?.length || 0}
+            <Text color="cyan">🔢 Steps:</Text> {state.currentScenario?.steps?.length || 0}
           </Text>
-          {state.currentScenario.environments && (
+          {state.currentScenario?.environments && (
             <Text marginTop={1}>
               <Text color="cyan">🌍 Environments:</Text> {Array.isArray(state.currentScenario.environments) ? state.currentScenario.environments.join(', ') : Object.keys(state.currentScenario.environments).join(', ')}
             </Text>
@@ -128,7 +128,7 @@ export const DetailsPane: React.FC = () => {
         </Box>
 
         {/* Steps overview */}
-        {state.currentScenario.steps && state.currentScenario.steps.length > 0 && (
+        {state.currentScenario?.steps && state.currentScenario.steps.length > 0 && (
           <Box flexDirection="column" marginBottom={2}>
             <Text color="yellow" bold>
               🎯 Steps Overview
@@ -138,7 +138,7 @@ export const DetailsPane: React.FC = () => {
         )}
 
         {/* Current step details */}
-        {state.currentScenario.steps && state.currentScenario.steps.length > 0 && (
+        {state.currentScenario?.steps && state.currentScenario.steps.length > 0 && (
           <Box flexDirection="column" marginBottom={2}>
             <Text color="yellow" bold>
               🎯 Current Step ({state.ui.selectedStepIndex + 1}/{state.currentScenario.steps.length})
@@ -204,7 +204,7 @@ export const DetailsPane: React.FC = () => {
   };
 
   const renderGlobalVariables = () => {
-    const variables = state.currentScenario?.variables || (state.currentScenario as any)?.config?.variables;
+    const variables = (state.currentScenario as any)?.variables || (state.currentScenario as any)?.config?.variables;
     if (!variables || Object.keys(variables).length === 0) return null;
     
     return (
@@ -238,7 +238,7 @@ export const DetailsPane: React.FC = () => {
     
     return (
       <Box flexDirection="column" paddingLeft={2}>
-        {state.currentScenario.steps.map((step, index) => {
+        {state.currentScenario?.steps?.map((step, index) => {
           const isSelected = index === state.ui.selectedStepIndex;
           const isCurrent = state.executionProgress?.currentStepIndex === index && state.isRunning;
           
@@ -295,12 +295,12 @@ export const DetailsPane: React.FC = () => {
     }
     
     const maxVisibleSteps = 8; // Adjust based on available space
-    const visibleSteps = state.currentScenario.steps.slice(scrollOffset, scrollOffset + maxVisibleSteps);
+    const visibleSteps = state.currentScenario?.steps?.slice(scrollOffset, scrollOffset + maxVisibleSteps) || [];
     
     return (
       <Box flexDirection="column" height="100%">
         <Text color="yellow" bold marginBottom={1}>
-          🔢 All Steps ({state.currentScenario.steps.length})
+          🔢 All Steps ({state.currentScenario?.steps?.length || 0})
         </Text>
         
         {/* Scroll indicator */}
@@ -470,9 +470,9 @@ export const DetailsPane: React.FC = () => {
         </Box>
         
         {/* Bottom scroll indicator */}
-        {state.currentScenario.steps.length > scrollOffset + maxVisibleSteps && (
+        {(state.currentScenario?.steps?.length || 0) > scrollOffset + maxVisibleSteps && (
           <Text color="gray" dimColor marginTop={1}>
-            ↓ {state.currentScenario.steps.length - (scrollOffset + maxVisibleSteps)} more steps (press ↓ to scroll down)
+            ↓ {(state.currentScenario?.steps?.length || 0) - (scrollOffset + maxVisibleSteps)} more steps (press ↓ to scroll down)
           </Text>
         )}
       </Box>

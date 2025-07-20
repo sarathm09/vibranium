@@ -5,6 +5,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import * as glob from 'fast-glob';
+import { parse as parseYaml } from 'yaml';
 
 export interface FileDiscoveryOptions {
   extensions?: string[];
@@ -170,12 +171,24 @@ export class FileDiscovery {
         
         if (ext === '.json') {
           parsed = JSON.parse(content);
+        } else if (ext === '.yaml' || ext === '.yml') {
+          // Use proper YAML parsing
+          parsed = parseYaml(content);
         } else {
-          // For YAML or unknown, fall back to basic heuristic
-          return this.looksLikeScenario(content);
+          // For unknown extensions, try both JSON and YAML
+          try {
+            parsed = JSON.parse(content);
+          } catch {
+            try {
+              parsed = parseYaml(content);
+            } catch {
+              // Fall back to basic heuristic
+              return this.looksLikeScenario(content);
+            }
+          }
         }
         
-        // Validate the parsed structure for JSON
+        // Validate the parsed structure
         return parsed && 
                typeof parsed === 'object' &&
                parsed.name && 

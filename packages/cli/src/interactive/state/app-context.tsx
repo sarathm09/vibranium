@@ -3,6 +3,7 @@
  */
 
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from 'react';
+import { parse as parseYaml } from 'yaml';
 import { Scenario, ScenarioResult, Environment } from '../types';
 import { ResolvedConfig } from '../../utils/config-resolver';
 
@@ -335,23 +336,8 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
           if (ext === '.json') {
             scenario = JSON.parse(content);
           } else if (ext === '.yaml' || ext === '.yml') {
-            // For now, create a mock scenario - YAML parsing would need js-yaml
-            const filename = path.basename(scenarioPath, ext);
-            scenario = {
-              name: filename,
-              description: `YAML scenario from ${scenarioPath}`,
-              steps: [
-                {
-                  name: 'Sample API Call',
-                  type: 'api',
-                  method: 'GET',
-                  url: 'https://api.example.com/data',
-                  expect: []
-                }
-              ],
-              lifecycle: {},
-              environments: ['local', 'staging', 'production']
-            };
+            // Use proper YAML parsing
+            scenario = parseYaml(content);
           } else {
             throw new Error(`Unsupported file format: ${ext}`);
           }

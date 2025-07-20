@@ -19,6 +19,7 @@ export interface VibraniumAppProps {
 
 const VibraniumAppInner: React.FC = () => {
   const { exit } = useApp();
+  const { stdout } = useStdout();
   const { 
     state, 
     actions: { 
@@ -38,6 +39,7 @@ const VibraniumAppInner: React.FC = () => {
   
   const [readlineInterface, setReadlineInterface] = useState<any>(null);
   const commandPromptRef = useRef<boolean>(false);
+  const [terminalSize, setTerminalSize] = useState({ width: 80, height: 24 });
 
   // Track terminal size changes
   useEffect(() => {

@@ -30,14 +30,17 @@
 ## 💻 Phase 4: CLI Implementation (Priority 1)
 
 ### In Progress
-- [ ] **Comprehensive Report Generation System** - Enhanced CLI reporting with multiple formats:
-  - [x] Console Reporter with colored status indicators and multiple verbosity levels (minimal, normal, verbose)
-  - [x] JSON Reporter for programmatic consumption with structured data, sanitized sensitive information 
-  - [x] HTML Reporter for web viewing with interactive step details, styled components, responsive design
-  - [x] JUnit XML Reporter for CI/CD integration with detailed test properties and error reporting
-  - [x] CLI options for report format selection (--format), output directory (--output-dir), artifact inclusion (--include-artifacts), metadata inclusion (--include-metadata), console levels (--console-level), color control (--no-color)
-  - [x] Integration with run and batch commands with flexible output options
-  - [ ] Build system fixes for TypeScript compilation issues in existing codebase
+- [ ] **Individual Step Execution System** - Granular control over scenario execution at step level:
+  - [ ] Core step execution engine with single step execution capability
+  - [ ] Interactive UI step controls (run this step, run from this step, run up to this step)
+  - [ ] Step-level execution state management and progress tracking
+  - [ ] Individual step debugging and inspection interface
+  - [ ] Step execution history and logging system
+  - [ ] Step retry functionality with individual step controls
+  - [ ] Keyboard shortcuts for step navigation and execution (S for single step, Shift+S for step from here)
+  - [ ] Step-specific request/response data display
+  - [ ] Variable state inspection at each step
+  - [ ] Integration with existing execution orchestrator
 
 ### Planned
 
@@ -89,3 +92,4 @@
 - [x] **Example Scenarios (apps/examples)** - Basic API tests with explanations, complex multi-step workflows, validation examples for all operators, environment configurations with secrets, plugin examples and custom step types
 - [x] **Documentation Site (apps/docs)** - VitePress setup with navigation, getting started guide, complete scenario syntax reference, variable system documentation, plugin development guide, HTTP client swapping guide
 - [x] **Documentation** - Comprehensive README with getting started guide, complete scenario syntax reference, variable system documentation, CLI command reference, usage guides
+- [x] **Enhanced Details Pane** - Comprehensive scenario information display with multiple view modes (Overview, Steps, Raw, Execution), detailed metadata display (name, description, version, environments, variables, configuration), step-by-step visualization with status indicators, enhanced current step details with API/UI specifics, basic syntax highlighting for YAML/JSON, global variables and configuration display, proper handling of both YAML and JSON scenario files

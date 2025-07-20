@@ -6,6 +6,9 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { parse as parseYaml } from 'yaml';
 import { Scenario, ScenarioResult, Environment } from '../types';
 import { ResolvedConfig } from '../../utils/config-resolver';
+import { ScenarioOrchestrator, ExecutionProgress } from '@vibraniumjs/core';
+import { CoreApiPlugin } from '@vibraniumjs/plugins';
+import { EnvironmentManager } from '@vibraniumjs/utils';
 
 // File system tree node
 export interface FileSystemNode {
@@ -35,8 +38,11 @@ export interface AppState {
 
   // Execution state
   isRunning: boolean;
+  canStop: boolean;
+  executionProgress?: ExecutionProgress;
   lastResult?: ScenarioResult;
   executionHistory: ScenarioResult[];
+  executionOrchestrator?: ScenarioOrchestrator;
 
   // UI state
   ui: {
@@ -70,6 +76,8 @@ export interface AppActions {
   // Execution
   runCurrentScenario: () => Promise<void>;
   runCurrentStep: () => Promise<void>;
+  stopExecution: () => Promise<void>;
+  retryExecution: () => Promise<void>;
 
   // File system navigation
   loadFileSystemTree: (directory?: string) => Promise<void>;
@@ -78,7 +86,7 @@ export interface AppActions {
   toggleFolder: (folderPath: string) => void;
   navigateToDirectory: (directoryPath: string) => Promise<void>;
   navigateToParentDirectory: () => Promise<void>;
-  selectFileSystemNode: (nodePath: string) => void;
+  selectFileSystemNode: (nodePath: string) => Promise<void>;
   toggleNavigationMode: () => void;
 
   // UI actions
@@ -89,7 +97,7 @@ export interface AppActions {
   // Navigation
   navigateScenarios: (direction: 'up' | 'down') => void;
   navigateSteps: (direction: 'up' | 'down') => void;
-  navigateFileSystem: (direction: 'up' | 'down') => void;
+  navigateFileSystem: (direction: 'up' | 'down') => Promise<void>;
 }
 
 export interface AppContextValue {
@@ -106,6 +114,9 @@ type Action =
   | { type: 'SET_ENVIRONMENTS'; payload: Environment[] }
   | { type: 'SET_CURRENT_ENVIRONMENT'; payload: string }
   | { type: 'SET_RUNNING'; payload: boolean }
+  | { type: 'SET_CAN_STOP'; payload: boolean }
+  | { type: 'SET_EXECUTION_PROGRESS'; payload: ExecutionProgress | undefined }
+  | { type: 'SET_ORCHESTRATOR'; payload: ScenarioOrchestrator }
   | { type: 'SET_LAST_RESULT'; payload: ScenarioResult }
   | { type: 'ADD_EXECUTION_RESULT'; payload: ScenarioResult }
   | { type: 'SELECT_SCENARIO'; payload: number }
@@ -149,6 +160,15 @@ function appReducer(state: AppState, action: Action): AppState {
     
     case 'SET_RUNNING':
       return { ...state, isRunning: action.payload };
+    
+    case 'SET_CAN_STOP':
+      return { ...state, canStop: action.payload };
+    
+    case 'SET_EXECUTION_PROGRESS':
+      return { ...state, executionProgress: action.payload };
+    
+    case 'SET_ORCHESTRATOR':
+      return { ...state, executionOrchestrator: action.payload };
     
     case 'SET_LAST_RESULT':
       return { ...state, lastResult: action.payload };
@@ -242,8 +262,11 @@ function createInitialState(config: ResolvedConfig, environment: string): AppSta
     expandedFolders: new Set<string>(),
     breadcrumbs: [],
     isRunning: false,
+    canStop: false,
+    executionProgress: undefined,
     lastResult: undefined,
     executionHistory: [],
+    executionOrchestrator: undefined,
     ui: {
       selectedScenarioIndex: 0,
       selectedStepIndex: 0,
@@ -444,82 +467,257 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
         return;
       }
       
+      if (!state.executionOrchestrator) {
+        // Initialize orchestrator if not already done
+        await actions.initializeOrchestrator();
+      }
+      
       dispatch({ type: 'SET_RUNNING', payload: true });
+      dispatch({ type: 'SET_CAN_STOP', payload: true });
       const startTime = new Date();
       actions.setStatus(`Running scenario: ${state.currentScenario.name}...`, 'info');
       
       try {
-        const stepResults: any[] = [];
-        const totalSteps = state.currentScenario.steps?.length || 0;
+        // Prepare environment variables
+        const environmentManager = new EnvironmentManager();
+        const environmentVariables = await environmentManager.getEnvironment(state.currentEnvironment);
         
-        // Simulate step execution
-        for (let i = 0; i < totalSteps; i++) {
-          const step = state.currentScenario.steps![i];
-          actions.setStatus(`Running step ${i + 1}/${totalSteps}: ${step.name}`, 'info');
-          
-          // Update selected step index to show progress
-          dispatch({ type: 'SELECT_STEP', payload: i });
-          
-          // Simulate step execution time
-          const stepStartTime = Date.now();
-          await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500));
-          const stepDuration = Date.now() - stepStartTime;
-          
-          // Simulate step success/failure (90% success rate)
-          const stepSuccess = Math.random() > 0.1;
-          
-          const stepResult = {
-            stepName: step.name,
-            success: stepSuccess,
-            duration: stepDuration,
-            error: stepSuccess ? undefined : 'Mock execution error',
-            response: stepSuccess ? {
-              status: 200,
-              statusText: 'OK',
-              body: { id: i + 1, message: 'Success' },
-              headers: { 'content-type': 'application/json' }
-            } : undefined
-          };
-          
-          stepResults.push(stepResult);
-          
-          // Early exit on failure (optional)
-          if (!stepSuccess && state.currentScenario.lifecycle?.onFailure !== 'continue') {
-            break;
+        // Convert UI scenario to core scenario format
+        const coreScenario = actions.convertToCoreDomain(state.currentScenario);
+        
+        // Set up progress tracking
+        let currentStepIndex = 0;
+        const totalSteps = coreScenario.steps.length;
+        
+        // Execute the scenario using the real orchestrator
+        const result = await state.executionOrchestrator!.executeScenario(
+          coreScenario,
+          {
+            env: environmentVariables?.variables || {},
+            global: {},
+            context: {},
+            request: {},
+            response: {},
+            api: {}
+          },
+          {
+            maxConcurrency: 1, // Sequential execution for better UI feedback
+            failFast: state.currentScenario.lifecycle?.onFailure !== 'continue',
+            timeout: 30000
           }
-        }
+        );
         
-        const endTime = new Date();
-        const duration = endTime.getTime() - startTime.getTime();
-        const overallSuccess = stepResults.every(r => r.success);
+        // Convert core result to UI result format
+        const uiResult = actions.convertToUIResult(result, state.currentScenario, state.currentEnvironment);
         
-        const result: ScenarioResult = {
-          scenarioName: state.currentScenario.name,
-          success: overallSuccess,
-          duration,
-          stepResults,
-          startTime,
-          endTime,
-          environment: state.currentEnvironment
-        };
+        dispatch({ type: 'SET_LAST_RESULT', payload: uiResult });
+        dispatch({ type: 'ADD_EXECUTION_RESULT', payload: uiResult });
         
-        dispatch({ type: 'SET_LAST_RESULT', payload: result });
-        dispatch({ type: 'ADD_EXECUTION_RESULT', payload: result });
-        
-        const status = overallSuccess ? 'PASSED' : 'FAILED';
-        const statusType = overallSuccess ? 'success' : 'error';
-        actions.setStatus(`Scenario ${status} - ${stepResults.filter(r => r.success).length}/${stepResults.length} steps passed (${duration}ms)`, statusType);
+        const status = uiResult.success ? 'PASSED' : 'FAILED';
+        const statusType = uiResult.success ? 'success' : 'error';
+        const passedCount = uiResult.stepResults?.filter(r => r.success).length || 0;
+        const totalCount = uiResult.stepResults?.length || 0;
+        actions.setStatus(`Scenario ${status} - ${passedCount}/${totalCount} steps passed (${uiResult.duration}ms)`, statusType);
         
       } catch (error) {
         console.error('Execution error:', error);
-        actions.setStatus(`Execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`, 'error');
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        actions.setStatus(`Execution failed: ${errorMessage}`, 'error');
+        
+        // Create a failed result
+        const failedResult: ScenarioResult = {
+          scenarioName: state.currentScenario.name,
+          success: false,
+          duration: Date.now() - startTime.getTime(),
+          stepResults: [],
+          startTime,
+          endTime: new Date(),
+          environment: state.currentEnvironment
+        };
+        
+        dispatch({ type: 'SET_LAST_RESULT', payload: failedResult });
+        dispatch({ type: 'ADD_EXECUTION_RESULT', payload: failedResult });
       } finally {
         dispatch({ type: 'SET_RUNNING', payload: false });
+        dispatch({ type: 'SET_CAN_STOP', payload: false });
+        dispatch({ type: 'SET_EXECUTION_PROGRESS', payload: undefined });
       }
     },
 
     async runCurrentStep() {
-      actions.setStatus('Step execution not implemented yet', 'warning');
+      if (!state.currentScenario || !state.currentScenario.steps || state.isRunning) {
+        actions.setStatus('No scenario/step selected or already running', 'warning');
+        return;
+      }
+      
+      const currentStep = state.currentScenario.steps[state.ui.selectedStepIndex];
+      if (!currentStep) {
+        actions.setStatus('No step selected', 'warning');
+        return;
+      }
+      
+      actions.setStatus(`Running single step: ${currentStep.name}...`, 'info');
+      
+      try {
+        if (!state.executionOrchestrator) {
+          await actions.initializeOrchestrator();
+        }
+        
+        // Create a single-step scenario
+        const singleStepScenario = {
+          ...state.currentScenario,
+          name: `${state.currentScenario.name} - ${currentStep.name}`,
+          steps: [currentStep]
+        };
+        
+        const coreScenario = actions.convertToCoreDomain(singleStepScenario);
+        
+        // Prepare environment variables
+        const environmentManager = new EnvironmentManager();
+        const environmentVariables = await environmentManager.getEnvironment(state.currentEnvironment);
+        
+        // Execute single step
+        const result = await state.executionOrchestrator!.executeScenario(
+          coreScenario,
+          {
+            env: environmentVariables?.variables || {},
+            global: {},
+            context: {},
+            request: {},
+            response: {},
+            api: {}
+          },
+          {
+            maxConcurrency: 1,
+            failFast: true,
+            timeout: 30000
+          }
+        );
+        
+        const uiResult = actions.convertToUIResult(result, singleStepScenario, state.currentEnvironment);
+        const stepResult = uiResult.stepResults?.[0];
+        
+        if (stepResult) {
+          const status = stepResult.success ? 'PASSED' : 'FAILED';
+          const statusType = stepResult.success ? 'success' : 'error';
+          actions.setStatus(`Step ${status}: ${currentStep.name} (${stepResult.duration || 0}ms)`, statusType);
+        }
+        
+      } catch (error) {
+        console.error('Step execution error:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        actions.setStatus(`Step execution failed: ${errorMessage}`, 'error');
+      }
+    },
+    
+    async stopExecution() {
+      if (!state.isRunning) {
+        actions.setStatus('No execution running to stop', 'warning');
+        return;
+      }
+      
+      actions.setStatus('Stopping execution...', 'info');
+      dispatch({ type: 'SET_CAN_STOP', payload: false });
+      
+      // In a real implementation, you'd cancel the orchestrator execution
+      // For now, we'll just mark as stopped
+      dispatch({ type: 'SET_RUNNING', payload: false });
+      actions.setStatus('Execution stopped by user', 'warning');
+    },
+    
+    async retryExecution() {
+      if (state.isRunning) {
+        actions.setStatus('Cannot retry while execution is running', 'warning');
+        return;
+      }
+      
+      if (!state.lastResult || state.lastResult.success) {
+        actions.setStatus('No failed execution to retry', 'warning');
+        return;
+      }
+      
+      actions.setStatus('Retrying previous execution...', 'info');
+      await actions.runCurrentScenario();
+    },
+    
+    async initializeOrchestrator() {
+      try {
+        const orchestrator = new ScenarioOrchestrator();
+        
+        // Register the core API plugin
+        const apiPlugin = new CoreApiPlugin();
+        await apiPlugin.initialize();
+        orchestrator.registerPlugin('api', apiPlugin);
+        orchestrator.registerPlugin('http', apiPlugin);
+        orchestrator.registerPlugin('get', apiPlugin);
+        orchestrator.registerPlugin('post', apiPlugin);
+        orchestrator.registerPlugin('put', apiPlugin);
+        orchestrator.registerPlugin('patch', apiPlugin);
+        orchestrator.registerPlugin('delete', apiPlugin);
+        orchestrator.registerPlugin('head', apiPlugin);
+        orchestrator.registerPlugin('options', apiPlugin);
+        
+        dispatch({ type: 'SET_ORCHESTRATOR', payload: orchestrator });
+        actions.setStatus('Execution engine initialized', 'success');
+      } catch (error) {
+        console.error('Failed to initialize orchestrator:', error);
+        actions.setStatus('Failed to initialize execution engine', 'error');
+        throw error;
+      }
+    },
+    
+    convertToCoreDomain(uiScenario: Scenario): any {
+      // Convert UI scenario format to core domain format
+      return {
+        id: `scenario-${Date.now()}`,
+        name: uiScenario.name,
+        description: uiScenario.description || '',
+        version: '1.0.0',
+        tags: [],
+        variables: {},
+        steps: uiScenario.steps.map((step, index) => ({
+          id: `step-${index}`,
+          name: step.name,
+          type: step.type,
+          ...step
+        })),
+        lifecycle: {
+          setup: uiScenario.lifecycle?.setup || [],
+          teardown: uiScenario.lifecycle?.teardown || [],
+          onFailure: uiScenario.lifecycle?.onFailure || 'stop'
+        },
+        environments: uiScenario.environments || [],
+        metadata: {
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          author: 'interactive-user',
+          version: '1.0.0'
+        }
+      };
+    },
+    
+    convertToUIResult(coreResult: any, uiScenario: Scenario, environment: string): ScenarioResult {
+      // Convert core execution result to UI result format
+      return {
+        scenarioName: uiScenario.name,
+        success: coreResult.status === 'completed',
+        duration: coreResult.duration || 0,
+        stepResults: coreResult.stepResults?.map((stepResult: any) => ({
+          stepName: stepResult.step?.name || 'Unknown Step',
+          success: stepResult.status === 'passed',
+          duration: stepResult.duration || 0,
+          error: stepResult.error?.message || (stepResult.status === 'failed' ? 'Step failed' : undefined),
+          response: stepResult.data?.response ? {
+            status: stepResult.data.response.status,
+            statusText: stepResult.data.response.statusText,
+            body: stepResult.data.response.body,
+            headers: stepResult.data.response.headers
+          } : undefined
+        })) || [],
+        startTime: coreResult.startTime || new Date(),
+        endTime: coreResult.endTime || new Date(),
+        environment
+      };
     },
 
     togglePane(pane: 'variables' | 'help' | 'next') {
@@ -684,6 +882,39 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
     async navigateToDirectory(directoryPath: string) {
       await actions.loadFileSystemTree(directoryPath);
       dispatch({ type: 'SET_SELECTED_NODE', payload: '' });
+      
+      // Trigger scenario re-discovery when navigating to a new directory
+      try {
+        actions.setStatus('Checking for scenarios...', 'info');
+        
+        // Create a temporary config with the new directory as scenariosDir
+        const tempConfig = {
+          ...state.config,
+          scenariosDir: directoryPath,
+          workspaceRoot: directoryPath
+        };
+        
+        const { ConfigResolver } = await import('../../utils/config-resolver');
+        const resolver = new ConfigResolver();
+        const scenarios = await resolver.findScenarios(tempConfig);
+        
+        // Update scenarios in state if any were found
+        dispatch({ type: 'SET_SCENARIOS', payload: scenarios });
+        
+        if (scenarios.length === 0) {
+          actions.setStatus('No scenarios found in this directory', 'warning');
+        } else {
+          actions.setStatus(`Found ${scenarios.length} scenario${scenarios.length === 1 ? '' : 's'} in directory`, 'success');
+          
+          // If we're in scenarios navigation mode, auto-select the first scenario
+          if (state.ui.navigationMode === 'scenarios' && scenarios.length > 0) {
+            await actions.selectScenario(0);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking for scenarios during navigation:', error);
+        actions.setStatus('Error checking for scenarios', 'error');
+      }
     },
 
     async navigateToParentDirectory() {
@@ -694,16 +925,41 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
       }
     },
 
-    selectFileSystemNode(nodePath: string) {
+    async selectFileSystemNode(nodePath: string) {
       dispatch({ type: 'SET_SELECTED_NODE', payload: nodePath });
       
-      // If it's a scenario file, try to load it
-      if (nodePath.endsWith('.json') || nodePath.endsWith('.yaml') || nodePath.endsWith('.yml')) {
-        // Find the scenario in the scenarios list and select it
-        const scenarioIndex = state.scenarios.findIndex(s => s === nodePath);
-        if (scenarioIndex >= 0) {
-          actions.selectScenario(scenarioIndex);
+      // Check if it's a directory that might contain scenarios
+      const fs = await import('fs/promises');
+      try {
+        const stats = await fs.stat(nodePath);
+        if (stats.isDirectory()) {
+          // For directories, check if they contain scenarios when selected (but don't auto-navigate)
+          try {
+            const tempConfig = {
+              ...state.config,
+              scenariosDir: nodePath,
+              workspaceRoot: nodePath
+            };
+            
+            const { ConfigResolver } = await import('../../utils/config-resolver');
+            const resolver = new ConfigResolver();
+            const scenarios = await resolver.findScenarios(tempConfig);
+            
+            if (scenarios.length > 0) {
+              actions.setStatus(`Directory contains ${scenarios.length} scenario${scenarios.length === 1 ? '' : 's'}`, 'info');
+            }
+          } catch (error) {
+            // Silently ignore errors for directory preview
+          }
+        } else if (nodePath.endsWith('.json') || nodePath.endsWith('.yaml') || nodePath.endsWith('.yml')) {
+          // If it's a scenario file, try to load it
+          const scenarioIndex = state.scenarios.findIndex(s => s === nodePath);
+          if (scenarioIndex >= 0) {
+            await actions.selectScenario(scenarioIndex);
+          }
         }
+      } catch (error) {
+        // Handle file system errors silently
       }
     },
 
@@ -713,7 +969,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
       actions.setStatus(`Switched to ${newMode} navigation mode`, 'info');
     },
 
-    navigateFileSystem(direction: 'up' | 'down') {
+    async navigateFileSystem(direction: 'up' | 'down') {
       if (state.fileSystemTree.length === 0) return;
       
       let currentIndex = state.fileSystemTree.findIndex(node => node.path === state.selectedNodePath);
@@ -729,7 +985,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
       
       if (newIndex !== currentIndex || currentIndex === -1) {
         const selectedNode = state.fileSystemTree[newIndex];
-        actions.selectFileSystemNode(selectedNode.path);
+        await actions.selectFileSystemNode(selectedNode.path);
         actions.setStatus(`Selected: ${selectedNode.name}`, 'info');
       }
     }
@@ -739,6 +995,9 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
   useEffect(() => {
     const loadInitialData = async () => {
       try {
+        // Initialize execution orchestrator
+        await actions.initializeOrchestrator();
+        
         // Load scenarios
         const { ConfigResolver } = await import('../../utils/config-resolver');
         const resolver = new ConfigResolver();
@@ -758,6 +1017,7 @@ export const AppProvider: React.FC<AppProviderProps> = ({ children, initialProps
         
       } catch (error) {
         console.error('Error loading initial data:', error);
+        actions.setStatus('Failed to initialize application', 'error');
       }
     };
     

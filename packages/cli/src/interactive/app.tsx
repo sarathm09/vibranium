@@ -24,7 +24,10 @@ const VibraniumAppInner: React.FC = () => {
     state, 
     actions: { 
       switchEnvironment, 
-      runCurrentScenario, 
+      runCurrentScenario,
+      runCurrentStep,
+      stopExecution,
+      retryExecution,
       togglePane,
       navigateScenarios,
       navigateFileSystem,
@@ -155,6 +158,16 @@ const VibraniumAppInner: React.FC = () => {
               runCurrentScenario();
             }
             break;
+          case 's':
+            if (state.isRunning && state.canStop) {
+              stopExecution();
+            }
+            break;
+          case 't':
+            if (!state.isRunning && state.lastResult && !state.lastResult.success) {
+              retryExecution();
+            }
+            break;
           case 'e':
             togglePane('next'); // Cycle through environments
             break;
@@ -175,16 +188,22 @@ const VibraniumAppInner: React.FC = () => {
         return;
       }
       
+      // Handle single step execution (Shift+R)
+      if (input.toLowerCase() === 'r' && key.shift && !state.isRunning) {
+        runCurrentStep();
+        return;
+      }
+      
       // Navigation without modifiers
       if (key.upArrow) {
         if (state.ui.navigationMode === 'folders') {
-          navigateFileSystem('up');
+          void navigateFileSystem('up');
         } else {
           navigateScenarios('up');
         }
       } else if (key.downArrow) {
         if (state.ui.navigationMode === 'folders') {
-          navigateFileSystem('down');
+          void navigateFileSystem('down');
         } else {
           navigateScenarios('down');
         }
@@ -244,7 +263,7 @@ const VibraniumAppInner: React.FC = () => {
           case 'up':
           case 'u':
             if (state.ui.navigationMode === 'folders') {
-              navigateFileSystem('up');
+              void navigateFileSystem('up');
             } else {
               navigateScenarios('up');
             }
@@ -254,7 +273,7 @@ const VibraniumAppInner: React.FC = () => {
           case 'down':  
           case 'd':
             if (state.ui.navigationMode === 'folders') {
-              navigateFileSystem('down');
+              void navigateFileSystem('down');
             } else {
               navigateScenarios('down');
             }

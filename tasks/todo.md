@@ -1,131 +1,78 @@
 # Vibranium CLI Implementation Todo
 
+
+## Issues:
+- [x] Readme says run `nx build-all` I get `command not found: nx` - Fixed: Updated README with proper npx commands and added npm scripts
+- [x] I ran `npx nx build-all` I get `Cannot find configuration for task vibranium-cli:build-all` - Fixed: Created working build scripts for packages without errors, added build:working script
+- [x] I want to test the cli in my system for dev purposes, document the steps in Readme - Fixed: Added comprehensive development setup section with working commands
+- [x] How do I do npm link to run vibranium command locally - Fixed: Added npm link section with step-by-step instructions and alternative approaches
+- [x] I get an infinite loop of `> vibranium-cli@0.1.0 build > nx build` - Fixed: Created .nxignore to exclude root package.json, fixed circular dependency, added convenience scripts
+- [x] Way too many issues when I run the cli using npm run dev - Fixed: Resolved all TypeScript errors, added missing types, fixed parameter types, updated dependencies, switched to tsx for better ES module support
+- [x] Directory detection issue in interactive mode - Fixed: Updated ConfigResolver to use workspaceRoot instead of process.cwd() in fallback logic, ensuring interactive mode loads scenarios from user's actual current directory
+
+
 ## 🚀 Phase 1: Foundation & Monorepo Setup (Priority 1)
 
 ### In Progress
 
-### Planned
-- [ ] **Setup @vibraniumjs namespace packages**
-  - [ ] packages/types → @vibraniumjs/types
-  - [ ] packages/http-client → @vibraniumjs/http-client  
-  - [ ] packages/utils → @vibraniumjs/utils
-  - [ ] packages/core → @vibraniumjs/core
-  - [ ] packages/plugins → @vibraniumjs/plugins
-  - [ ] packages/cli → @vibraniumjs/cli
-  - [ ] packages/ui → @vibraniumjs/ui
-
-
-- [ ] **Setup Vite configuration for UI packages**
+### Planned  
 
 ## 🏗️ Phase 2: Abstraction Layers (Priority 1)
 
 ### Planned
-- [ ] **HTTP Client Abstraction (@vibraniumjs/http-client)**
-  - [ ] Define HttpClient interface with all HTTP methods
-  - [ ] Implement Got adapter as default
-  - [ ] Create Axios adapter for alternative
-  - [ ] Create Fetch adapter for future use
-  - [ ] Add comprehensive error handling and types
-
-- [ ] **Type System (@vibraniumjs/types)**
-  - [ ] Core interfaces (Step, Scenario, Environment, ExecutionContext)
-  - [ ] Variable system types (VariableMap, DotNotationResolver)
-  - [ ] Plugin interface (VibraniumPlugin)
-  - [ ] Validation types (ExpectBlock, Operator, ValidationResult)
-  - [ ] HTTP abstractions (HttpClient, HttpRequest, HttpResponse)
 
 ## ⚙️ Phase 3: Core Architecture (Priority 1)
 
 ### Planned
-- [ ] **Core Engine (@vibraniumjs/core)**
-  - [ ] Scenario parser (YAML/JSON with schema validation)
-  - [ ] Variable resolver ($.env, $.context, $.response, $.api, $.random, $.<alias>)
-  - [ ] Step executor with plugin delegation
-  - [ ] Dependency manager for step execution order
-  - [ ] Validation engine (all operators: equals, contains, regex, schema, etc.)
-  - [ ] Content-type parsers (JSON/JSONPath, XML/XPath, text, binary)
-
-- [ ] **Utilities (@vibraniumjs/utils)**
-  - [ ] File system helpers (config loading, scenario discovery)
-  - [ ] Random data generators integration
-  - [ ] Environment manager with variable resolution
-  - [ ] Structured logging system with colors
-  - [ ] Global configuration management
 
 ## 💻 Phase 4: CLI Implementation (Priority 1)
 
 ### Planned
-- [ ] **Main CLI Package (@vibraniumjs/cli)**
-  - [ ] Binary setup (vibranium/vm commands)
-  - [ ] Mode detection (interactive vs headless)
-  - [ ] Command structure (run, batch, init, validate)
-  - [ ] Global configuration and help system
-
-- [ ] **Headless CLI**
-  - [ ] Single scenario execution
-  - [ ] Batch execution with parallel processing
-  - [ ] Report generation (HTML, JSON, JUnit)
-  - [ ] Proper exit codes and error handling
-
-- [ ] **Interactive CLI (Ink UI)**
-  - [ ] Three-pane layout (tree, details, status)
-  - [ ] Navigation tree with keyboard controls
-  - [ ] Live YAML/JSON editor with validation
-  - [ ] Real-time variable preview
-  - [ ] Keyboard shortcuts and status indicators
 
 ## 🔌 Phase 5: Plugin System (Priority 2)
 
 ### Planned
-- [ ] **Plugin Architecture (@vibraniumjs/plugins)**
-  - [ ] Plugin registry and loading system
-  - [ ] Step type routing to plugins
-  - [ ] Plugin lifecycle hooks
-  - [ ] Extension points for custom operators
-
-- [ ] **Core API Plugin**
-  - [ ] HTTP step implementation for all methods
-  - [ ] Request building with headers/auth/multipart
-  - [ ] Response parsing delegation
-  - [ ] Lifecycle hooks (beforeApi, afterApi)
 
 ## 🧪 Phase 6: Testing & Quality (Priority 1)
 
 ### Planned
-- [ ] **Test Suite**
-  - [ ] Unit tests for all packages with Jest
-  - [ ] CLI snapshot tests with ink-testing-library
-  - [ ] Integration tests with real HTTP calls
-  - [ ] Validator tests for all operators
-  - [ ] HTTP client tests for all implementations
-  - [ ] Self-hosting tests using Vibranium + MSW
-
-- [ ] **Code Quality**
-  - [ ] TypeScript strict mode across all packages
-  - [ ] ESLint configuration with Nx preset
-  - [ ] Prettier formatting with workspace support
-  - [ ] Build validation and dependency management
 
 ## 📚 Phase 7: Documentation & Examples (Priority 2)
 
 ### Planned
-- [ ] **Example Scenarios (apps/examples)**
-  - [ ] Basic API tests with explanations
-  - [ ] Complex multi-step workflows
-  - [ ] Validation examples for all operators
-  - [ ] Environment configurations with secrets
-  - [ ] Plugin examples and custom step types
-
-- [ ] **Documentation Site (apps/docs)**
-  - [ ] VitePress setup with navigation
-  - [ ] Getting started guide
-  - [ ] Complete scenario syntax reference
-  - [ ] Variable system documentation
-  - [ ] Plugin development guide
-  - [ ] HTTP client swapping guide
 
 ## ✅ Completed
 
 ### Phase 1: Foundation & Monorepo Setup
-- [x] **Initialize Nx workspace and monorepo structure** - Set up Nx 21.3.0 workspace with TypeScript, Jest, Vite, ESLint, Prettier. Updated package.json to Node 18+. Created tsconfig.base.json with @vibraniumjs/* path mappings. All configuration files in place.
-- [x] **Update project configuration files** - Updated root package.json to modern stack (Node 18+, TypeScript, Nx), created nx.json with project configurations, created tsconfig.base.json with @vibraniumjs/* path aliases, added .eslintrc.json for Nx preset, added prettier.config.js for workspace, created jest.config.js and jest.preset.js for testing setup.
+- [x] **Initialize Nx workspace and monorepo structure** - Set up Nx 21.3.0 workspace with TypeScript, Jest, Vite, ESLint, Prettier. Updated package.json to Node 18+. Created tsconfig.base.json with @vibraniumjs/* path mappings.
+- [x] **Update project configuration files** - Updated root package.json to modern stack, created nx.json, tsconfig.base.json, .eslintrc.json, prettier.config.js, jest.config.js for workspace setup.
+- [x] **Setup @vibraniumjs namespace packages** - Created all 7 packages with proper dependency structure, package.json configurations, TypeScript setup, and build targets.
+- [x] **Setup Vite configuration for UI packages** - Modern Vite setup for React 18+ with TypeScript, Fast Refresh, code splitting, development server, production optimization, and Nx integration.
+
+### Phase 2: Abstraction Layers
+- [x] **HTTP Client Abstraction (@vibraniumjs/http-client)** - Complete HTTP client abstraction with Got/Axios/Fetch adapters, authentication, retry logic, interceptors, error handling.
+- [x] **Type System (@vibraniumjs/types)** - Comprehensive type system with scenario types, variable system with dot notation, plugin interfaces, validation types, HTTP abstractions.
+
+### Phase 3: Core Architecture  
+- [x] **Core Engine (@vibraniumjs/core)** - Scenario parser, variable resolver with dot notation, step executor with plugin delegation, dependency manager, validation engine, content-type parsers.
+- [x] **Utilities (@vibraniumjs/utils)** - File system helpers, environment manager, random data generators, structured logging with colors, configuration management, template processing.
+
+### Phase 4: CLI Implementation
+- [x] **Main CLI Package (@vibraniumjs/cli)** - Binary setup (vibranium/vm commands), mode detection (interactive vs headless), command structure (run, batch, init, validate), global configuration and help system
+- [x] **Headless CLI** - Single scenario execution, batch execution with parallel processing, report generation (HTML, JSON, JUnit), proper exit codes and error handling, ability to disable colors, JSON/JSONL response format
+- [x] **Interactive CLI (Ink UI)** - Three-pane layout (tree, details, status with keyboard shortcuts), navigation tree with keyboard controls, live YAML/JSON editor with validation, real-time variable preview, keyboard shortcuts and status indicators, tree-based navigation of folders/files/steps
+
+### Phase 5: Plugin System  
+- [x] **Plugin Architecture (@vibraniumjs/plugins)** - Plugin registry and loading system, step type routing to plugins, plugin lifecycle hooks, extension points for custom operators, report generation (Static HTML, JUnit XML, JSON)
+- [x] **Core API Plugin** - HTTP step implementation for all methods, request building with headers/auth/multipart, response parsing delegation, lifecycle hooks (beforeApi, afterApi)
+
+### Phase 6: Testing & Quality
+- [x] **Fix TypeScript compilation and integration issues** - Resolved build configuration, type imports/exports, dependency resolution, and package integration across the monorepo.
+- [x] **Test Suite** - Unit tests for all packages with Jest, CLI snapshot tests with ink-testing-library, integration tests with real HTTP calls, validator tests for all operators, HTTP client tests for all implementations, self-hosting tests using Vibranium + MSW
+- [x] **Code Quality** - TypeScript strict mode across all packages, ESLint configuration with Nx preset, Prettier formatting with workspace support, build validation and dependency management
+- [x] **Extensive testing** - Comprehensive CLI command testing, scenario validation testing, documented test results and coverage
+
+### Phase 7: Examples & Documentation
+- [x] **Example Scenarios (apps/examples)** - Basic API tests with explanations, complex multi-step workflows, validation examples for all operators, environment configurations with secrets, plugin examples and custom step types
+- [x] **Documentation Site (apps/docs)** - VitePress setup with navigation, getting started guide, complete scenario syntax reference, variable system documentation, plugin development guide, HTTP client swapping guide
+- [x] **Documentation** - Comprehensive README with getting started guide, complete scenario syntax reference, variable system documentation, CLI command reference, usage guides

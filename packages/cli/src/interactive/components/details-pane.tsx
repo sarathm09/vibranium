@@ -1126,9 +1126,19 @@ export const DetailsPane: React.FC = () => {
     const availableHeight = Math.max(10, Math.floor((process.stdout.rows || 25) * 0.8) - 6);
     const maxVisibleLines = availableHeight;
     
+    // Performance optimization: For very large files, limit processing
+    const isLargeFile = totalLines > 10000;
+    const maxProcessableLines = isLargeFile ? 50000 : totalLines; // Limit for performance
+    
     // Ensure scroll offset doesn't exceed total lines
-    const safeScrollOffset = Math.min(scrollOffset, Math.max(0, totalLines - maxVisibleLines));
-    const visibleLines = lines.slice(safeScrollOffset, safeScrollOffset + maxVisibleLines);
+    const safeScrollOffset = Math.min(scrollOffset, Math.max(0, Math.min(totalLines, maxProcessableLines) - maxVisibleLines));
+    
+    // Virtual scrolling: only process visible lines plus small buffer
+    const bufferSize = 10;
+    const startIndex = Math.max(0, safeScrollOffset - bufferSize);
+    const endIndex = Math.min(totalLines, safeScrollOffset + maxVisibleLines + bufferSize);
+    const visibleLines = lines.slice(startIndex, endIndex);
+    const displayOffset = startIndex;
     
     // Calculate scroll indicators
     const scrollPercentage = totalLines > maxVisibleLines ? 
@@ -1160,8 +1170,12 @@ export const DetailsPane: React.FC = () => {
         {/* Source content with line numbers */}
         <Box flexDirection="column" flexGrow={1} overflow="hidden">
           {visibleLines.map((line, index) => {
-            const lineNumber = safeScrollOffset + index + 1;
+            const lineNumber = displayOffset + index + 1;
             const lineNumberStr = lineNumber.toString().padStart(4, ' ');
+            const isWithinViewport = lineNumber >= safeScrollOffset + 1 && lineNumber <= safeScrollOffset + maxVisibleLines;
+            
+            // Skip rendering if outside visible viewport (performance optimization)
+            if (!isWithinViewport) return null;
             
             return (
               <Box key={lineNumber} flexDirection="row">
@@ -1173,6 +1187,15 @@ export const DetailsPane: React.FC = () => {
               </Box>
             );
           })}
+          
+          {/* Performance indicator for large files */}
+          {isLargeFile && (
+            <Box marginTop={1}>
+              <Text color="yellow" dimColor>
+                ⚠ Large file detected ({totalLines.toLocaleString()} lines) - Performance mode enabled
+              </Text>
+            </Box>
+          )}
         </Box>
         
         {/* Enhanced footer with navigation hints and file info */}

@@ -301,7 +301,7 @@ type Action =
   | { type: 'ADD_STEP_RESPONSE'; payload: PersistentStepResponse }
   | { type: 'SET_CURRENT_EXECUTION_ID'; payload: string }
   | { type: 'SET_STEP_RESPONSE_VIEWER_MODE'; payload: 'current' | 'historical' }
-  | { type: 'SET_SELECTED_HISTORICAL_EXECUTION'; payload: string };
+  | { type: 'SET_SELECTED_HISTORICAL_EXECUTION'; payload: string | undefined };
 
 // Reducer
 function appReducer(state: AppState, action: Action): AppState {

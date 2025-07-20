@@ -1,0 +1,198 @@
+name: "Validation Operators Showcase"
+description: "Demonstrates all available validation operators and their usage"
+version: "1.0.0"
+
+environments:
+  - local
+
+variables:
+  baseUrl: "https://jsonplaceholder.typicode.com"
+  expectedUserId: 1
+  expectedTitle: "sunt aut facere repellat provident occaecati excepturi optio reprehenderit"
+
+steps:
+  - name: "Status Code Validation"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts/1"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "statusCodeIn"
+        value: [200, 201, 204]
+
+  - name: "Equality Operators"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts/1"
+    expect:
+      - operator: "equals"
+        path: "$.id"
+        value: 1
+      - operator: "equals"
+        path: "$.userId"
+        value: "${$.variables.expectedUserId}"
+      - operator: "notEquals"
+        path: "$.id"
+        value: 999
+
+  - name: "String Operations"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts/1"
+    expect:
+      - operator: "contains"
+        path: "$.title"
+        value: "sunt aut facere"
+      - operator: "startsWith"
+        path: "$.title"
+        value: "sunt"
+      - operator: "endsWith"
+        path: "$.title"
+        value: "reprehenderit"
+      - operator: "regex"
+        path: "$.title"
+        value: "^sunt.*reprehenderit$"
+      - operator: "length"
+        path: "$.title"
+        value: 68
+
+  - name: "Numeric Comparisons"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts/1"
+    expect:
+      - operator: "greaterThan"
+        path: "$.id"
+        value: 0
+      - operator: "greaterThanOrEqual"
+        path: "$.id"
+        value: 1
+      - operator: "lessThan"
+        path: "$.id"
+        value: 10
+      - operator: "lessThanOrEqual"
+        path: "$.id"
+        value: 1
+      - operator: "between"
+        path: "$.id"
+        value: [1, 5]
+
+  - name: "Array Operations"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts"
+    expect:
+      - operator: "arrayLength"
+        path: "$"
+        value: 100
+      - operator: "arrayMinLength"
+        path: "$"
+        value: 50
+      - operator: "arrayMaxLength"
+        path: "$"
+        value: 150
+      - operator: "arrayContains"
+        path: "$[*].userId"
+        value: 1
+      - operator: "arrayNotContains"
+        path: "$[*].userId"
+        value: 999
+
+  - name: "Existence and Type Checks"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts/1"
+    expect:
+      - operator: "exists"
+        path: "$.id"
+      - operator: "exists"
+        path: "$.title"
+      - operator: "exists"
+        path: "$.body"
+      - operator: "exists"
+        path: "$.userId"
+      - operator: "notExists"
+        path: "$.nonExistentField"
+      - operator: "type"
+        path: "$.id"
+        value: "number"
+      - operator: "type"
+        path: "$.title"
+        value: "string"
+
+  - name: "JSON Schema Validation"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts/1"
+    expect:
+      - operator: "schema"
+        value:
+          type: "object"
+          required: ["id", "title", "body", "userId"]
+          properties:
+            id:
+              type: "integer"
+              minimum: 1
+            title:
+              type: "string"
+              minLength: 1
+            body:
+              type: "string"
+              minLength: 1
+            userId:
+              type: "integer"
+              minimum: 1
+
+  - name: "Complex Nested Validation"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/users/1"
+    expect:
+      - operator: "exists"
+        path: "$.address"
+      - operator: "exists"
+        path: "$.address.street"
+      - operator: "exists"
+        path: "$.address.city"
+      - operator: "exists"
+        path: "$.company"
+      - operator: "exists"
+        path: "$.company.name"
+      - operator: "type"
+        path: "$.address"
+        value: "object"
+      - operator: "schema"
+        path: "$.address"
+        value:
+          type: "object"
+          required: ["street", "city"]
+          properties:
+            street:
+              type: "string"
+            city:
+              type: "string"
+
+  - name: "Header Validation"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts/1"
+    expect:
+      - operator: "headerExists"
+        value: "content-type"
+      - operator: "headerEquals"
+        name: "content-type"
+        value: "application/json; charset=utf-8"
+      - operator: "headerContains"
+        name: "content-type"
+        value: "application/json"
+
+  - name: "Response Time Validation"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts"
+    expect:
+      - operator: "responseTime"
+        value: 5000  # Max 5 seconds
+      - operator: "statusCode"
+        value: 200

@@ -1,0 +1,215 @@
+// Dashboard Page Styles
+.dashboard-page {
+  padding: 2rem;
+  min-height: 100vh;
+  background: transparent;
+
+  &__header {
+    margin-bottom: 2rem;
+
+    .dashboard-page__title {
+      font-size: 2.5rem;
+      font-weight: bold;
+      color: white;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #00b4db, #0083b0);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .dashboard-page__subtitle {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 1.1rem;
+    }
+  }
+
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+
+    .dashboard-stat-card {
+      padding: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 32px rgba(0, 180, 219, 0.3);
+      }
+
+      &__icon {
+        padding: 0.75rem;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.1);
+        color: #00b4db;
+      }
+
+      &__content {
+        flex: 1;
+      }
+
+      &__value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: white;
+        margin-bottom: 0.25rem;
+      }
+
+      &__title {
+        color: rgba(255, 255, 255, 0.9);
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+      }
+
+      &__change {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.875rem;
+      }
+    }
+  }
+
+  &__content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+
+    @media (max-width: 1024px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__section {
+    .dashboard-section-title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      color: white;
+      margin-bottom: 1.5rem;
+    }
+  }
+}
+
+.dashboard-quick-actions {
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+
+    @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .dashboard-quick-action {
+    width: 100%;
+    height: auto;
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+
+    &__content {
+      text-align: left;
+    }
+
+    &__title {
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    &__description {
+      font-size: 0.875rem;
+      opacity: 0.8;
+    }
+  }
+}
+
+.dashboard-recent-activity {
+  .dashboard-activity-list {
+    space-y: 1rem;
+  }
+
+  .dashboard-activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+    margin-bottom: 0.75rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+      transform: translateX(4px);
+    }
+
+    &__indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-top: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    &--success .dashboard-activity-item__indicator {
+      background: #10b981;
+    }
+
+    &--error .dashboard-activity-item__indicator {
+      background: #ef4444;
+    }
+
+    &--info .dashboard-activity-item__indicator {
+      background: #3b82f6;
+    }
+
+    &__content {
+      flex: 1;
+    }
+
+    &__title {
+      font-weight: 600;
+      color: white;
+      margin-bottom: 0.25rem;
+    }
+
+    &__description {
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 0.25rem;
+      font-size: 0.875rem;
+    }
+
+    &__time {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 0.75rem;
+    }
+  }
+
+  &__footer {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .dashboard-page {
+    padding: 1rem;
+
+    &__stats {
+      grid-template-columns: 1fr;
+    }
+
+    &__content {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+  }
+}

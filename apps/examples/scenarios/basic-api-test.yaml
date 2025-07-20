@@ -1,0 +1,95 @@
+name: "Basic API Testing Examples"
+description: "Simple GET, POST, PUT, DELETE examples using JSONPlaceholder API"
+version: "1.0.0"
+
+environments:
+  - local
+  - staging
+
+variables:
+  baseUrl: "https://jsonplaceholder.typicode.com"
+  userId: 1
+  postId: 1
+
+steps:
+  - name: "Get All Posts"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "contains"
+        path: "$[0].title"
+        value: "sunt aut facere"
+      - operator: "arrayLength"
+        path: "$"
+        value: 100
+
+  - name: "Get Single Post"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts/${$.variables.postId}"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "equals"
+        path: "$.id"
+        value: 1
+      - operator: "exists"
+        path: "$.title"
+      - operator: "exists"
+        path: "$.body"
+      - operator: "exists"
+        path: "$.userId"
+
+  - name: "Create New Post"
+    type: "api"
+    method: "POST"
+    url: "${$.variables.baseUrl}/posts"
+    headers:
+      Content-Type: "application/json"
+    body:
+      title: "Test Post from Vibranium CLI"
+      body: "This is a test post created by the Vibranium CLI tool"
+      userId: "${$.variables.userId}"
+    expect:
+      - operator: "statusCode"
+        value: 201
+      - operator: "equals"
+        path: "$.title"
+        value: "Test Post from Vibranium CLI"
+      - operator: "equals"
+        path: "$.userId"
+        value: 1
+      - operator: "exists"
+        path: "$.id"
+
+  - name: "Update Post"
+    type: "api"
+    method: "PUT"
+    url: "${$.variables.baseUrl}/posts/${$.variables.postId}"
+    headers:
+      Content-Type: "application/json"
+    body:
+      id: "${$.variables.postId}"
+      title: "Updated Post Title"
+      body: "This post has been updated"
+      userId: "${$.variables.userId}"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "equals"
+        path: "$.title"
+        value: "Updated Post Title"
+      - operator: "equals"
+        path: "$.id"
+        value: 1
+
+  - name: "Delete Post"
+    type: "api"
+    method: "DELETE"
+    url: "${$.variables.baseUrl}/posts/${$.variables.postId}"
+    expect:
+      - operator: "statusCode"
+        value: 200

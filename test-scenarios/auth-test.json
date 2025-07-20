@@ -1,0 +1,40 @@
+{
+  "name": "Authentication Test",
+  "description": "Test authentication workflow",
+  "steps": [
+    {
+      "name": "Login",
+      "type": "api",
+      "method": "POST",
+      "url": "https://httpbin.org/post",
+      "body": {
+        "username": "testuser",
+        "password": "testpass"
+      },
+      "expect": [
+        {
+          "field": "status",
+          "operator": "equals",
+          "value": 200
+        }
+      ]
+    },
+    {
+      "name": "Get Profile",
+      "type": "api",
+      "method": "GET", 
+      "url": "https://httpbin.org/get",
+      "headers": {
+        "Authorization": "Bearer token123"
+      },
+      "expect": [
+        {
+          "field": "status",
+          "operator": "equals",
+          "value": 200
+        }
+      ]
+    }
+  ],
+  "environments": ["local", "dev", "staging"]
+}

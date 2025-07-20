@@ -1,0 +1,286 @@
+// Global styles for Vibranium Frosted Glass UI
+@use './variables' as vars;
+@use './tailwind-utility';
+
+// === CSS CUSTOM PROPERTIES FOR READABILITY ===
+:root {
+  --text-primary: #ffffff;
+  --text-secondary: #f1f5f9;
+  --text-muted: #cbd5e1;
+  --text-glass-primary: #f8fafc;
+  --text-glass-secondary: #e2e8f0;
+  --text-glass-muted: #94a3b8;
+}
+
+// === GLOBAL RESET & BASE STYLES ===
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  line-height: vars.$line-height-normal;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+}
+
+body {
+  font-family: vars.$font-family-base;
+  font-size: vars.$font-size-base;
+  color: var(--theme-text-primary);
+  background: var(--theme-background);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background vars.$transition-slow vars.$ease-glass, 
+              color vars.$transition-normal vars.$ease-glass;
+  
+  // Frosted glass background pattern
+  &::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--theme-background-pattern);
+    z-index: vars.$z-background;
+    pointer-events: none;
+    transition: background vars.$transition-slow vars.$ease-glass;
+  }
+}
+
+#root {
+  position: relative;
+  z-index: vars.$z-base;
+  min-height: 100vh;
+}
+
+// === GLASSMORPHISM BASE CLASSES ===
+.glass-panel {
+  background: var(--theme-glass-gradient);
+  backdrop-filter: vars.$blur-lg;
+  -webkit-backdrop-filter: vars.$blur-lg;
+  border: 1px solid var(--theme-glass-border);
+  border-radius: vars.$border-radius-xl;
+  box-shadow: vars.$glass-shadow-md, vars.$glass-inner-shadow;
+  transition: vars.$glass-transition;
+  color: var(--theme-text-primary);
+  
+  &:hover {
+    background: var(--theme-glass-hover);
+    border-color: var(--theme-glass-border);
+    box-shadow: vars.$glass-shadow-lg, vars.$glass-inner-shadow-strong;
+    transform: translateY(-2px);
+  }
+  
+  &.glass-panel--primary {
+    background: vars.$glass-gradient-primary;
+    border: vars.$glass-border-primary;
+    
+    &:hover {
+      background: vars.$glass-gradient-primary;
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+  }
+  
+  &.glass-panel--secondary {
+    background: vars.$glass-gradient-secondary;
+    border: vars.$glass-border-secondary;
+    
+    &:hover {
+      background: vars.$glass-gradient-secondary;
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+  }
+  
+  &.glass-panel--dark {
+    background: vars.$glass-gradient-dark;
+    border: vars.$glass-border-dark;
+    color: vars.$gray-100;
+    
+    &:hover {
+      background: vars.$glass-gradient-dark;
+      border-color: rgba(0, 0, 0, 0.3);
+    }
+  }
+}
+
+.glass-card {
+  @extend .glass-panel;
+  padding: vars.$spacing-lg;
+  
+  &.glass-card--sm {
+    padding: vars.$spacing-md;
+  }
+  
+  &.glass-card--lg {
+    padding: vars.$spacing-xl;
+  }
+  
+  &.glass-card--xl {
+    padding: vars.$spacing-2xl;
+  }
+}
+
+.glass-surface {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: vars.$blur-md;
+  -webkit-backdrop-filter: vars.$blur-md;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: vars.$border-radius-lg;
+  transition: vars.$glass-transition-fast;
+}
+
+// === GLASS BUTTON BASE ===
+.glass-button {
+  background: var(--theme-glass-gradient);
+  backdrop-filter: vars.$blur-md;
+  -webkit-backdrop-filter: vars.$blur-md;
+  border: 1px solid var(--theme-glass-border);
+  border-radius: vars.$border-radius-lg;
+  padding: vars.$spacing-sm vars.$spacing-md;
+  color: var(--theme-text-primary);
+  font-weight: vars.$font-weight-medium;
+  font-size: vars.$font-size-base;
+  line-height: vars.$line-height-snug;
+  cursor: pointer;
+  transition: vars.$glass-transition-fast;
+  display: inline-flex;
+  align-items: center;
+  gap: vars.$spacing-sm;
+  text-decoration: none;
+  
+  &:hover {
+    background: vars.$glass-white-hover;
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-1px);
+    box-shadow: vars.$glass-shadow-sm;
+  }
+  
+  &:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+  
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    
+    &:hover {
+      transform: none;
+      box-shadow: none;
+    }
+  }
+}
+
+// === GLASS INPUT BASE ===
+.glass-input {
+  background: var(--theme-glass-primary);
+  backdrop-filter: vars.$blur-sm;
+  -webkit-backdrop-filter: vars.$blur-sm;
+  border: 1px solid var(--theme-glass-border);
+  border-radius: vars.$border-radius-md;
+  padding: vars.$spacing-sm vars.$spacing-md;
+  color: var(--theme-text-primary);
+  font-size: vars.$font-size-base;
+  font-weight: vars.$font-weight-normal;
+  line-height: vars.$line-height-normal;
+  transition: vars.$glass-transition-fast;
+  
+  &::placeholder {
+    color: var(--theme-text-muted);
+    font-weight: vars.$font-weight-normal;
+  }
+  
+  &:focus {
+    outline: none;
+    background: rgba(255, 255, 255, 0.18);
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    color: vars.$text-primary;
+  }
+}
+
+// === UTILITY CLASSES ===
+.backdrop-blur-sm { backdrop-filter: vars.$blur-sm; -webkit-backdrop-filter: vars.$blur-sm; }
+.backdrop-blur-md { backdrop-filter: vars.$blur-md; -webkit-backdrop-filter: vars.$blur-md; }
+.backdrop-blur-lg { backdrop-filter: vars.$blur-lg; -webkit-backdrop-filter: vars.$blur-lg; }
+.backdrop-blur-xl { backdrop-filter: vars.$blur-xl; -webkit-backdrop-filter: vars.$blur-xl; }
+
+.glass-transition { transition: vars.$glass-transition; }
+.glass-transition-fast { transition: vars.$glass-transition-fast; }
+.glass-transition-slow { transition: vars.$glass-transition-slow; }
+
+// === SCROLLBAR STYLING ===
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--theme-scrollbar-track);
+  border-radius: vars.$border-radius-sm;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--theme-scrollbar-thumb);
+  border-radius: vars.$border-radius-sm;
+  transition: vars.$transition-fast;
+  
+  &:hover {
+    background: var(--theme-scrollbar-thumb-hover);
+  }
+}
+
+// === RESPONSIVE BREAKPOINTS ===
+@media (max-width: vars.$breakpoint-sm) {
+  .glass-panel {
+    border-radius: vars.$border-radius-lg;
+  }
+  
+  .glass-card {
+    padding: vars.$spacing-md;
+    
+    &.glass-card--lg,
+    &.glass-card--xl {
+      padding: vars.$spacing-md;
+    }
+  }
+}
+
+// === ANIMATION KEYFRAMES ===
+@keyframes glass-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+    backdrop-filter: blur(0);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    backdrop-filter: vars.$blur-lg;
+  }
+}
+
+@keyframes glass-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.glass-fade-in {
+  animation: glass-fade-in vars.$transition-slow vars.$ease-glass;
+}
+
+.glass-scale-in {
+  animation: glass-scale-in vars.$transition-normal vars.$ease-glass;
+}

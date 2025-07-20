@@ -1,0 +1,355 @@
+@use '../../styles/variables' as vars;
+
+.vibranium-layout {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  
+  // Header
+  &__header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: vars.$z-sticky;
+    height: 60px;
+    
+    .vibranium-layout__header-content {
+      height: 100%;
+      border-radius: 0;
+      border: none;
+      border-bottom: vars.$glass-border-light;
+    }
+  }
+  
+  // Sidebar
+  &__sidebar {
+    position: fixed;
+    top: 60px; // Header height
+    left: 0;
+    bottom: 0;
+    z-index: vars.$z-fixed;
+    overflow: hidden;
+    
+    .vibranium-layout__sidebar-content {
+      height: 100%;
+      border-radius: 0;
+      border: none;
+      border-right: vars.$glass-border-light;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+  }
+  
+  // Right Panel
+  &__right-panel {
+    position: fixed;
+    top: 60px; // Header height
+    right: 0;
+    bottom: 0;
+    z-index: vars.$z-fixed;
+    overflow: hidden;
+    
+    .vibranium-layout__right-panel-content {
+      height: 100%;
+      border-radius: 0;
+      border: none;
+      border-left: vars.$glass-border-light;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+  }
+  
+  // Main Content
+  &__main {
+    flex: 1;
+    padding-top: 60px; // Header height
+    min-height: calc(100vh - 60px);
+    transition: vars.$glass-transition;
+    
+    &-content {
+      padding: vars.$spacing-lg;
+      min-height: 100%;
+      
+      @media (max-width: vars.$breakpoint-md) {
+        padding: vars.$spacing-md;
+      }
+      
+      @media (max-width: vars.$breakpoint-sm) {
+        padding: vars.$spacing-sm;
+      }
+    }
+  }
+  
+  // Footer
+  &__footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: vars.$z-sticky;
+    height: 50px;
+    
+    .vibranium-layout__footer-content {
+      height: 100%;
+      border-radius: 0;
+      border: none;
+      border-top: vars.$glass-border-light;
+    }
+  }
+  
+  // Mobile Overlay
+  &__overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: vars.$blur-sm;
+    -webkit-backdrop-filter: vars.$blur-sm;
+    z-index: vars.$z-modal-backdrop;
+    cursor: pointer;
+  }
+  
+  // Layout States
+  &--has-sidebar {
+    .vibranium-layout__main {
+      margin-left: 280px;
+      
+      @media (max-width: vars.$breakpoint-lg) {
+        margin-left: 0;
+      }
+    }
+    
+    &.vibranium-layout--sidebar-collapsed {
+      .vibranium-layout__main {
+        margin-left: 60px;
+        
+        @media (max-width: vars.$breakpoint-lg) {
+          margin-left: 0;
+        }
+      }
+    }
+  }
+  
+  &--has-right-panel {
+    .vibranium-layout__main {
+      margin-right: 320px;
+      
+      @media (max-width: vars.$breakpoint-lg) {
+        margin-right: 0;
+      }
+    }
+    
+    &.vibranium-layout--right-panel-collapsed {
+      .vibranium-layout__main {
+        margin-right: 60px;
+        
+        @media (max-width: vars.$breakpoint-lg) {
+          margin-right: 0;
+        }
+      }
+    }
+  }
+  
+  // With Footer
+  &--has-footer {
+    .vibranium-layout__main {
+      padding-bottom: 50px; // Footer height
+      min-height: calc(100vh - 110px); // Header + Footer
+    }
+    
+    .vibranium-layout__sidebar,
+    .vibranium-layout__right-panel {
+      bottom: 50px; // Footer height
+    }
+  }
+  
+  // Mobile Responsive Adjustments
+  &--mobile {
+    .vibranium-layout__sidebar {
+      top: 0;
+      width: 280px !important;
+      transform: translateX(-100%);
+      
+      &.expanded {
+        transform: translateX(0);
+      }
+    }
+    
+    .vibranium-layout__right-panel {
+      top: 0;
+      width: 320px !important;
+      transform: translateX(100%);
+      
+      &.expanded {
+        transform: translateX(0);
+      }
+    }
+    
+    .vibranium-layout__main {
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+    }
+    
+    .vibranium-layout__header {
+      .vibranium-layout__header-content {
+        padding: 0 vars.$spacing-md;
+      }
+    }
+  }
+  
+  // Tablet Responsive Adjustments
+  &--tablet {
+    .vibranium-layout__sidebar {
+      width: 240px;
+    }
+    
+    .vibranium-layout__right-panel {
+      width: 280px;
+    }
+    
+    &.vibranium-layout--has-sidebar {
+      .vibranium-layout__main {
+        margin-left: 240px;
+      }
+      
+      &.vibranium-layout--sidebar-collapsed {
+        .vibranium-layout__main {
+          margin-left: 60px;
+        }
+      }
+    }
+    
+    &.vibranium-layout--has-right-panel {
+      .vibranium-layout__main {
+        margin-right: 280px;
+      }
+      
+      &.vibranium-layout--right-panel-collapsed {
+        .vibranium-layout__main {
+          margin-right: 60px;
+        }
+      }
+    }
+  }
+  
+  // Collapsed State Styles
+  &--sidebar-collapsed {
+    .vibranium-layout__sidebar-content {
+      .sidebar-nav-text,
+      .sidebar-title {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .sidebar-nav-icon {
+        margin: 0 auto;
+      }
+    }
+  }
+  
+  &--right-panel-collapsed {
+    .vibranium-layout__right-panel-content {
+      .panel-content {
+        opacity: 0;
+        pointer-events: none;
+      }
+      
+      .panel-toggle {
+        transform: rotate(180deg);
+      }
+    }
+  }
+}
+
+// Smooth Scrolling for Panel Content
+.vibranium-layout__sidebar-content,
+.vibranium-layout__right-panel-content {
+  scroll-behavior: smooth;
+  
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  }
+}
+
+// Animation Classes
+.layout-fade-in {
+  animation: layoutFadeIn 0.5s ease-out;
+}
+
+.layout-slide-in-left {
+  animation: layoutSlideInLeft 0.3s ease-out;
+}
+
+.layout-slide-in-right {
+  animation: layoutSlideInRight 0.3s ease-out;
+}
+
+@keyframes layoutFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes layoutSlideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes layoutSlideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+// High contrast mode support
+@media (prefers-contrast: high) {
+  .vibranium-layout {
+    &__header-content,
+    &__sidebar-content,
+    &__right-panel-content,
+    &__footer-content {
+      border-color: rgba(255, 255, 255, 0.5);
+    }
+  }
+}
+
+// Reduced motion support
+@media (prefers-reduced-motion: reduce) {
+  .vibranium-layout {
+    * {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

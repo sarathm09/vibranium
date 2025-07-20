@@ -1,0 +1,65 @@
+{
+  "name": "@vibraniumjs/http-client",
+  "version": "0.1.0",
+  "description": "HTTP abstraction layer for Vibranium CLI with pluggable adapters",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc && vite build",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "vibranium",
+    "http",
+    "client",
+    "got",
+    "axios",
+    "fetch"
+  ],
+  "author": "sarathm09",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sarathm09/vibranium.git",
+    "directory": "packages/http-client"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@vibraniumjs/types": "^0.1.0",
+    "got": "^14.4.5"
+  },
+  "peerDependencies": {
+    "axios": ">=1.0.0"
+  },
+  "peerDependenciesMeta": {
+    "axios": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.15",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5",
+    "axios": "^1.7.7",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.12",
+    "ts-jest": "^29.2.5",
+    "http-proxy-agent": "^7.0.2",
+    "https-proxy-agent": "^7.0.5"
+  }
+}

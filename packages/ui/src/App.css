@@ -1,0 +1,41 @@
+.app {
+  text-align: center;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  background-color: #282c34;
+  padding: 20px;
+  color: white;
+}
+
+.app-main {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.placeholder {
+  max-width: 600px;
+}
+
+.placeholder h2 {
+  color: #f39c12;
+  margin-bottom: 20px;
+}
+
+.placeholder ul {
+  text-align: left;
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.placeholder li {
+  margin: 8px 0;
+}

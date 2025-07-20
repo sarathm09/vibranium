@@ -1,0 +1,23 @@
+{
+  "name": "@vibranium/docs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Vibranium CLI documentation site built with VitePress",
+  "scripts": {
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview",
+    "serve": "vitepress serve"
+  },
+  "devDependencies": {
+    "vitepress": "^1.0.0-rc.31",
+    "vue": "^3.3.8"
+  },
+  "keywords": [
+    "vibranium",
+    "documentation",
+    "vitepress",
+    "api-testing"
+  ]
+}

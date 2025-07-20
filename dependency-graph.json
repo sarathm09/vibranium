@@ -1,0 +1,163 @@
+{
+  "graph": {
+    "nodes": {
+      "vibranium-cli": {
+        "name": "vibranium-cli",
+        "type": "lib",
+        "data": {
+          "root": ".",
+          "name": "vibranium-cli",
+          "tags": [
+            "npm:public",
+            "npm:vibranium",
+            "npm:api",
+            "npm:functional",
+            "npm:regression",
+            "npm:test",
+            "npm:data generation",
+            "npm:schema"
+          ],
+          "metadata": {
+            "targetGroups": {
+              "NPM Scripts": [
+                "build",
+                "test",
+                "lint",
+                "typecheck",
+                "format",
+                "format:check",
+                "nx"
+              ]
+            },
+            "description": "API testing and data generation made easy",
+            "js": {
+              "packageName": "vibranium-cli",
+              "packageMain": "src/index.js",
+              "isInPackageManagerWorkspaces": true
+            }
+          },
+          "targets": {
+            "build": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "build"
+              },
+              "metadata": {
+                "scriptContent": "nx build",
+                "runCommand": "npm run build"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "dependsOn": [
+                "^build"
+              ],
+              "inputs": [
+                "production",
+                "^production"
+              ],
+              "cache": true
+            },
+            "test": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "test"
+              },
+              "metadata": {
+                "scriptContent": "nx test",
+                "runCommand": "npm run test"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "inputs": [
+                "default",
+                "^production",
+                "{workspaceRoot}/jest.preset.js"
+              ],
+              "cache": true
+            },
+            "lint": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "lint"
+              },
+              "metadata": {
+                "scriptContent": "nx lint",
+                "runCommand": "npm run lint"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "inputs": [
+                "default",
+                "{workspaceRoot}/.eslintrc.json",
+                "{workspaceRoot}/eslint.config.js"
+              ],
+              "cache": true
+            },
+            "typecheck": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "typecheck"
+              },
+              "metadata": {
+                "scriptContent": "nx run-many --target=typecheck",
+                "runCommand": "npm run typecheck"
+              },
+              "configurations": {},
+              "parallelism": true,
+              "cache": true
+            },
+            "format": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "format"
+              },
+              "metadata": {
+                "scriptContent": "prettier --write .",
+                "runCommand": "npm run format"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "format:check": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "format:check"
+              },
+              "metadata": {
+                "scriptContent": "prettier --check .",
+                "runCommand": "npm run format:check"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "nx": {
+              "executor": "nx:run-script",
+              "options": {
+                "script": "nx"
+              },
+              "metadata": {
+                "scriptContent": "nx",
+                "runCommand": "npm run nx"
+              },
+              "configurations": {},
+              "parallelism": true
+            },
+            "nx-release-publish": {
+              "executor": "@nx/js:release-publish",
+              "dependsOn": [
+                "^nx-release-publish"
+              ],
+              "options": {},
+              "configurations": {},
+              "parallelism": true
+            }
+          },
+          "implicitDependencies": []
+        }
+      }
+    },
+    "dependencies": {
+      "vibranium-cli": []
+    }
+  }
+}

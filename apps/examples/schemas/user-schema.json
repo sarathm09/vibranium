@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "User",
+  "description": "A user object from JSONPlaceholder API",
+  "type": "object",
+  "required": ["id", "name", "username", "email"],
+  "properties": {
+    "id": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Unique identifier for the user"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "description": "Full name of the user"
+    },
+    "username": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50,
+      "pattern": "^[a-zA-Z0-9._-]+$",
+      "description": "Username for the user"
+    },
+    "email": {
+      "type": "string",
+      "format": "email",
+      "description": "Email address of the user"
+    },
+    "address": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string",
+          "description": "Street address"
+        },
+        "suite": {
+          "type": "string",
+          "description": "Suite or apartment number"
+        },
+        "city": {
+          "type": "string",
+          "description": "City name"
+        },
+        "zipcode": {
+          "type": "string",
+          "pattern": "^[0-9]{5}(-[0-9]{4})?$",
+          "description": "ZIP code"
+        },
+        "geo": {
+          "type": "object",
+          "properties": {
+            "lat": {
+              "type": "string",
+              "pattern": "^-?[0-9]+\\.[0-9]+$",
+              "description": "Latitude coordinate"
+            },
+            "lng": {
+              "type": "string",
+              "pattern": "^-?[0-9]+\\.[0-9]+$",
+              "description": "Longitude coordinate"
+            }
+          }
+        }
+      }
+    },
+    "phone": {
+      "type": "string",
+      "description": "Phone number"
+    },
+    "website": {
+      "type": "string",
+      "format": "uri",
+      "description": "Website URL"
+    },
+    "company": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Company name"
+        },
+        "catchPhrase": {
+          "type": "string",
+          "description": "Company catch phrase"
+        },
+        "bs": {
+          "type": "string",
+          "description": "Company business strategy"
+        }
+      }
+    }
+  }
+}

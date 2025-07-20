@@ -1,0 +1,193 @@
+@use '../../styles/variables' as vars;
+
+.glass-panel {
+  position: relative;
+  background: var(--theme-glass-gradient);
+  backdrop-filter: vars.$blur-lg;
+  -webkit-backdrop-filter: vars.$blur-lg;
+  border: 1px solid var(--theme-glass-border);
+  color: var(--theme-text-primary);
+  transition: vars.$glass-transition;
+  display: block;
+  
+  // Size variants
+  &.glass-panel--sm {
+    padding: vars.$spacing-sm;
+  }
+  
+  &.glass-panel--md {
+    padding: vars.$spacing-md;
+  }
+  
+  &.glass-panel--lg {
+    padding: vars.$spacing-lg;
+  }
+  
+  &.glass-panel--xl {
+    padding: vars.$spacing-xl;
+  }
+  
+  &.glass-panel--no-padding {
+    padding: 0;
+  }
+  
+  // Blur variants
+  &.glass-panel--blur-sm {
+    backdrop-filter: vars.$blur-sm;
+    -webkit-backdrop-filter: vars.$blur-sm;
+  }
+  
+  &.glass-panel--blur-md {
+    backdrop-filter: vars.$blur-md;
+    -webkit-backdrop-filter: vars.$blur-md;
+  }
+  
+  &.glass-panel--blur-lg {
+    backdrop-filter: vars.$blur-lg;
+    -webkit-backdrop-filter: vars.$blur-lg;
+  }
+  
+  &.glass-panel--blur-xl {
+    backdrop-filter: vars.$blur-xl;
+    -webkit-backdrop-filter: vars.$blur-xl;
+  }
+  
+  // Rounded variants
+  &.glass-panel--rounded-sm {
+    border-radius: vars.$border-radius-sm;
+  }
+  
+  &.glass-panel--rounded-md {
+    border-radius: vars.$border-radius-md;
+  }
+  
+  &.glass-panel--rounded-lg {
+    border-radius: vars.$border-radius-lg;
+  }
+  
+  &.glass-panel--rounded-xl {
+    border-radius: vars.$border-radius-xl;
+  }
+  
+  // Shadow variants
+  &.glass-panel--shadow-sm {
+    box-shadow: vars.$glass-shadow-sm, vars.$glass-inner-shadow;
+  }
+  
+  &.glass-panel--shadow-md {
+    box-shadow: vars.$glass-shadow-md, vars.$glass-inner-shadow;
+  }
+  
+  &.glass-panel--shadow-lg {
+    box-shadow: vars.$glass-shadow-lg, vars.$glass-inner-shadow-strong;
+  }
+  
+  &.glass-panel--shadow-xl {
+    box-shadow: vars.$glass-shadow-xl, vars.$glass-inner-shadow-strong;
+  }
+  
+  // Color variants
+  &.glass-panel--primary {
+    background: vars.$glass-gradient-primary;
+    border: vars.$glass-border-primary;
+    
+    &:hover {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.08) 100%);
+      border-color: rgba(59, 130, 246, 0.4);
+    }
+  }
+  
+  &.glass-panel--secondary {
+    background: vars.$glass-gradient-secondary;
+    border: vars.$glass-border-secondary;
+    
+    &:hover {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.08) 100%);
+      border-color: rgba(99, 102, 241, 0.4);
+    }
+  }
+  
+  &.glass-panel--dark {
+    background: vars.$glass-gradient-dark;
+    border: vars.$glass-border-dark;
+    color: vars.$text-glass-primary;
+    
+    &:hover {
+      background: linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.08) 100%);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+  }
+  
+  // Interactive states
+  &.glass-panel--hoverable:hover {
+    background: var(--theme-glass-hover);
+    border-color: var(--theme-glass-border);
+    box-shadow: vars.$glass-shadow-lg, vars.$glass-inner-shadow-strong;
+  }
+  
+  &.glass-panel--clickable {
+    cursor: pointer;
+    user-select: none;
+    
+    &:active {
+      transform: scale(0.98);
+    }
+  }
+  
+  // Pseudo elements for enhanced glass effect - theme aware
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--theme-glass-border), transparent);
+    border-radius: inherit;
+    opacity: 0.6;
+  }
+  
+  &::after {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    right: 1px;
+    bottom: 1px;
+    background: linear-gradient(135deg, var(--theme-glass-primary) 0%, transparent 50%);
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0.4;
+  }
+}
+
+// High contrast mode for better accessibility
+@media (prefers-contrast: high) {
+  .glass-panel {
+    border-width: 2px;
+    color: #ffffff;
+    
+    &::before {
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    }
+    
+    &::after {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, transparent 50%);
+    }
+  }
+}
+
+// Dark theme adjustments
+@media (prefers-color-scheme: dark) {
+  .glass-panel {
+    color: vars.$text-primary;
+    
+    &::before {
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+    }
+    
+    &::after {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+    }
+  }
+}

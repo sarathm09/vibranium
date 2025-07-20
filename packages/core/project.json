@@ -1,0 +1,38 @@
+{
+  "name": "core",
+  "projectType": "library",
+  "sourceRoot": "packages/core/src",
+  "targets": {
+    "build": {
+      "executor": "@nx/vite:build",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "packages/core/dist"
+      },
+      "dependsOn": ["utils:build", "types:build", "http-client:build"]
+    },
+    "test": {
+      "executor": "@nx/jest:jest",
+      "outputs": ["{workspaceRoot}/coverage/packages/core"],
+      "options": {
+        "jestConfig": "packages/core/jest.config.js",
+        "passWithNoTests": true
+      }
+    },
+    "lint": {
+      "executor": "@nx/eslint:lint",
+      "outputs": ["{options.outputFile}"],
+      "options": {
+        "lintFilePatterns": ["packages/core/**/*.ts"]
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit",
+        "cwd": "packages/core"
+      }
+    }
+  },
+  "tags": ["type:library", "scope:core"]
+}

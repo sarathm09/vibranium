@@ -1,0 +1,43 @@
+{
+  "name": "Sample API Test",
+  "description": "A simple test scenario for the interactive UI",
+  "steps": [
+    {
+      "name": "Get User Data",
+      "type": "api",
+      "method": "GET",
+      "url": "https://jsonplaceholder.typicode.com/users/1",
+      "expect": [
+        {
+          "field": "status",
+          "operator": "equals",
+          "value": 200
+        },
+        {
+          "field": "body.name",
+          "operator": "exists",
+          "value": true
+        }
+      ]
+    },
+    {
+      "name": "Get User Posts",
+      "type": "api", 
+      "method": "GET",
+      "url": "https://jsonplaceholder.typicode.com/users/1/posts",
+      "expect": [
+        {
+          "field": "status",
+          "operator": "equals", 
+          "value": 200
+        },
+        {
+          "field": "body",
+          "operator": "isArray",
+          "value": true
+        }
+      ]
+    }
+  ],
+  "environments": ["local", "staging", "production"]
+}

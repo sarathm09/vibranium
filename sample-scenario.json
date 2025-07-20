@@ -1,0 +1,58 @@
+{
+  "name": "Sample API Test",
+  "description": "A sample scenario to test real-time execution indicators",
+  "steps": [
+    {
+      "name": "Get User",
+      "type": "api",
+      "method": "GET",
+      "url": "https://jsonplaceholder.typicode.com/users/1",
+      "expect": [
+        {
+          "field": "status",
+          "operator": "equals",
+          "value": 200
+        },
+        {
+          "field": "body.id",
+          "operator": "equals",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "Get Posts",
+      "type": "api",
+      "method": "GET",
+      "url": "https://jsonplaceholder.typicode.com/posts?userId=1",
+      "expect": [
+        {
+          "field": "status",
+          "operator": "equals",
+          "value": 200
+        }
+      ]
+    },
+    {
+      "name": "Create Post",
+      "type": "api",
+      "method": "POST",
+      "url": "https://jsonplaceholder.typicode.com/posts",
+      "headers": {
+        "Content-Type": "application/json"
+      },
+      "body": {
+        "title": "Test Post",
+        "body": "This is a test post",
+        "userId": 1
+      },
+      "expect": [
+        {
+          "field": "status",
+          "operator": "equals",
+          "value": 201
+        }
+      ]
+    }
+  ]
+}

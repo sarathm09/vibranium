@@ -1,0 +1,53 @@
+{
+  "name": "Test JSON Scenario",
+  "description": "A simple JSON scenario for testing detection",
+  "version": "1.0.0",
+  "environments": ["local", "staging"],
+  "variables": {
+    "baseUrl": "https://jsonplaceholder.typicode.com",
+    "testId": 1
+  },
+  "steps": [
+    {
+      "name": "Get Test Data",
+      "type": "api",
+      "method": "GET",
+      "url": "${$.variables.baseUrl}/posts/${$.variables.testId}",
+      "expect": [
+        {
+          "operator": "statusCode",
+          "value": 200
+        },
+        {
+          "operator": "exists",
+          "path": "$.id"
+        },
+        {
+          "operator": "equals",
+          "path": "$.id",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "name": "Validate Response Structure",
+      "type": "api",
+      "method": "GET",
+      "url": "${$.variables.baseUrl}/posts/${$.variables.testId}",
+      "expect": [
+        {
+          "operator": "exists",
+          "path": "$.title"
+        },
+        {
+          "operator": "exists",
+          "path": "$.body"
+        },
+        {
+          "operator": "exists",
+          "path": "$.userId"
+        }
+      ]
+    }
+  ]
+}

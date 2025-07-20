@@ -1,0 +1,119 @@
+name: "Authentication Flow Examples"
+description: "Demonstrates authentication patterns with Bearer tokens and API keys"
+version: "1.0.0"
+
+environments:
+  - local
+  - staging
+
+variables:
+  baseUrl: "https://jsonplaceholder.typicode.com"
+  apiKey: "${$.env.API_KEY}"
+  authToken: ""
+
+steps:
+  - name: "Mock Authentication Request"
+    type: "api"
+    method: "POST"
+    url: "${$.variables.baseUrl}/posts"  # Using posts endpoint as mock auth
+    headers:
+      Content-Type: "application/json"
+    body:
+      username: "testuser"
+      password: "testpass123"
+      grant_type: "password"
+    expect:
+      - operator: "statusCode"
+        value: 201
+      - operator: "exists"
+        path: "$.id"
+    saveResponse:
+      mockToken: "$.id"  # Using the returned ID as a mock token
+
+  - name: "Authenticated Request with Bearer Token"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts/1"
+    headers:
+      Authorization: "Bearer ${$.response.Mock Authentication Request.mockToken}"
+      Content-Type: "application/json"
+    depends_on:
+      - "Mock Authentication Request"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "exists"
+        path: "$.title"
+      - operator: "exists"
+        path: "$.body"
+
+  - name: "API Key Authentication"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/users"
+    headers:
+      X-API-Key: "${$.variables.apiKey}"
+      Content-Type: "application/json"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "arrayMinLength"
+        path: "$"
+        value: 1
+
+  - name: "Protected Resource Access"
+    type: "api"
+    method: "POST"
+    url: "${$.variables.baseUrl}/posts"
+    headers:
+      Authorization: "Bearer ${$.response.Mock Authentication Request.mockToken}"
+      Content-Type: "application/json"
+    body:
+      title: "Protected Post"
+      body: "This post was created with authentication"
+      userId: 1
+    depends_on:
+      - "Mock Authentication Request"
+    expect:
+      - operator: "statusCode"
+        value: 201
+      - operator: "equals"
+        path: "$.title"
+        value: "Protected Post"
+      - operator: "exists"
+        path: "$.id"
+
+  - name: "Token Refresh Simulation"
+    type: "api"
+    method: "POST"
+    url: "${$.variables.baseUrl}/posts"
+    headers:
+      Content-Type: "application/json"
+    body:
+      refresh_token: "${$.response.Mock Authentication Request.mockToken}"
+      grant_type: "refresh_token"
+    depends_on:
+      - "Mock Authentication Request"
+    expect:
+      - operator: "statusCode"
+        value: 201
+      - operator: "exists"
+        path: "$.id"
+    saveResponse:
+      refreshedToken: "$.id"
+
+  - name: "Use Refreshed Token"
+    type: "api"
+    method: "GET"
+    url: "${$.variables.baseUrl}/posts"
+    headers:
+      Authorization: "Bearer ${$.response.Token Refresh Simulation.refreshedToken}"
+      Content-Type: "application/json"
+    depends_on:
+      - "Token Refresh Simulation"
+    expect:
+      - operator: "statusCode"
+        value: 200
+      - operator: "arrayLength"
+        path: "$"
+        value: 100

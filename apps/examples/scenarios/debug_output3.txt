@@ -1,0 +1,179 @@
+Config resolver workingDir: /Users/sarath/dev/projects/vibranium/apps/examples/scenarios
+ℹ Starting Vibranium interactive mode...
+🎯 NavigationTree render: scenarios.length = 0
+
+[2K[1A[2K[G🎯 NavigationTree scenarios: []
+
+[2K[1A[2K[G┌────────────────────┐┌────────────────────────────────────────────────────────┐
+│ ┌────────────────┐ ││ ┌────────────────────────────────────────────────┐     │
+│ │ Scenarios &    │ ││ │ Scenario Details                               │     │
+│ │ Steps          │ ││ └────────────────────────────────────────────────┘     │
+│ └────────────────┘ ││                                                        │
+│                    ││                                                        │
+│  Scenarios (0)     ││                                                        │
+│                    ││                                                        │
+│  No scenarios      ││  Select a scenario to view details                     │
+│  found             ││                                                        │
+│                    ││                                                        │
+│ ┌────────────────┐ ││                                                        │
+│ │ ↑↓ Navigate •  │ ││                                                        │
+│ │ Enter: Select  │ ││ ┌────────────────────────────────────────────────┐     │
+│ │ • Tab: Switch  │ ││ │ Ctrl+S: Save • ↑↓ Scroll • Ctrl+R: Run • Tab:  │     │
+│ │ Pane           │ ││ │ Switch Pane                                    │     │
+│ └────────────────┘ ││ └────────────────────────────────────────────────┘     │
+└────────────────────┘└────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ℹ Welcome to          ENV:    ⏸ ReadCtrl+E: Env • Ctrl+R: Run • Ctrl+V:      │
+│ Vibranium CLI         local         Variables • Ctrl+Q: Quit                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G📊 State changed - scenarios.length: 0
+┌────────────────────┐┌────────────────────────────────────────────────────────┐
+│ ┌────────────────┐ ││ ┌────────────────────────────────────────────────┐     │
+│ │ Scenarios &    │ ││ │ Scenario Details                               │     │
+│ │ Steps          │ ││ └────────────────────────────────────────────────┘     │
+│ └────────────────┘ ││                                                        │
+│                    ││                                                        │
+│  Scenarios (0)     ││                                                        │
+│                    ││                                                        │
+│  No scenarios      ││  Select a scenario to view details                     │
+│  found             ││                                                        │
+│                    ││                                                        │
+│ ┌────────────────┐ ││                                                        │
+│ │ ↑↓ Navigate •  │ ││                                                        │
+│ │ Enter: Select  │ ││ ┌────────────────────────────────────────────────┐     │
+│ │ • Tab: Switch  │ ││ │ Ctrl+S: Save • ↑↓ Scroll • Ctrl+R: Run • Tab:  │     │
+│ │ Pane           │ ││ │ Switch Pane                                    │     │
+│ └────────────────┘ ││ └────────────────────────────────────────────────┘     │
+└────────────────────┘└────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ℹ Welcome to          ENV:    ⏸ ReadCtrl+E: Env • Ctrl+R: Run • Ctrl+V:      │
+│ Vibranium CLI         local         Variables • Ctrl+Q: Quit                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G🚀 useEffect: STARTING with dispatch test
+┌────────────────────┐┌────────────────────────────────────────────────────────┐
+│ ┌────────────────┐ ││ ┌────────────────────────────────────────────────┐     │
+│ │ Scenarios &    │ ││ │ Scenario Details                               │     │
+│ │ Steps          │ ││ └────────────────────────────────────────────────┘     │
+│ └────────────────┘ ││                                                        │
+│                    ││                                                        │
+│  Scenarios (0)     ││                                                        │
+│                    ││                                                        │
+│  No scenarios      ││  Select a scenario to view details                     │
+│  found             ││                                                        │
+│                    ││                                                        │
+│ ┌────────────────┐ ││                                                        │
+│ │ ↑↓ Navigate •  │ ││                                                        │
+│ │ Enter: Select  │ ││ ┌────────────────────────────────────────────────┐     │
+│ │ • Tab: Switch  │ ││ │ Ctrl+S: Save • ↑↓ Scroll • Ctrl+R: Run • Tab:  │     │
+│ │ Pane           │ ││ │ Switch Pane                                    │     │
+│ └────────────────┘ ││ └────────────────────────────────────────────────┘     │
+└────────────────────┘└────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ℹ Welcome to          ENV:    ⏸ ReadCtrl+E: Env • Ctrl+R: Run • Ctrl+V:      │
+│ Vibranium CLI         local         Variables • Ctrl+Q: Quit                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G🚀 useEffect: Testing simple dispatch
+┌────────────────────┐┌────────────────────────────────────────────────────────┐
+│ ┌────────────────┐ ││ ┌────────────────────────────────────────────────┐     │
+│ │ Scenarios &    │ ││ │ Scenario Details                               │     │
+│ │ Steps          │ ││ └────────────────────────────────────────────────┘     │
+│ └────────────────┘ ││                                                        │
+│                    ││                                                        │
+│  Scenarios (0)     ││                                                        │
+│                    ││                                                        │
+│  No scenarios      ││  Select a scenario to view details                     │
+│  found             ││                                                        │
+│                    ││                                                        │
+│ ┌────────────────┐ ││                                                        │
+│ │ ↑↓ Navigate •  │ ││                                                        │
+│ │ Enter: Select  │ ││ ┌────────────────────────────────────────────────┐     │
+│ │ • Tab: Switch  │ ││ │ Ctrl+S: Save • ↑↓ Scroll • Ctrl+R: Run • Tab:  │     │
+│ │ Pane           │ ││ │ Switch Pane                                    │     │
+│ └────────────────┘ ││ └────────────────────────────────────────────────┘     │
+└────────────────────┘└────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ℹ Welcome to          ENV:    ⏸ ReadCtrl+E: Env • Ctrl+R: Run • Ctrl+V:      │
+│ Vibranium CLI         local         Variables • Ctrl+Q: Quit                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G🚀 useEffect: Called test dispatch
+┌────────────────────┐┌────────────────────────────────────────────────────────┐
+│ ┌────────────────┐ ││ ┌────────────────────────────────────────────────┐     │
+│ │ Scenarios &    │ ││ │ Scenario Details                               │     │
+│ │ Steps          │ ││ └────────────────────────────────────────────────┘     │
+│ └────────────────┘ ││                                                        │
+│                    ││                                                        │
+│  Scenarios (0)     ││                                                        │
+│                    ││                                                        │
+│  No scenarios      ││  Select a scenario to view details                     │
+│  found             ││                                                        │
+│                    ││                                                        │
+│ ┌────────────────┐ ││                                                        │
+│ │ ↑↓ Navigate •  │ ││                                                        │
+│ │ Enter: Select  │ ││ ┌────────────────────────────────────────────────┐     │
+│ │ • Tab: Switch  │ ││ │ Ctrl+S: Save • ↑↓ Scroll • Ctrl+R: Run • Tab:  │     │
+│ │ Pane           │ ││ │ Switch Pane                                    │     │
+│ └────────────────┘ ││ └────────────────────────────────────────────────┘     │
+└────────────────────┘└────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ ℹ Welcome to          ENV:    ⏸ ReadCtrl+E: Env • Ctrl+R: Run • Ctrl+V:      │
+│ Vibranium CLI         local         Variables • Ctrl+Q: Quit                 │
+└──────────────────────────────────────────────────────────────────────────────┘
+[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[1A[2K[G
+  ERROR Raw mode is not supported on the current process.stdin, which Ink uses
+       as input stream by default.
+       Read about how to prevent this error on
+       https://github.com/vadimdemedes/ink/#israwmodesupported
+
+ - Read about how to prevent this error on
+   https://github.com/vadimdemedes/ink/#israwmodesupported
+ -handleSetRawM (/Users/sarath/dev/projects/vibranium/node_modules/ink/src/comp
+  ode          onents/App.tsx:151:11)
+ -<anonymous (/Users/sarath/dev/projects/vibranium/node_modules/ink/src/hooks/u
+            se-input.ts:127:3)
+ -commitHookEffectLis (/Users/sarath/dev/projects/vibranium/node_modules/react-
+  Mount              reconciler/cjs/react-reconciler.development.js:14817:26)
+ -commitPassiveMountO (/Users/sarath/dev/projects/vibranium/node_modules/react-
+  Fiber              reconciler/cjs/react-reconciler.development.js:16648:11)
+ -commitPassiveMountEffec (/Users/sarath/dev/projects/vibranium/node_modules/re
+  s_complete             act-reconciler/cjs/react-reconciler.development.js:166
+                         08:9)
+ -commitPassiveMountEffe (/Users/sarath/dev/projects/vibranium/node_modules/rea
+  ts_begin              ct-reconciler/cjs/react-reconciler.development.js:16595
+                        :7)
+ -commitPassiveMountE (/Users/sarath/dev/projects/vibranium/node_modules/react-
+  fects              reconciler/cjs/react-reconciler.development.js:16583:3)
+ -flushPassiveEffec (/Users/sarath/dev/projects/vibranium/node_modules/react-re
+  sImpl            conciler/cjs/react-reconciler.development.js:19221:3)
+ -flushPassiveEff (/Users/sarath/dev/projects/vibranium/node_modules/react-reco
+  cts            nciler/cjs/react-reconciler.development.js:19166:14)
+ - (/Users/sarath/dev/projects/vibranium/node_modules/react-reconciler/cjs/reac
+  t-reconciler.development.js:18951:9)
+
+The above error occurred in the <DetailsPane> component:
+
+    at DetailsPane (/Users/sarath/dev/projects/vibranium/packages/cli/src/interactive/components/details-pane.tsx:11:30)
+    at ink-box
+    at Box (/Users/sarath/dev/projects/vibranium/node_modules/ink/src/components/Box.tsx:12:4)
+    at ink-box
+    at Box (/Users/sarath/dev/projects/vibranium/node_modules/ink/src/components/Box.tsx:12:4)
+    at ink-box
+    at Box (/Users/sarath/dev/projects/vibranium/node_modules/ink/src/components/Box.tsx:12:4)
+    at VibraniumAppInner (/Users/sarath/dev/projects/vibranium/packages/cli/src/interactive/app.tsx:21:20)
+    at AppProvider (/Users/sarath/dev/projects/vibranium/packages/cli/src/interactive/state/app-context.tsx:204:59)
+    at VibraniumApp
+    at App (/Users/sarath/dev/projects/vibranium/node_modules/ink/src/components/App.tsx:42:15)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, InternalApp.
+The above error occurred in the <VibraniumAppInner> component:
+
+    at VibraniumAppInner (/Users/sarath/dev/projects/vibranium/packages/cli/src/interactive/app.tsx:21:20)
+    at AppProvider (/Users/sarath/dev/projects/vibranium/packages/cli/src/interactive/state/app-context.tsx:204:59)
+    at VibraniumApp
+    at App (/Users/sarath/dev/projects/vibranium/node_modules/ink/src/components/App.tsx:42:15)
+
+React will try to recreate this component tree from scratch using the error boundary you provided, InternalApp.
+Looking for scenarios in: /Users/sarath/dev/projects/vibranium/apps/examples/scenarios/scenarios
+🚀 useEffect: Found 5 scenarios
+🚀 useEffect: Calling dispatch SET_SCENARIOS with 5 items
+🚀 useEffect: Called dispatch SET_SCENARIOS
+🚀 useEffect: Called dispatch SET_ENVIRONMENTS

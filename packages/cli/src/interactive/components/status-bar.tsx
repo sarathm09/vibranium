@@ -138,8 +138,13 @@ export const StatusBar: React.FC = () => {
           </Text>
         </Box>
 
-        {/* Right - Active pane and execution controls */}
+        {/* Right - Environment, Active pane and execution controls */}
         <Box>
+          <Text color="green" marginRight={2}>
+            🌍 {state.currentEnvironment}
+            {state.ui.showEnvironmentViewer && <Text color="cyan"> [VIEWER]</Text>}
+            {state.ui.showEnvironmentSwitcher && <Text color="yellow"> [SWITCH]</Text>}
+          </Text>
           <Text color="yellow">
             {getActivePaneIndicator()} {state.ui.activePane.slice(0,3).toUpperCase()}
             {state.ui.showVariablePreview && <Text color="cyan"> VAR</Text>}
@@ -147,7 +152,7 @@ export const StatusBar: React.FC = () => {
           <Text color="gray" dimColor marginLeft={2}>
             {state.isRunning ? 'Ctrl+S:Stop' : 'Ctrl+R:Run'}
             {executionStatus.canRetry && <Text color="cyan"> • Ctrl+T:Retry</Text>}
-            <Text> • Ctrl+Q:Quit</Text>
+            <Text> • E:Env • Ctrl+Q:Quit</Text>
           </Text>
         </Box>
       </Box>

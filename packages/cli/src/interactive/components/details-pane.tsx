@@ -20,9 +20,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 import { useAppContext } from '../state/app-context';
-import { StepsUI } from './steps-ui';
-import { StepNavigator } from './step-navigator';
-import { StepSummary } from './step-summary';
 import { ResultsView } from './execution-results';
 import chalk from 'chalk';
 
@@ -370,48 +367,203 @@ export const DetailsPane: React.FC = () => {
     );
   };
 
-  // New clean steps UI
+  // Enhanced steps view - cleaner and more intuitive
   const renderNewStepsView = () => {
-    return (
-      <StepsUI 
-        mode="detailed"
-        onStepSelect={(stepIndex: number) => {
-          actions.setSelectedStepIndex?.(stepIndex);
-        }}
-        onStepRun={(stepIndex: number) => {
-          actions.runSingleStep?.(stepIndex);
-        }}
-      />
-    );
+    return renderEnhancedStepsView();
   };
 
   const renderStepSummaryView = () => {
-    return (
-      <StepSummary 
-        onStepJump={(stepIndex: number) => {
-          actions.setSelectedStepIndex?.(stepIndex);
-          // Switch to detailed steps view to show the selected step
-          actions.setDetailsViewMode?.('steps');
-        }}
-        showGroups={true}
-        showDependencies={true}
-      />
-    );
+    return renderStepSummaryView_Internal();
   };
 
   const renderStepNavigatorView = () => {
+    return renderStepNavigatorView_Internal();
+  };
+
+  // Clean, scannable steps list with better UX
+  const renderEnhancedStepsView = () => {
+    if (!state.currentScenario?.steps) {
+      return (
+        <Box justifyContent="center" alignItems="center" height="100%" flexDirection="column">
+          <Text color="gray" bold>📝 No Steps Available</Text>
+          <Text color="gray" dimColor marginTop={1}>
+            This scenario doesn't contain any steps
+          </Text>
+        </Box>
+      );
+    }
+
+    const steps = state.currentScenario.steps;
+    
     return (
-      <StepNavigator 
-        onStepSelect={(stepIndex: number) => {
-          actions.setSelectedStepIndex?.(stepIndex);
-          // Switch to detailed steps view to show the selected step
-          actions.setDetailsViewMode?.('steps');
-        }}
-        onClose={() => {
-          // Go back to overview or previous view
-          actions.setDetailsViewMode?.('overview');
-        }}
-      />
+      <Box flexDirection="column" height="100%">
+        {/* Clean header with summary */}
+        <Box paddingX={1} paddingY={1} borderBottom>
+          <Text bold color="cyan">📋 {steps.length} Steps</Text>
+          <Box marginTop={1}>
+            <Text color="gray">
+              {steps.filter(s => s.type === 'api').length > 0 && <Text color="blue">🌐 {steps.filter(s => s.type === 'api').length} API</Text>}
+              {steps.filter(s => s.type === 'api').length > 0 && steps.filter(s => s.type === 'ui').length > 0 && <Text> • </Text>}
+              {steps.filter(s => s.type === 'ui').length > 0 && <Text color="green">🖥️ {steps.filter(s => s.type === 'ui').length} UI</Text>}
+            </Text>
+          </Box>
+          {state.lastResult?.stepResults && (
+            <Box marginTop={1}>
+              <Text>
+                <Text color="green">✅ {state.lastResult.stepResults.filter(r => r.success).length}</Text>
+                <Text> • </Text>
+                <Text color="red">❌ {state.lastResult.stepResults.filter(r => !r.success).length}</Text>
+                <Text color="gray"> / {state.lastResult.stepResults.length}</Text>
+              </Text>
+            </Box>
+          )}
+        </Box>
+
+        {/* Enhanced steps list */}
+        <Box flexDirection="column" flexGrow={1} paddingX={1}>
+          {steps.map((step, index) => {
+            const isSelected = index === state.ui.selectedStepIndex;
+            const isCurrent = index === state.executionProgress?.currentStepIndex && state.isRunning;
+            const result = state.lastResult?.stepResults?.[index];
+            const statusDisplay = getEnhancedStepStatus(result, isCurrent);
+
+            return (
+              <Box
+                key={index}
+                flexDirection="column"
+                marginBottom={1}
+                paddingX={1}
+                paddingY={1}
+                borderStyle={isSelected ? 'round' : undefined}
+                borderColor={isSelected ? 'cyan' : undefined}
+              >
+                {/* Clean step header */}
+                <Box justifyContent="space-between" alignItems="center">
+                  <Box>
+                    <Text color={statusDisplay.color} bold={isSelected}>
+                      {statusDisplay.icon} {index + 1}. {step.name}
+                    </Text>
+                    {isCurrent && <Text color="yellow" bold> ← Running</Text>}
+                  </Box>
+                  <Box>
+                    <Text color={getTypeColor(step.type)}>{getTypeIcon(step.type)}</Text>
+                    {result?.duration && (
+                      <Text color="gray" marginLeft={1}>{result.duration}ms</Text>
+                    )}
+                  </Box>
+                </Box>
+
+                {/* Essential step info (clean, scannable) */}
+                <Box flexDirection="column" marginTop={1} paddingLeft={2}>
+                  {step.type === 'api' && (
+                    <Text color="gray">
+                      <Text color="cyan">{(step as any).method || 'GET'}</Text>
+                      <Text> {truncateUrl((step as any).url || '')}</Text>
+                    </Text>
+                  )}
+                  {step.type === 'ui' && (
+                    <Text color="gray">
+                      <Text color="green">{(step as any).action || 'click'}</Text>
+                      <Text> {truncateText((step as any).selector || (step as any).target || '', 40)}</Text>
+                    </Text>
+                  )}
+                  {step.description && (
+                    <Text color="gray" dimColor>
+                      {truncateText(step.description, 60)}
+                    </Text>
+                  )}
+
+                  {/* Progressive disclosure for selected step */}
+                  {isSelected && (
+                    <Box marginTop={1} paddingLeft={2} borderLeft borderColor="gray">
+                      {renderSelectedStepDetails(step, result)}
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Simple status indicator */}
+                {isSelected && result && (
+                  <Box marginTop={1}>
+                    <Text color={result.success ? 'green' : 'red'}>
+                      {'▄'.repeat(30)}
+                    </Text>
+                  </Box>
+                )}
+              </Box>
+            );
+          })}
+        </Box>
+
+        {/* Clean footer */}
+        <Box paddingX={1} paddingY={1} borderTop>
+          <Text color="gray" dimColor>
+            ↑↓ Navigate • Enter Select/Run • Tab Switch
+          </Text>
+        </Box>
+      </Box>
+    );
+  };
+
+  // Step summary view with grouping
+  const renderStepSummaryView_Internal = () => {
+    if (!state.currentScenario?.steps) {
+      return renderEnhancedStepsView();
+    }
+
+    const steps = state.currentScenario.steps;
+    const groupedSteps = groupStepsByType(steps);
+
+    return (
+      <Box flexDirection="column" height="100%">
+        <Box paddingX={1} paddingY={1} borderBottom>
+          <Text bold color="cyan">📊 Steps Summary ({steps.length} total)</Text>
+        </Box>
+        
+        <Box flexDirection="column" flexGrow={1} paddingX={1}>
+          {Object.entries(groupedSteps).map(([type, typeSteps]) => (
+            <Box key={type} flexDirection="column" marginBottom={2}>
+              <Text color="blue" bold>
+                {getTypeIcon(type)} {type.toUpperCase()} Steps ({typeSteps.length})
+              </Text>
+              <Box paddingLeft={2} marginTop={1}>
+                {typeSteps.map((step, stepIndex) => {
+                  const originalIndex = steps.findIndex(s => s === step);
+                  const result = state.lastResult?.stepResults?.[originalIndex];
+                  const statusDisplay = getEnhancedStepStatus(result);
+
+                  return (
+                    <Text key={originalIndex} color={statusDisplay.color}>
+                      {statusDisplay.icon} {originalIndex + 1}. {step.name}
+                    </Text>
+                  );
+                })}
+              </Box>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    );
+  };
+
+  // Step navigator view with search
+  const renderStepNavigatorView_Internal = () => {
+    if (!state.currentScenario?.steps) {
+      return renderEnhancedStepsView();
+    }
+
+    return (
+      <Box flexDirection="column" height="100%">
+        <Box paddingX={1} paddingY={1} borderBottom>
+          <Text bold color="cyan">🔍 Step Navigator</Text>
+          <Text color="gray" marginTop={1}>
+            Use keyboard shortcuts to navigate and filter steps
+          </Text>
+        </Box>
+        
+        <Box flexGrow={1}>
+          {renderEnhancedStepsView()}
+        </Box>
+      </Box>
     );
   };
 
@@ -1511,6 +1663,136 @@ export const DetailsPane: React.FC = () => {
                 <Text> • Ended: {stepResult.endTime.toLocaleTimeString()}</Text>
               )}
             </Text>
+          </Box>
+        )}
+      </Box>
+    );
+  };
+
+  // Helper functions for enhanced steps UI
+  const getEnhancedStepStatus = (result?: any, isCurrent?: boolean): { icon: string; color: string } => {
+    if (isCurrent) {
+      return { icon: '⏳', color: 'yellow' };
+    }
+    
+    if (!result) {
+      return { icon: '⚪', color: 'gray' };
+    }
+    
+    return result.success 
+      ? { icon: '✅', color: 'green' }
+      : { icon: '❌', color: 'red' };
+  };
+
+  const getTypeIcon = (type: string): string => {
+    const iconMap: Record<string, string> = {
+      api: '🌐',
+      ui: '🖥️',
+      validation: '✅',
+      setup: '🔧',
+      teardown: '🧹'
+    };
+    return iconMap[type] || '⚡';
+  };
+
+  const getTypeColor = (type: string): string => {
+    const colorMap: Record<string, string> = {
+      api: 'blue',
+      ui: 'green',
+      validation: 'yellow',
+      setup: 'cyan',
+      teardown: 'magenta'
+    };
+    return colorMap[type] || 'white';
+  };
+
+  const truncateText = (text: string, maxLength: number): string => {
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength - 3) + '...';
+  };
+
+  const truncateUrl = (url: string): string => {
+    if (url.length <= 40) return url;
+    
+    try {
+      const urlObj = new URL(url);
+      return `${urlObj.hostname}${urlObj.pathname.substring(0, 20)}...`;
+    } catch {
+      return truncateText(url, 40);
+    }
+  };
+
+  const groupStepsByType = (steps: any[]) => {
+    return steps.reduce((acc, step) => {
+      const type = step.type;
+      if (!acc[type]) acc[type] = [];
+      acc[type].push(step);
+      return acc;
+    }, {} as Record<string, any[]>);
+  };
+
+  const renderSelectedStepDetails = (step: any, result?: any) => {
+    return (
+      <Box flexDirection="column">
+        {/* API details */}
+        {step.type === 'api' && (
+          <Box flexDirection="column">
+            {step.headers && Object.keys(step.headers).length > 0 && (
+              <Text color="blue">📜 {Object.keys(step.headers).length} headers</Text>
+            )}
+            {step.body && (
+              <Text color="blue">📦 Body: {typeof step.body === 'object' ? 'JSON' : 'Text'}</Text>
+            )}
+            {step.auth && (
+              <Text color="magenta">🔐 Auth: {step.auth.type}</Text>
+            )}
+          </Box>
+        )}
+        
+        {/* UI details */}
+        {step.type === 'ui' && (
+          <Box flexDirection="column">
+            {step.value && (
+              <Text color="green">📝 Value: {truncateText(String(step.value), 30)}</Text>
+            )}
+            {step.wait && (
+              <Text color="yellow">⏰ Wait: {step.wait.type}</Text>
+            )}
+          </Box>
+        )}
+        
+        {/* Expectations */}
+        {step.expect && (
+          <Text color="yellow">✅ {Array.isArray(step.expect) ? step.expect.length : 1} expectations</Text>
+        )}
+        
+        {/* Configuration */}
+        <Box>
+          {step.timeout && (
+            <Text color="orange" marginRight={2}>⏱️ {step.timeout}ms</Text>
+          )}
+          {step.retries && (
+            <Text color="orange" marginRight={2}>🔄 {step.retries}x</Text>
+          )}
+        </Box>
+        
+        {/* Result summary */}
+        {result && (
+          <Box marginTop={1} paddingTop={1} borderTop borderColor="gray">
+            <Text color={result.success ? 'green' : 'red'} bold>
+              {result.success ? '✅ Passed' : '❌ Failed'}
+              {result.duration && <Text color="gray"> ({result.duration}ms)</Text>}
+            </Text>
+            {result.error && (
+              <Text color="red" dimColor>
+                {truncateText(result.error.toString(), 60)}
+              </Text>
+            )}
+            {result.response && (
+              <Text color="cyan" dimColor>
+                {result.response.status} {result.response.statusText}
+              </Text>
+            )}
           </Box>
         )}
       </Box>

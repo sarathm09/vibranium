@@ -27,10 +27,17 @@ export const VariablePreview: React.FC = () => {
     try {
       const variables: Record<string, any> = {};
       
-      // Environment variables
-      variables['$.env.API_URL'] = process.env.API_URL || 'https://api.example.com';
-      variables['$.env.TIMEOUT'] = parseInt(process.env.TIMEOUT || '10000');
-      variables['$.env.DEBUG'] = process.env.DEBUG === 'true';
+      // Environment-specific variables from current environment
+      const currentEnv = state.environments.find(env => env.name === state.currentEnvironment);
+      if (currentEnv?.variables) {
+        Object.entries(currentEnv.variables).forEach(([key, value]) => {
+          variables[`$.env.${key}`] = value;
+        });
+      }
+      
+      // Fallback environment variables
+      variables['$.env.API_URL'] = currentEnv?.baseUrl || process.env.API_URL || 'https://api.example.com';
+      variables['$.env.TIMEOUT'] = currentEnv?.timeout || parseInt(process.env.TIMEOUT || '10000');
       variables['$.env.NODE_ENV'] = process.env.NODE_ENV || 'development';
       
       // Global context variables
@@ -43,6 +50,14 @@ export const VariablePreview: React.FC = () => {
       variables['$.context.startTime'] = new Date().toISOString();
       variables['$.context.environment'] = state.currentEnvironment;
       variables['$.context.scenarioCount'] = state.scenarios.length;
+      variables['$.context.environmentCount'] = state.environments.length;
+      
+      // Environment metadata
+      if (currentEnv?.metadata) {
+        variables['$.env.type'] = currentEnv.metadata.type;
+        variables['$.env.version'] = currentEnv.metadata.version;
+        variables['$.env.owner'] = currentEnv.metadata.owner;
+      }
       
       // Random generators
       variables['$.random.uuid'] = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {

@@ -1,29 +1,29 @@
-@import '../../styles/variables.scss';
+@use '../../styles/variables' as vars;
 
 .glass-panel {
   position: relative;
-  background: $glass-gradient-light;
-  backdrop-filter: $blur-lg;
-  -webkit-backdrop-filter: $blur-lg;
-  border: $glass-border-light;
-  transition: $glass-transition;
+  background: vars.$glass-gradient-light;
+  backdrop-filter: vars.$blur-lg;
+  -webkit-backdrop-filter: vars.$blur-lg;
+  border: vars.$glass-border-light;
+  transition: vars.$glass-transition;
   display: block;
   
   // Size variants
   &.glass-panel--sm {
-    padding: $spacing-sm;
+    padding: vars.$spacing-sm;
   }
   
   &.glass-panel--md {
-    padding: $spacing-md;
+    padding: vars.$spacing-md;
   }
   
   &.glass-panel--lg {
-    padding: $spacing-lg;
+    padding: vars.$spacing-lg;
   }
   
   &.glass-panel--xl {
-    padding: $spacing-xl;
+    padding: vars.$spacing-xl;
   }
   
   &.glass-panel--no-padding {
@@ -32,63 +32,63 @@
   
   // Blur variants
   &.glass-panel--blur-sm {
-    backdrop-filter: $blur-sm;
-    -webkit-backdrop-filter: $blur-sm;
+    backdrop-filter: vars.$blur-sm;
+    -webkit-backdrop-filter: vars.$blur-sm;
   }
   
   &.glass-panel--blur-md {
-    backdrop-filter: $blur-md;
-    -webkit-backdrop-filter: $blur-md;
+    backdrop-filter: vars.$blur-md;
+    -webkit-backdrop-filter: vars.$blur-md;
   }
   
   &.glass-panel--blur-lg {
-    backdrop-filter: $blur-lg;
-    -webkit-backdrop-filter: $blur-lg;
+    backdrop-filter: vars.$blur-lg;
+    -webkit-backdrop-filter: vars.$blur-lg;
   }
   
   &.glass-panel--blur-xl {
-    backdrop-filter: $blur-xl;
-    -webkit-backdrop-filter: $blur-xl;
+    backdrop-filter: vars.$blur-xl;
+    -webkit-backdrop-filter: vars.$blur-xl;
   }
   
   // Rounded variants
   &.glass-panel--rounded-sm {
-    border-radius: $border-radius-sm;
+    border-radius: vars.$border-radius-sm;
   }
   
   &.glass-panel--rounded-md {
-    border-radius: $border-radius-md;
+    border-radius: vars.$border-radius-md;
   }
   
   &.glass-panel--rounded-lg {
-    border-radius: $border-radius-lg;
+    border-radius: vars.$border-radius-lg;
   }
   
   &.glass-panel--rounded-xl {
-    border-radius: $border-radius-xl;
+    border-radius: vars.$border-radius-xl;
   }
   
   // Shadow variants
   &.glass-panel--shadow-sm {
-    box-shadow: $glass-shadow-sm, $glass-inner-shadow;
+    box-shadow: vars.$glass-shadow-sm, vars.$glass-inner-shadow;
   }
   
   &.glass-panel--shadow-md {
-    box-shadow: $glass-shadow-md, $glass-inner-shadow;
+    box-shadow: vars.$glass-shadow-md, vars.$glass-inner-shadow;
   }
   
   &.glass-panel--shadow-lg {
-    box-shadow: $glass-shadow-lg, $glass-inner-shadow-strong;
+    box-shadow: vars.$glass-shadow-lg, vars.$glass-inner-shadow-strong;
   }
   
   &.glass-panel--shadow-xl {
-    box-shadow: $glass-shadow-xl, $glass-inner-shadow-strong;
+    box-shadow: vars.$glass-shadow-xl, vars.$glass-inner-shadow-strong;
   }
   
   // Color variants
   &.glass-panel--primary {
-    background: $glass-gradient-primary;
-    border: $glass-border-primary;
+    background: vars.$glass-gradient-primary;
+    border: vars.$glass-border-primary;
     
     &:hover {
       background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(59, 130, 246, 0.08) 100%);
@@ -97,8 +97,8 @@
   }
   
   &.glass-panel--secondary {
-    background: $glass-gradient-secondary;
-    border: $glass-border-secondary;
+    background: vars.$glass-gradient-secondary;
+    border: vars.$glass-border-secondary;
     
     &:hover {
       background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(99, 102, 241, 0.08) 100%);
@@ -107,9 +107,9 @@
   }
   
   &.glass-panel--dark {
-    background: $glass-gradient-dark;
-    border: $glass-border-dark;
-    color: $gray-100;
+    background: vars.$glass-gradient-dark;
+    border: vars.$glass-border-dark;
+    color: vars.$gray-100;
     
     &:hover {
       background: linear-gradient(135deg, rgba(0, 0, 0, 0.15) 0%, rgba(0, 0, 0, 0.08) 100%);
@@ -120,7 +120,7 @@
   // Interactive states
   &.glass-panel--hoverable:hover {
     border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: $glass-shadow-lg, $glass-inner-shadow-strong;
+    box-shadow: vars.$glass-shadow-lg, vars.$glass-inner-shadow-strong;
   }
   
   &.glass-panel--clickable {

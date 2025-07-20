@@ -1,5 +1,6 @@
 // Global styles for Vibranium Frosted Glass UI
-@import './variables.scss';
+@use './variables' as vars;
+@use './tailwind-utility';
 
 // === GLOBAL RESET & BASE STYLES ===
 * {
@@ -17,9 +18,9 @@ html {
 }
 
 body {
-  font-family: $font-family-base;
-  font-size: $font-size-base;
-  color: $gray-900;
+  font-family: vars.$font-family-base;
+  font-size: vars.$font-size-base;
+  color: vars.$gray-900;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   overflow-x: hidden;
@@ -36,61 +37,61 @@ body {
       radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
       radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
       radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%);
-    z-index: $z-background;
+    z-index: vars.$z-background;
     pointer-events: none;
   }
 }
 
 #root {
   position: relative;
-  z-index: $z-base;
+  z-index: vars.$z-base;
   min-height: 100vh;
 }
 
 // === GLASSMORPHISM BASE CLASSES ===
 .glass-panel {
-  background: $glass-gradient-light;
-  backdrop-filter: $blur-lg;
-  -webkit-backdrop-filter: $blur-lg;
-  border: $glass-border-light;
-  border-radius: $border-radius-xl;
-  box-shadow: $glass-shadow-md, $glass-inner-shadow;
-  transition: $glass-transition;
+  background: vars.$glass-gradient-light;
+  backdrop-filter: vars.$blur-lg;
+  -webkit-backdrop-filter: vars.$blur-lg;
+  border: vars.$glass-border-light;
+  border-radius: vars.$border-radius-xl;
+  box-shadow: vars.$glass-shadow-md, vars.$glass-inner-shadow;
+  transition: vars.$glass-transition;
   
   &:hover {
-    background: $glass-gradient-light;
+    background: vars.$glass-gradient-light;
     border-color: rgba(255, 255, 255, 0.3);
-    box-shadow: $glass-shadow-lg, $glass-inner-shadow-strong;
+    box-shadow: vars.$glass-shadow-lg, vars.$glass-inner-shadow-strong;
     transform: translateY(-2px);
   }
   
   &.glass-panel--primary {
-    background: $glass-gradient-primary;
-    border: $glass-border-primary;
+    background: vars.$glass-gradient-primary;
+    border: vars.$glass-border-primary;
     
     &:hover {
-      background: $glass-gradient-primary;
+      background: vars.$glass-gradient-primary;
       border-color: rgba(59, 130, 246, 0.4);
     }
   }
   
   &.glass-panel--secondary {
-    background: $glass-gradient-secondary;
-    border: $glass-border-secondary;
+    background: vars.$glass-gradient-secondary;
+    border: vars.$glass-border-secondary;
     
     &:hover {
-      background: $glass-gradient-secondary;
+      background: vars.$glass-gradient-secondary;
       border-color: rgba(99, 102, 241, 0.4);
     }
   }
   
   &.glass-panel--dark {
-    background: $glass-gradient-dark;
-    border: $glass-border-dark;
-    color: $gray-100;
+    background: vars.$glass-gradient-dark;
+    border: vars.$glass-border-dark;
+    color: vars.$gray-100;
     
     &:hover {
-      background: $glass-gradient-dark;
+      background: vars.$glass-gradient-dark;
       border-color: rgba(0, 0, 0, 0.3);
     }
   }
@@ -98,52 +99,52 @@ body {
 
 .glass-card {
   @extend .glass-panel;
-  padding: $spacing-lg;
+  padding: vars.$spacing-lg;
   
   &.glass-card--sm {
-    padding: $spacing-md;
+    padding: vars.$spacing-md;
   }
   
   &.glass-card--lg {
-    padding: $spacing-xl;
+    padding: vars.$spacing-xl;
   }
   
   &.glass-card--xl {
-    padding: $spacing-2xl;
+    padding: vars.$spacing-2xl;
   }
 }
 
 .glass-surface {
   background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: $blur-md;
-  -webkit-backdrop-filter: $blur-md;
+  backdrop-filter: vars.$blur-md;
+  -webkit-backdrop-filter: vars.$blur-md;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: $border-radius-lg;
-  transition: $glass-transition-fast;
+  border-radius: vars.$border-radius-lg;
+  transition: vars.$glass-transition-fast;
 }
 
 // === GLASS BUTTON BASE ===
 .glass-button {
-  background: $glass-gradient-light;
-  backdrop-filter: $blur-md;
-  -webkit-backdrop-filter: $blur-md;
-  border: $glass-border-light;
-  border-radius: $border-radius-lg;
-  padding: $spacing-sm $spacing-md;
-  color: $gray-800;
+  background: vars.$glass-gradient-light;
+  backdrop-filter: vars.$blur-md;
+  -webkit-backdrop-filter: vars.$blur-md;
+  border: vars.$glass-border-light;
+  border-radius: vars.$border-radius-lg;
+  padding: vars.$spacing-sm vars.$spacing-md;
+  color: vars.$gray-800;
   font-weight: 500;
   cursor: pointer;
-  transition: $glass-transition-fast;
+  transition: vars.$glass-transition-fast;
   display: inline-flex;
   align-items: center;
-  gap: $spacing-sm;
+  gap: vars.$spacing-sm;
   text-decoration: none;
   
   &:hover {
-    background: $glass-white-hover;
+    background: vars.$glass-white-hover;
     border-color: rgba(255, 255, 255, 0.3);
     transform: translateY(-1px);
-    box-shadow: $glass-shadow-sm;
+    box-shadow: vars.$glass-shadow-sm;
   }
   
   &:active {
@@ -165,14 +166,14 @@ body {
 // === GLASS INPUT BASE ===
 .glass-input {
   background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: $blur-sm;
-  -webkit-backdrop-filter: $blur-sm;
+  backdrop-filter: vars.$blur-sm;
+  -webkit-backdrop-filter: vars.$blur-sm;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: $border-radius-md;
-  padding: $spacing-sm $spacing-md;
-  color: $gray-800;
-  font-size: $font-size-base;
-  transition: $glass-transition-fast;
+  border-radius: vars.$border-radius-md;
+  padding: vars.$spacing-sm vars.$spacing-md;
+  color: vars.$gray-800;
+  font-size: vars.$font-size-base;
+  transition: vars.$glass-transition-fast;
   
   &::placeholder {
     color: rgba(107, 114, 128, 0.7);
@@ -187,14 +188,14 @@ body {
 }
 
 // === UTILITY CLASSES ===
-.backdrop-blur-sm { backdrop-filter: $blur-sm; -webkit-backdrop-filter: $blur-sm; }
-.backdrop-blur-md { backdrop-filter: $blur-md; -webkit-backdrop-filter: $blur-md; }
-.backdrop-blur-lg { backdrop-filter: $blur-lg; -webkit-backdrop-filter: $blur-lg; }
-.backdrop-blur-xl { backdrop-filter: $blur-xl; -webkit-backdrop-filter: $blur-xl; }
+.backdrop-blur-sm { backdrop-filter: vars.$blur-sm; -webkit-backdrop-filter: vars.$blur-sm; }
+.backdrop-blur-md { backdrop-filter: vars.$blur-md; -webkit-backdrop-filter: vars.$blur-md; }
+.backdrop-blur-lg { backdrop-filter: vars.$blur-lg; -webkit-backdrop-filter: vars.$blur-lg; }
+.backdrop-blur-xl { backdrop-filter: vars.$blur-xl; -webkit-backdrop-filter: vars.$blur-xl; }
 
-.glass-transition { transition: $glass-transition; }
-.glass-transition-fast { transition: $glass-transition-fast; }
-.glass-transition-slow { transition: $glass-transition-slow; }
+.glass-transition { transition: vars.$glass-transition; }
+.glass-transition-fast { transition: vars.$glass-transition-fast; }
+.glass-transition-slow { transition: vars.$glass-transition-slow; }
 
 // === SCROLLBAR STYLING ===
 ::-webkit-scrollbar {
@@ -204,13 +205,13 @@ body {
 
 ::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
-  border-radius: $border-radius-sm;
+  border-radius: vars.$border-radius-sm;
 }
 
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
-  border-radius: $border-radius-sm;
-  transition: $transition-fast;
+  border-radius: vars.$border-radius-sm;
+  transition: vars.$transition-fast;
   
   &:hover {
     background: rgba(255, 255, 255, 0.3);
@@ -218,17 +219,17 @@ body {
 }
 
 // === RESPONSIVE BREAKPOINTS ===
-@media (max-width: $breakpoint-sm) {
+@media (max-width: vars.$breakpoint-sm) {
   .glass-panel {
-    border-radius: $border-radius-lg;
+    border-radius: vars.$border-radius-lg;
   }
   
   .glass-card {
-    padding: $spacing-md;
+    padding: vars.$spacing-md;
     
     &.glass-card--lg,
     &.glass-card--xl {
-      padding: $spacing-md;
+      padding: vars.$spacing-md;
     }
   }
 }
@@ -243,7 +244,7 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
-    backdrop-filter: $blur-lg;
+    backdrop-filter: vars.$blur-lg;
   }
 }
 
@@ -259,9 +260,9 @@ body {
 }
 
 .glass-fade-in {
-  animation: glass-fade-in $transition-slow $ease-glass;
+  animation: glass-fade-in vars.$transition-slow vars.$ease-glass;
 }
 
 .glass-scale-in {
-  animation: glass-scale-in $transition-normal $ease-glass;
+  animation: glass-scale-in vars.$transition-normal vars.$ease-glass;
 }

@@ -1,41 +1,41 @@
-@import '../../styles/variables.scss';
+@use '../../styles/variables' as vars;
 
 .sidebar {
   display: flex;
   flex-direction: column;
   height: 100%;
   background: transparent;
-  transition: $glass-transition;
+  transition: vars.$glass-transition;
   
   &__header {
-    padding: $spacing-lg;
+    padding: vars.$spacing-lg;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     
     h2 {
-      color: $gray-100;
-      font-size: $font-size-lg;
+      color: vars.$gray-100;
+      font-size: vars.$font-size-lg;
       font-weight: 600;
       margin: 0;
     }
     
     p {
-      color: $gray-400;
-      font-size: $font-size-sm;
-      margin: $spacing-xs 0 0;
+      color: vars.$gray-400;
+      font-size: vars.$font-size-sm;
+      margin: vars.$spacing-xs 0 0;
     }
   }
   
   &__toggle {
-    padding: $spacing-md $spacing-lg;
+    padding: vars.$spacing-md vars.$spacing-lg;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     
     .sidebar__toggle-button {
       width: 100%;
       justify-content: flex-start;
-      color: $gray-300;
+      color: vars.$gray-300;
       
       &:hover {
-        color: $gray-100;
+        color: vars.$gray-100;
       }
     }
   }
@@ -44,18 +44,18 @@
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: $spacing-md 0;
+    padding: vars.$spacing-md 0;
     
     &-items {
       display: flex;
       flex-direction: column;
-      gap: $spacing-xs;
-      padding: 0 $spacing-lg;
+      gap: vars.$spacing-xs;
+      padding: 0 vars.$spacing-lg;
     }
   }
   
   &__footer {
-    padding: $spacing-lg;
+    padding: vars.$spacing-lg;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     margin-top: auto;
   }
@@ -64,7 +64,7 @@
   &--collapsed {
     .sidebar__header,
     .sidebar__footer {
-      padding: $spacing-md;
+      padding: vars.$spacing-md;
       text-align: center;
       
       h2, p {
@@ -73,7 +73,7 @@
     }
     
     .sidebar__nav-items {
-      padding: 0 $spacing-md;
+      padding: 0 vars.$spacing-md;
     }
     
     .sidebar__toggle .sidebar__toggle-button {
@@ -94,21 +94,21 @@
     display: flex;
     align-items: center;
     width: 100%;
-    padding: $spacing-sm $spacing-md;
+    padding: vars.$spacing-sm vars.$spacing-md;
     background: transparent;
     border: none;
-    border-radius: $border-radius-lg;
-    color: $gray-300;
-    font-size: $font-size-sm;
+    border-radius: vars.$border-radius-lg;
+    color: vars.$gray-300;
+    font-size: vars.$font-size-sm;
     font-weight: 500;
     cursor: pointer;
-    transition: $glass-transition-fast;
+    transition: vars.$glass-transition-fast;
     text-align: left;
-    gap: $spacing-sm;
+    gap: vars.$spacing-sm;
     
     &:hover {
       background: rgba(255, 255, 255, 0.05);
-      color: $gray-100;
+      color: vars.$gray-100;
       transform: translateX(2px);
     }
     
@@ -122,7 +122,7 @@
       
       &:hover {
         background: transparent;
-        color: $gray-300;
+        color: vars.$gray-300;
         transform: none;
       }
     }
@@ -151,15 +151,15 @@
   }
   
   &__badge {
-    background: $glass-primary;
-    border: $glass-border-primary;
-    color: $primary-color;
-    font-size: $font-size-xs;
+    background: vars.$glass-primary;
+    border: vars.$glass-border-primary;
+    color: vars.$primary-color;
+    font-size: vars.$font-size-xs;
     font-weight: 600;
     padding: 2px 6px;
-    border-radius: $border-radius-sm;
-    backdrop-filter: $blur-sm;
-    -webkit-backdrop-filter: $blur-sm;
+    border-radius: vars.$border-radius-sm;
+    backdrop-filter: vars.$blur-sm;
+    -webkit-backdrop-filter: vars.$blur-sm;
     min-width: 18px;
     text-align: center;
     flex-shrink: 0;
@@ -172,7 +172,7 @@
     width: 16px;
     height: 16px;
     flex-shrink: 0;
-    transition: $glass-transition-fast;
+    transition: vars.$glass-transition-fast;
     
     svg {
       width: 12px;
@@ -182,7 +182,7 @@
   
   &__children {
     overflow: hidden;
-    margin-left: $spacing-lg;
+    margin-left: vars.$spacing-lg;
     border-left: 1px solid rgba(255, 255, 255, 0.1);
     
     .sidebar-item {
@@ -199,8 +199,8 @@
       }
       
       .sidebar-item__button {
-        padding-left: $spacing-lg;
-        font-size: $font-size-xs;
+        padding-left: vars.$spacing-lg;
+        font-size: vars.$font-size-xs;
       }
     }
   }
@@ -208,33 +208,33 @@
   // Active State
   &--active {
     .sidebar-item__button {
-      background: $glass-primary;
-      border: $glass-border-primary;
-      color: $primary-color;
+      background: vars.$glass-primary;
+      border: vars.$glass-border-primary;
+      color: vars.$primary-color;
       
       &:hover {
-        background: $glass-primary-hover;
-        color: $primary-color;
+        background: vars.$glass-primary-hover;
+        color: vars.$primary-color;
       }
     }
     
     .sidebar-item__badge {
       background: rgba(255, 255, 255, 0.2);
-      color: $gray-100;
+      color: vars.$gray-100;
     }
   }
   
   // Level Indentation
   &--level-1 .sidebar-item__button {
-    padding-left: $spacing-xl;
+    padding-left: vars.$spacing-xl;
   }
   
   &--level-2 .sidebar-item__button {
-    padding-left: calc(#{$spacing-xl} + #{$spacing-md});
+    padding-left: calc(#{vars.$spacing-xl} + #{vars.$spacing-md});
   }
   
   &--level-3 .sidebar-item__button {
-    padding-left: calc(#{$spacing-xl} + #{$spacing-lg});
+    padding-left: calc(#{vars.$spacing-xl} + #{vars.$spacing-lg});
   }
   
   // Disabled State
@@ -264,7 +264,7 @@
   .sidebar-item {
     &__button {
       justify-content: center;
-      padding: $spacing-sm;
+      padding: vars.$spacing-sm;
       position: relative;
       
       &:hover {
@@ -273,19 +273,19 @@
         &::after {
           content: attr(title);
           position: absolute;
-          left: calc(100% + #{$spacing-sm});
+          left: calc(100% + #{vars.$spacing-sm});
           top: 50%;
           transform: translateY(-50%);
-          background: $glass-dark-strong;
-          backdrop-filter: $blur-md;
-          -webkit-backdrop-filter: $blur-md;
-          border: $glass-border-dark;
-          border-radius: $border-radius-md;
-          padding: $spacing-xs $spacing-sm;
-          color: $gray-100;
-          font-size: $font-size-xs;
+          background: vars.$glass-dark-strong;
+          backdrop-filter: vars.$blur-md;
+          -webkit-backdrop-filter: vars.$blur-md;
+          border: vars.$glass-border-dark;
+          border-radius: vars.$border-radius-md;
+          padding: vars.$spacing-xs vars.$spacing-sm;
+          color: vars.$gray-100;
+          font-size: vars.$font-size-xs;
           white-space: nowrap;
-          z-index: $z-tooltip;
+          z-index: vars.$z-tooltip;
           pointer-events: none;
           opacity: 0;
           animation: tooltip-fade-in 0.2s ease-out forwards;
@@ -317,15 +317,15 @@
 }
 
 // Responsive Design
-@media (max-width: $breakpoint-md) {
+@media (max-width: vars.$breakpoint-md) {
   .sidebar {
     &__nav-items {
-      gap: $spacing-sm;
+      gap: vars.$spacing-sm;
     }
     
     .sidebar-item__button {
-      padding: $spacing-md;
-      font-size: $font-size-base;
+      padding: vars.$spacing-md;
+      font-size: vars.$font-size-base;
     }
   }
 }
@@ -343,7 +343,7 @@
     }
     
     &--active .sidebar-item__button {
-      border-color: $primary-color;
+      border-color: vars.$primary-color;
     }
   }
 }

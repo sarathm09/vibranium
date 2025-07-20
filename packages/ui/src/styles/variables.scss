@@ -1,5 +1,8 @@
 // SCSS Variables for Vibranium Frosted Glass UI
 // Glassmorphism design system with advanced glass effects
+// This file serves as the central source for design tokens and can be consumed using @use
+
+// Make all variables available when this module is @forward-ed
 
 // === GLASSMORPHISM COLOR PALETTE ===
 // Primary Glass Colors with transparency

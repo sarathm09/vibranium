@@ -1,20 +1,20 @@
-@import '../../styles/variables.scss';
+@use '../../styles/variables' as vars;
 
 .dashboard-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: $spacing-xl 0;
+  padding: vars.$spacing-xl 0;
   
   &__header {
-    margin-bottom: $spacing-2xl;
+    margin-bottom: vars.$spacing-2xl;
     text-align: center;
   }
   
   &__title {
-    font-size: $font-size-3xl;
+    font-size: vars.$font-size-3xl;
     font-weight: 700;
-    color: $gray-900;
-    margin-bottom: $spacing-sm;
+    color: vars.$gray-900;
+    margin-bottom: vars.$spacing-sm;
     background: linear-gradient(135deg, #3b82f6, #8b5cf6);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -22,26 +22,26 @@
   }
   
   &__subtitle {
-    font-size: $font-size-lg;
-    color: $gray-600;
+    font-size: vars.$font-size-lg;
+    color: vars.$gray-600;
     margin: 0;
   }
   
   &__stats {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: $spacing-lg;
-    margin-bottom: $spacing-2xl;
+    gap: vars.$spacing-lg;
+    margin-bottom: vars.$spacing-2xl;
   }
   
   &__content {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: $spacing-xl;
+    gap: vars.$spacing-xl;
     
-    @media (max-width: $breakpoint-lg) {
+    @media (max-width: vars.$breakpoint-lg) {
       grid-template-columns: 1fr;
-      gap: $spacing-lg;
+      gap: vars.$spacing-lg;
     }
   }
   
@@ -55,8 +55,8 @@
 .dashboard-stat-card {
   display: flex;
   align-items: center;
-  gap: $spacing-lg;
-  padding: $spacing-lg;
+  gap: vars.$spacing-lg;
+  padding: vars.$spacing-lg;
   
   &__icon {
     display: flex;
@@ -64,7 +64,7 @@
     justify-content: center;
     width: 48px;
     height: 48px;
-    border-radius: $border-radius-lg;
+    border-radius: vars.$border-radius-lg;
     background: rgba(255, 255, 255, 0.1);
     color: currentColor;
     flex-shrink: 0;
@@ -76,34 +76,34 @@
   }
   
   &__value {
-    font-size: $font-size-2xl;
+    font-size: vars.$font-size-2xl;
     font-weight: 700;
-    color: $gray-900;
+    color: vars.$gray-900;
     line-height: 1;
-    margin-bottom: $spacing-xs;
+    margin-bottom: vars.$spacing-xs;
   }
   
   &__title {
-    font-size: $font-size-sm;
+    font-size: vars.$font-size-sm;
     font-weight: 600;
-    color: $gray-700;
-    margin-bottom: $spacing-xs;
+    color: vars.$gray-700;
+    margin-bottom: vars.$spacing-xs;
   }
   
   &__change {
-    font-size: $font-size-xs;
-    color: $gray-500;
+    font-size: vars.$font-size-xs;
+    color: vars.$gray-500;
     font-weight: 500;
   }
 }
 
 // Section Titles
 .dashboard-section-title {
-  font-size: $font-size-xl;
+  font-size: vars.$font-size-xl;
   font-weight: 600;
-  color: $gray-900;
-  margin-bottom: $spacing-lg;
-  padding-bottom: $spacing-sm;
+  color: vars.$gray-900;
+  margin-bottom: vars.$spacing-lg;
+  padding-bottom: vars.$spacing-sm;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -112,34 +112,34 @@
   &__grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: $spacing-md;
+    gap: vars.$spacing-md;
   }
 }
 
 .dashboard-quick-action {
   width: 100%;
   height: auto;
-  padding: $spacing-lg;
+  padding: vars.$spacing-lg;
   text-align: left;
   flex-direction: column;
   align-items: stretch;
-  gap: $spacing-sm;
+  gap: vars.$spacing-sm;
   
   &__content {
     display: flex;
     flex-direction: column;
-    gap: $spacing-xs;
+    gap: vars.$spacing-xs;
     flex: 1;
   }
   
   &__title {
-    font-size: $font-size-base;
+    font-size: vars.$font-size-base;
     font-weight: 600;
     color: currentColor;
   }
   
   &__description {
-    font-size: $font-size-sm;
+    font-size: vars.$font-size-sm;
     color: currentColor;
     opacity: 0.8;
   }
@@ -148,8 +148,8 @@
 // Recent Activity
 .dashboard-recent-activity {
   &__footer {
-    margin-top: $spacing-lg;
-    padding-top: $spacing-lg;
+    margin-top: vars.$spacing-lg;
+    padding-top: vars.$spacing-lg;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     text-align: center;
   }
@@ -158,18 +158,18 @@
 .dashboard-activity-list {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
+  gap: vars.$spacing-md;
 }
 
 .dashboard-activity-item {
   display: flex;
   align-items: flex-start;
-  gap: $spacing-md;
-  padding: $spacing-md;
-  border-radius: $border-radius-lg;
+  gap: vars.$spacing-md;
+  padding: vars.$spacing-md;
+  border-radius: vars.$border-radius-lg;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  transition: $glass-transition-fast;
+  transition: vars.$glass-transition-fast;
   
   &:hover {
     background: rgba(255, 255, 255, 0.06);
@@ -183,7 +183,7 @@
     border-radius: 50%;
     flex-shrink: 0;
     margin-top: 6px;
-    background: $gray-400;
+    background: vars.$gray-400;
   }
   
   &__content {
@@ -192,75 +192,75 @@
   }
   
   &__title {
-    font-size: $font-size-sm;
+    font-size: vars.$font-size-sm;
     font-weight: 600;
-    color: $gray-900;
-    margin-bottom: $spacing-xs;
+    color: vars.$gray-900;
+    margin-bottom: vars.$spacing-xs;
   }
   
   &__description {
-    font-size: $font-size-sm;
-    color: $gray-600;
-    margin-bottom: $spacing-xs;
+    font-size: vars.$font-size-sm;
+    color: vars.$gray-600;
+    margin-bottom: vars.$spacing-xs;
   }
   
   &__time {
-    font-size: $font-size-xs;
-    color: $gray-500;
+    font-size: vars.$font-size-xs;
+    color: vars.$gray-500;
     font-weight: 500;
   }
   
   // Status variants
   &--success {
     .dashboard-activity-item__indicator {
-      background: $success-color;
+      background: vars.$success-color;
       box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
     }
   }
   
   &--error {
     .dashboard-activity-item__indicator {
-      background: $error-color;
+      background: vars.$error-color;
       box-shadow: 0 0 8px rgba(239, 68, 68, 0.3);
     }
   }
   
   &--warning {
     .dashboard-activity-item__indicator {
-      background: $warning-color;
+      background: vars.$warning-color;
       box-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
     }
   }
   
   &--info {
     .dashboard-activity-item__indicator {
-      background: $info-color;
+      background: vars.$info-color;
       box-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
     }
   }
 }
 
 // Responsive Design
-@media (max-width: $breakpoint-md) {
+@media (max-width: vars.$breakpoint-md) {
   .dashboard-page {
-    padding: $spacing-lg 0;
+    padding: vars.$spacing-lg 0;
     
     &__stats {
       grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: $spacing-md;
-      margin-bottom: $spacing-xl;
+      gap: vars.$spacing-md;
+      margin-bottom: vars.$spacing-xl;
     }
     
     &__content {
-      gap: $spacing-lg;
+      gap: vars.$spacing-lg;
     }
   }
   
   .dashboard-stat-card {
-    padding: $spacing-md;
+    padding: vars.$spacing-md;
     flex-direction: column;
     text-align: center;
-    gap: $spacing-md;
+    gap: vars.$spacing-md;
     
     &__icon {
       width: 40px;
@@ -268,7 +268,7 @@
     }
     
     &__value {
-      font-size: $font-size-xl;
+      font-size: vars.$font-size-xl;
     }
   }
   
@@ -277,18 +277,18 @@
   }
   
   .dashboard-quick-action {
-    padding: $spacing-md;
+    padding: vars.$spacing-md;
   }
 }
 
-@media (max-width: $breakpoint-sm) {
+@media (max-width: vars.$breakpoint-sm) {
   .dashboard-page {
     &__title {
-      font-size: $font-size-2xl;
+      font-size: vars.$font-size-2xl;
     }
     
     &__subtitle {
-      font-size: $font-size-base;
+      font-size: vars.$font-size-base;
     }
     
     &__stats {
@@ -298,7 +298,7 @@
   
   .dashboard-stat-card {
     &__value {
-      font-size: $font-size-lg;
+      font-size: vars.$font-size-lg;
     }
   }
 }
@@ -307,43 +307,43 @@
 @media (prefers-color-scheme: dark) {
   .dashboard-page {
     &__title {
-      color: $gray-100;
+      color: vars.$gray-100;
     }
     
     &__subtitle {
-      color: $gray-400;
+      color: vars.$gray-400;
     }
   }
   
   .dashboard-stat-card {
     &__value {
-      color: $gray-100;
+      color: vars.$gray-100;
     }
     
     &__title {
-      color: $gray-300;
+      color: vars.$gray-300;
     }
     
     &__change {
-      color: $gray-400;
+      color: vars.$gray-400;
     }
   }
   
   .dashboard-section-title {
-    color: $gray-100;
+    color: vars.$gray-100;
   }
   
   .dashboard-activity-item {
     &__title {
-      color: $gray-100;
+      color: vars.$gray-100;
     }
     
     &__description {
-      color: $gray-300;
+      color: vars.$gray-300;
     }
     
     &__time {
-      color: $gray-400;
+      color: vars.$gray-400;
     }
   }
 }

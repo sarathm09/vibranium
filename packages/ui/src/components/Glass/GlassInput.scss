@@ -1,10 +1,10 @@
-@import '../../styles/variables.scss';
+@use '../../styles/variables' as vars;
 
 .glass-input-container {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: $spacing-sm;
+  gap: vars.$spacing-sm;
   
   &.glass-input-container--full-width {
     width: 100%;
@@ -12,11 +12,11 @@
 }
 
 .glass-input__label {
-  font-size: $font-size-sm;
+  font-size: vars.$font-size-sm;
   font-weight: 500;
-  color: $gray-700;
-  margin-bottom: $spacing-xs;
-  transition: $glass-transition-fast;
+  color: vars.$gray-700;
+  margin-bottom: vars.$spacing-xs;
+  transition: vars.$glass-transition-fast;
 }
 
 .glass-input__wrapper {
@@ -24,10 +24,10 @@
   display: flex;
   align-items: center;
   background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: $blur-sm;
-  -webkit-backdrop-filter: $blur-sm;
+  backdrop-filter: vars.$blur-sm;
+  -webkit-backdrop-filter: vars.$blur-sm;
   border: 1px solid rgba(255, 255, 255, 0.15);
-  transition: $glass-transition-fast;
+  transition: vars.$glass-transition-fast;
   overflow: hidden;
   
   // Pseudo elements for enhanced glass effect
@@ -61,16 +61,16 @@
   background: transparent;
   border: none;
   outline: none;
-  color: $gray-800;
-  font-size: $font-size-base;
+  color: vars.$gray-800;
+  font-size: vars.$font-size-base;
   font-family: inherit;
-  transition: $glass-transition-fast;
+  transition: vars.$glass-transition-fast;
   position: relative;
   z-index: 1;
   
   &::placeholder {
     color: rgba(107, 114, 128, 0.6);
-    transition: $glass-transition-fast;
+    transition: vars.$glass-transition-fast;
   }
   
   &:focus::placeholder {
@@ -86,18 +86,18 @@
 // Size variants
 .glass-input-container--sm {
   .glass-input__wrapper {
-    border-radius: $border-radius-md;
+    border-radius: vars.$border-radius-md;
     min-height: 32px;
   }
   
   .glass-input__field {
-    padding: $spacing-xs $spacing-sm;
-    font-size: $font-size-sm;
+    padding: vars.$spacing-xs vars.$spacing-sm;
+    font-size: vars.$font-size-sm;
   }
   
   .glass-input__left-icon,
   .glass-input__right-icon {
-    padding: 0 $spacing-xs;
+    padding: 0 vars.$spacing-xs;
     
     svg {
       width: 14px;
@@ -108,18 +108,18 @@
 
 .glass-input-container--md {
   .glass-input__wrapper {
-    border-radius: $border-radius-lg;
+    border-radius: vars.$border-radius-lg;
     min-height: 40px;
   }
   
   .glass-input__field {
-    padding: $spacing-sm $spacing-md;
-    font-size: $font-size-base;
+    padding: vars.$spacing-sm vars.$spacing-md;
+    font-size: vars.$font-size-base;
   }
   
   .glass-input__left-icon,
   .glass-input__right-icon {
-    padding: 0 $spacing-sm;
+    padding: 0 vars.$spacing-sm;
     
     svg {
       width: 16px;
@@ -130,18 +130,18 @@
 
 .glass-input-container--lg {
   .glass-input__wrapper {
-    border-radius: $border-radius-lg;
+    border-radius: vars.$border-radius-lg;
     min-height: 48px;
   }
   
   .glass-input__field {
-    padding: $spacing-md $spacing-lg;
-    font-size: $font-size-lg;
+    padding: vars.$spacing-md vars.$spacing-lg;
+    font-size: vars.$font-size-lg;
   }
   
   .glass-input__left-icon,
   .glass-input__right-icon {
-    padding: 0 $spacing-md;
+    padding: 0 vars.$spacing-md;
     
     svg {
       width: 18px;
@@ -191,7 +191,7 @@
 // State variants
 .glass-input-container--focused {
   .glass-input__label {
-    color: $primary-color;
+    color: vars.$primary-color;
   }
   
   .glass-input__wrapper {
@@ -203,7 +203,7 @@
 
 .glass-input-container--error {
   .glass-input__label {
-    color: $error-color;
+    color: vars.$error-color;
   }
   
   .glass-input__wrapper {
@@ -231,8 +231,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: $gray-500;
-  transition: $glass-transition-fast;
+  color: vars.$gray-500;
+  transition: vars.$glass-transition-fast;
   
   svg {
     display: block;
@@ -248,12 +248,12 @@
   background: transparent;
   border: none;
   cursor: pointer;
-  color: $gray-500;
-  padding: 0 $spacing-sm;
-  transition: $glass-transition-fast;
+  color: vars.$gray-500;
+  padding: 0 vars.$spacing-sm;
+  transition: vars.$glass-transition-fast;
   
   &:hover {
-    color: $gray-700;
+    color: vars.$gray-700;
   }
   
   &:disabled {
@@ -274,26 +274,26 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 $spacing-sm;
+  padding: 0 vars.$spacing-sm;
 }
 
 .glass-input__spinner-circle {
   width: 16px;
   height: 16px;
   border: 2px solid rgba(59, 130, 246, 0.2);
-  border-top: 2px solid $primary-color;
+  border-top: 2px solid vars.$primary-color;
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }
 
 // Error and hint text
 .glass-input__error {
-  font-size: $font-size-sm;
-  color: $error-color;
+  font-size: vars.$font-size-sm;
+  color: vars.$error-color;
   font-weight: 500;
   display: flex;
   align-items: center;
-  gap: $spacing-xs;
+  gap: vars.$spacing-xs;
   
   &::before {
     content: '!';
@@ -302,7 +302,7 @@
     justify-content: center;
     width: 16px;
     height: 16px;
-    background: $error-color;
+    background: vars.$error-color;
     color: white;
     border-radius: 50%;
     font-size: 10px;
@@ -312,8 +312,8 @@
 }
 
 .glass-input__hint {
-  font-size: $font-size-sm;
-  color: $gray-500;
+  font-size: vars.$font-size-sm;
+  color: vars.$gray-500;
 }
 
 @keyframes spin {
@@ -335,11 +335,11 @@
   }
   
   .glass-input__label {
-    color: $gray-300;
+    color: vars.$gray-300;
   }
   
   .glass-input__field {
-    color: $gray-200;
+    color: vars.$gray-200;
     
     &::placeholder {
       color: rgba(156, 163, 175, 0.6);

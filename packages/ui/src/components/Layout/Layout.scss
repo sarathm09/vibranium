@@ -1,4 +1,4 @@
-@import '../../styles/variables.scss';
+@use '../../styles/variables' as vars;
 
 .vibranium-layout {
   position: relative;
@@ -13,14 +13,14 @@
     top: 0;
     left: 0;
     right: 0;
-    z-index: $z-sticky;
+    z-index: vars.$z-sticky;
     height: 60px;
     
     .vibranium-layout__header-content {
       height: 100%;
       border-radius: 0;
       border: none;
-      border-bottom: $glass-border-light;
+      border-bottom: vars.$glass-border-light;
     }
   }
   
@@ -30,14 +30,14 @@
     top: 60px; // Header height
     left: 0;
     bottom: 0;
-    z-index: $z-fixed;
+    z-index: vars.$z-fixed;
     overflow: hidden;
     
     .vibranium-layout__sidebar-content {
       height: 100%;
       border-radius: 0;
       border: none;
-      border-right: $glass-border-light;
+      border-right: vars.$glass-border-light;
       overflow-y: auto;
       overflow-x: hidden;
     }
@@ -49,14 +49,14 @@
     top: 60px; // Header height
     right: 0;
     bottom: 0;
-    z-index: $z-fixed;
+    z-index: vars.$z-fixed;
     overflow: hidden;
     
     .vibranium-layout__right-panel-content {
       height: 100%;
       border-radius: 0;
       border: none;
-      border-left: $glass-border-light;
+      border-left: vars.$glass-border-light;
       overflow-y: auto;
       overflow-x: hidden;
     }
@@ -67,18 +67,18 @@
     flex: 1;
     padding-top: 60px; // Header height
     min-height: calc(100vh - 60px);
-    transition: $glass-transition;
+    transition: vars.$glass-transition;
     
     &-content {
-      padding: $spacing-lg;
+      padding: vars.$spacing-lg;
       min-height: 100%;
       
-      @media (max-width: $breakpoint-md) {
-        padding: $spacing-md;
+      @media (max-width: vars.$breakpoint-md) {
+        padding: vars.$spacing-md;
       }
       
-      @media (max-width: $breakpoint-sm) {
-        padding: $spacing-sm;
+      @media (max-width: vars.$breakpoint-sm) {
+        padding: vars.$spacing-sm;
       }
     }
   }
@@ -89,14 +89,14 @@
     bottom: 0;
     left: 0;
     right: 0;
-    z-index: $z-sticky;
+    z-index: vars.$z-sticky;
     height: 50px;
     
     .vibranium-layout__footer-content {
       height: 100%;
       border-radius: 0;
       border: none;
-      border-top: $glass-border-light;
+      border-top: vars.$glass-border-light;
     }
   }
   
@@ -108,9 +108,9 @@
     right: 0;
     bottom: 0;
     background: rgba(0, 0, 0, 0.3);
-    backdrop-filter: $blur-sm;
-    -webkit-backdrop-filter: $blur-sm;
-    z-index: $z-modal-backdrop;
+    backdrop-filter: vars.$blur-sm;
+    -webkit-backdrop-filter: vars.$blur-sm;
+    z-index: vars.$z-modal-backdrop;
     cursor: pointer;
   }
   
@@ -119,7 +119,7 @@
     .vibranium-layout__main {
       margin-left: 280px;
       
-      @media (max-width: $breakpoint-lg) {
+      @media (max-width: vars.$breakpoint-lg) {
         margin-left: 0;
       }
     }
@@ -128,7 +128,7 @@
       .vibranium-layout__main {
         margin-left: 60px;
         
-        @media (max-width: $breakpoint-lg) {
+        @media (max-width: vars.$breakpoint-lg) {
           margin-left: 0;
         }
       }
@@ -139,7 +139,7 @@
     .vibranium-layout__main {
       margin-right: 320px;
       
-      @media (max-width: $breakpoint-lg) {
+      @media (max-width: vars.$breakpoint-lg) {
         margin-right: 0;
       }
     }
@@ -148,7 +148,7 @@
       .vibranium-layout__main {
         margin-right: 60px;
         
-        @media (max-width: $breakpoint-lg) {
+        @media (max-width: vars.$breakpoint-lg) {
           margin-right: 0;
         }
       }
@@ -197,7 +197,7 @@
     
     .vibranium-layout__header {
       .vibranium-layout__header-content {
-        padding: 0 $spacing-md;
+        padding: 0 vars.$spacing-md;
       }
     }
   }

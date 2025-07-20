@@ -21,6 +21,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 import { useAppContext } from '../state/app-context';
 import { ResultsView } from './execution-results';
+import { OverviewDashboard } from './overview-dashboard';
 import chalk from 'chalk';
 
 export const DetailsPane: React.FC = () => {
@@ -117,14 +118,15 @@ export const DetailsPane: React.FC = () => {
   };
   
   const renderOverview = () => {
+    // Calculate terminal width for responsive design
+    const terminalWidth = process.stdout.columns || 80;
+    const isActive = state.ui.activePane === 'details';
+    
     return (
-      <Box flexDirection="column" height="100%">
-        {renderScenarioMetadata()}
-        {state.currentScenario?.steps && state.currentScenario.steps.length > 0 && renderStepsSection()}
-        {state.currentScenario?.steps && state.currentScenario.steps.length > 0 && renderSelectedOverviewStepSection()}
-        {state.isRunning && state.executionProgress && renderLiveExecutionSection()}
-        {state.lastResult && !state.isRunning && renderExecutionSummarySection()}
-      </Box>
+      <OverviewDashboard 
+        isActive={isActive}
+        terminalWidth={terminalWidth}
+      />
     );
   };
 
